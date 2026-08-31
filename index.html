@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="format-detection" content="telephone=no">
+<title>入居時のお部屋チェック</title>
+<style>
+:root{
+  --ink:#17171A; --ink2:#3F3F46; --ink3:#71717A; --ink4:#A1A1AA;
+  --line:#E4E4E7; --line2:#D4D4D8; --bg:#F5F5F6; --card:#fff;
+  --ng:#B23A28; --ngbg:#FCEFEC;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+  font-size:16px;line-height:1.7;-webkit-text-size-adjust:100%;}
+body{padding-bottom:calc(96px + env(safe-area-inset-bottom));}
+img{max-width:100%;}
+button,input,textarea{font-family:inherit;font-size:16px;}
+
+/* ---- 上のバー ---- */
+header{position:sticky;top:0;z-index:20;background:var(--ink);color:#fff;
+  padding:calc(10px + env(safe-area-inset-top)) 16px 10px;}
+header .h-bldg{font-size:17px;font-weight:800;letter-spacing:.01em;}
+header .h-sub{font-size:12px;color:#B9BBC1;margin-top:2px;}
+.bar{height:4px;background:#3A3A40;border-radius:100px;margin-top:10px;overflow:hidden;}
+.bar > i{display:block;height:100%;background:#fff;border-radius:100px;transition:width .3s;}
+.steps{display:flex;gap:6px;margin-top:8px;font-size:11px;color:#8A8C93;}
+.steps span{flex:1;text-align:center;padding:3px 0;border-radius:100px;}
+.steps span.on{background:#fff;color:var(--ink);font-weight:800;}
+
+/* ---- 中身 ---- */
+main{padding:16px 14px 0;max-width:640px;margin:0 auto;}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;
+  padding:16px 14px;margin-bottom:14px;}
+h2{font-size:17px;font-weight:800;margin:0 0 4px;}
+.lead{font-size:13px;color:var(--ink3);margin:0 0 14px;}
+.note{font-size:12.5px;color:var(--ink3);line-height:1.75;}
+
+/* ---- パスワード ---- */
+#pw-box{max-width:420px;margin:40px auto;}
+#pw{width:100%;text-align:center;letter-spacing:.5em;font-size:26px;font-weight:800;
+  padding:14px 10px;border:2px solid var(--line2);border-radius:14px;text-transform:uppercase;}
+#pw:focus{outline:none;border-color:var(--ink);}
+.err{color:var(--ng);font-size:13.5px;font-weight:700;margin-top:10px;min-height:1.2em;}
+
+/* ---- ボタン ---- */
+.btn{display:block;width:100%;border:0;border-radius:14px;padding:16px;
+  font-size:16px;font-weight:800;background:var(--ink);color:#fff;cursor:pointer;}
+.btn:active{opacity:.85;}
+.btn.ghost{background:#fff;color:var(--ink);border:1.5px solid var(--line2);}
+.btn[disabled]{opacity:.4;}
+
+/* ---- 間取り図 ---- */
+#plan{margin-bottom:14px;}
+#plan img{width:100%;border-radius:14px;border:1px solid var(--line);display:block;background:#fff;}
+.plan-cap{font-size:11.5px;color:var(--ink3);text-align:center;margin-top:6px;}
+
+/* ---- 部屋 ---- */
+.place{border:1px solid var(--line);border-radius:14px;background:#fff;
+  padding:12px 12px 10px;margin-bottom:10px;}
+.place.is-ng{border-color:var(--ng);background:var(--ngbg);}
+.place-h{font-size:15.5px;font-weight:800;margin-bottom:8px;}
+.pick{display:flex;gap:8px;}
+.pick label{flex:1;position:relative;}
+.pick input{position:absolute;opacity:0;pointer-events:none;}
+.pick span{display:block;text-align:center;padding:11px 6px;border-radius:11px;
+  border:1.5px solid var(--line2);background:#fff;font-size:14px;font-weight:700;color:var(--ink2);}
+.pick input:checked + span{background:var(--ink);border-color:var(--ink);color:#fff;}
+.pick .ng input:checked + span{background:var(--ng);border-color:var(--ng);}
+.detail{margin-top:10px;}
+.detail textarea{width:100%;min-height:74px;padding:10px;border:1.5px solid var(--line2);
+  border-radius:11px;resize:vertical;line-height:1.6;}
+.detail textarea:focus{outline:none;border-color:var(--ink);}
+.shots{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;}
+.shot{position:relative;width:74px;height:74px;border-radius:10px;overflow:hidden;border:1px solid var(--line2);}
+.shot img{width:100%;height:100%;object-fit:cover;display:block;}
+.shot button{position:absolute;top:2px;right:2px;width:22px;height:22px;border:0;border-radius:50%;
+  background:rgba(0,0,0,.65);color:#fff;font-size:13px;line-height:1;cursor:pointer;}
+.addshot{width:74px;height:74px;border:1.5px dashed var(--line2);border-radius:10px;background:#fff;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  font-size:10.5px;color:var(--ink3);cursor:pointer;font-weight:700;}
+.addshot b{font-size:20px;font-weight:400;line-height:1;}
+
+/* ---- 確認事項 ---- */
+.chk{display:block;border:1px solid var(--line);border-radius:14px;background:#fff;
+  padding:12px 12px;margin-bottom:9px;position:relative;cursor:pointer;}
+.chk.on{border-color:var(--ink);background:#FAFAFA;}
+.chk input{position:absolute;opacity:0;pointer-events:none;}
+.chk-h{display:flex;align-items:flex-start;gap:10px;}
+.box{flex:0 0 26px;width:26px;height:26px;border:2px solid var(--line2);border-radius:8px;
+  background:#fff;margin-top:1px;position:relative;}
+.chk.on .box{background:var(--ink);border-color:var(--ink);}
+.chk.on .box::after{content:"";position:absolute;left:8px;top:3px;width:6px;height:12px;
+  border:solid #fff;border-width:0 2.5px 2.5px 0;transform:rotate(42deg);}
+.chk-t{flex:1;min-width:0;font-size:15px;font-weight:800;line-height:1.5;}
+.chk-b{font-size:12.5px;color:var(--ink2);line-height:1.75;margin:8px 0 0 36px;}
+.tag{display:inline-block;font-size:10.5px;font-weight:800;letter-spacing:.06em;
+  border:1px solid var(--line2);border-radius:100px;padding:1px 8px;color:var(--ink3);margin-left:6px;
+  vertical-align:2px;white-space:nowrap;}
+.tag.money{background:var(--ink);border-color:var(--ink);color:#fff;}
+.sec-h{font-size:12px;font-weight:800;letter-spacing:.08em;color:var(--ink3);
+  margin:20px 0 8px;padding-left:2px;}
+.allbtn{display:flex;gap:8px;margin-bottom:12px;}
+.allbtn button{flex:1;padding:10px;border-radius:11px;border:1.5px solid var(--line2);
+  background:#fff;font-size:13px;font-weight:700;color:var(--ink2);cursor:pointer;}
+
+/* ---- まとめ ---- */
+.sum{border:1px solid var(--line);border-radius:14px;background:#fff;padding:14px;margin-bottom:12px;}
+.sum-row{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid var(--line);font-size:14px;}
+.sum-row:last-child{border-bottom:0;}
+.sum-row b{font-weight:800;}
+.sum-ng{color:var(--ng);}
+
+/* ---- 下の固定ボタン ---- */
+footer{position:fixed;left:0;right:0;bottom:0;z-index:20;background:rgba(245,245,246,.94);
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+  border-top:1px solid var(--line);padding:10px 14px calc(10px + env(safe-area-inset-bottom));}
+footer .inner{max-width:640px;margin:0 auto;display:flex;gap:10px;}
+footer .btn{margin:0;}
+footer .btn.ghost{flex:0 0 34%;}
+
+/* ---- 送信中・完了 ---- */
+#veil{position:fixed;inset:0;z-index:60;background:rgba(255,255,255,.92);
+  display:none;align-items:center;justify-content:center;text-align:center;padding:30px;}
+#veil.on{display:flex;}
+#veil .in{font-size:15px;font-weight:800;}
+.spin{width:30px;height:30px;border:3px solid var(--line2);border-top-color:var(--ink);
+  border-radius:50%;margin:0 auto 14px;animation:sp .8s linear infinite;}
+@keyframes sp{to{transform:rotate(360deg);}}
+.done{text-align:center;padding:50px 20px;}
+.done .mk{width:64px;height:64px;border-radius:50%;background:var(--ink);color:#fff;
+  font-size:30px;line-height:64px;margin:0 auto 16px;}
+.hide{display:none !important;}
+
+/* ---- 写真の拡大 ---- */
+#zoom{position:fixed;inset:0;z-index:70;background:rgba(0,0,0,.92);display:none;
+  align-items:center;justify-content:center;padding:16px;}
+#zoom.on{display:flex;}
+#zoom img{max-width:100%;max-height:100%;border-radius:10px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="h-bldg" id="h-bldg">入居時のお部屋チェック</div>
+  <div class="h-sub"  id="h-sub">お部屋の確認と、ご説明内容の確認</div>
+  <div class="bar"><i id="bar" style="width:0"></i></div>
+  <div class="steps" id="steps">
+    <span data-s="1">① お部屋</span><span data-s="2">② ご説明</span><span data-s="3">③ 送信</span>
+  </div>
+</header>
+
+<main>
+
+  <!-- ===== パスワード ===== -->
+  <section id="s-pw">
+    <div id="pw-box">
+      <div class="card">
+        <h2>パスワードを入れてください</h2>
+        <p class="lead">ご案内のメールに書いてある 6文字です。</p>
+        <input id="pw" type="text" inputmode="latin" autocapitalize="characters"
+               autocomplete="off" maxlength="6" placeholder="－－－－－－">
+        <div class="err" id="pw-err"></div>
+        <button class="btn" id="pw-go" style="margin-top:6px;">はじめる</button>
+      </div>
+      <p class="note" style="text-align:center;">
+        うまく開けないときは、管理会社までご連絡ください。
+      </p>
+    </div>
+  </section>
+
+  <!-- ===== ① 室内 ===== -->
+  <section id="s1" class="hide">
+    <div id="plan"></div>
+    <div class="card">
+      <h2>お部屋の中を見てください</h2>
+      <p class="lead">
+        入居前からあるキズ・汚れ・不具合が無いか、場所ごとに教えてください。<br>
+        気になるところがあれば、<b>写真</b>を撮って送ってください。<br>
+        あとから「入居前からあった」と分かるようにするための確認です。
+      </p>
+      <div id="places"></div>
+    </div>
+  </section>
+
+  <!-- ===== ② ご説明の確認 ===== -->
+  <section id="s2" class="hide">
+    <div class="card">
+      <h2>ご契約時のご説明について</h2>
+      <p class="lead">
+        不動産会社から説明を受け、内容が分かったものに印を付けてください。<br>
+        分からないものは、印を付けずに送ってください。こちらからご連絡します。
+      </p>
+      <div class="allbtn">
+        <button type="button" id="all-on">すべてに印を付ける</button>
+        <button type="button" id="all-off">ぜんぶ外す</button>
+      </div>
+      <div class="sec-h">お金に関すること</div>
+      <div id="cl-money"></div>
+      <div class="sec-h">そのほか</div>
+      <div id="cl-other"></div>
+      <div class="sec-h">暮らしのお願い</div>
+      <div id="manners"></div>
+    </div>
+  </section>
+
+  <!-- ===== ③ 送信 ===== -->
+  <section id="s3" class="hide">
+    <div class="card">
+      <h2>この内容で送ります</h2>
+      <p class="lead">まちがいが無ければ、いちばん下の「送信する」を押してください。</p>
+      <div class="sum" id="sum"></div>
+      <p class="note">
+        送ったあとの控えは、管理会社で保管します。<br>
+        修正が必要なときは、管理会社までご連絡ください。
+      </p>
+    </div>
+  </section>
+
+  <!-- ===== 完了 ===== -->
+  <section id="s-done" class="hide">
+    <div class="done">
+      <div class="mk">✓</div>
+      <h2>送信しました</h2>
+      <p class="lead" id="done-msg">ご協力ありがとうございました。</p>
+    </div>
+  </section>
+
+</main>
+
+<footer id="foot" class="hide">
+  <div class="inner">
+    <button class="btn ghost hide" id="back">もどる</button>
+    <button class="btn" id="next">つぎへ</button>
+  </div>
+</footer>
+
+<div id="veil"><div class="in"><div class="spin"></div><span id="veil-msg">送信しています…</span></div></div>
+<div id="zoom"><img alt=""></div>
+
+<script src="clauses.js?v=1"></script>
+<script src="config.js?v=1"></script>
+<script src="app.js?v=1"></script>
+</body>
+</html>
