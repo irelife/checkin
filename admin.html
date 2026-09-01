@@ -84,11 +84,11 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
 
 <main>
 
-  <!-- 合言葉 -->
+  <!-- パスワード -->
   <section id="s-key">
     <div class="card">
-      <h2>管理用の合言葉</h2>
-      <input type="text" id="key" placeholder="合言葉" autocomplete="off">
+      <h2>パスワード</h2>
+      <input type="password" id="key" placeholder="パスワード" autocomplete="current-password">
       <div class="err" id="key-err"></div>
       <button class="btn" id="key-go">開く</button>
     </div>
@@ -166,7 +166,7 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
   /* ---- 合言葉 ---- */
   $('#key-go').addEventListener('click', function(){
     KEY = $('#key').value.trim();
-    if(!KEY){ $('#key-err').textContent = '合言葉を入れてください。'; return; }
+　　if(!KEY){ $('#key-err').textContent = 'パスワードを入れてください。'; return; }
     veil(true);
     post({ action:'list', key:KEY }).then(function(res){
       veil(false);
