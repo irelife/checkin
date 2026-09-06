@@ -109,6 +109,24 @@ h2{font-size:20px;font-weight:800;margin:0 0 6px;}
 .sec-h{font-size:14px;font-weight:800;letter-spacing:.08em;color:var(--ink3);
   margin:20px 0 8px;padding-left:2px;}
 
+/* ---- 印を付けなかった理由 ---- */
+.clwrap{margin-bottom:9px;}
+.clwrap .chk{margin-bottom:0;}
+.why{border:1.5px solid var(--ng);border-top:0;background:var(--ngbg);
+  border-radius:0 0 14px 14px;padding:12px 13px 13px;margin:-2px 0 0;}
+.why-q{font-size:14px;font-weight:800;color:var(--ng);margin-bottom:9px;line-height:1.6;}
+.whyr{display:flex;align-items:flex-start;gap:9px;background:#fff;border:1.5px solid var(--line2);
+  border-radius:11px;padding:11px 12px;margin-bottom:7px;cursor:pointer;}
+.whyr.on{border-color:var(--ng);background:#fff;}
+.whyr input{position:absolute;opacity:0;pointer-events:none;}
+.whyr span{flex:1;font-size:15px;font-weight:700;color:var(--ink2);line-height:1.5;}
+.whyr::before{content:"";flex:0 0 20px;width:20px;height:20px;border:2px solid var(--line2);
+  border-radius:50%;background:#fff;margin-top:1px;}
+.whyr.on::before{border-color:var(--ng);border-width:6px;}
+.why-n{width:100%;min-height:56px;padding:10px;border:1.5px solid var(--line2);
+  border-radius:11px;resize:vertical;line-height:1.6;font-size:16px;margin-top:2px;}
+.why-n:focus{outline:none;border-color:var(--ng);}
+
 /* ---- まとめ ---- */
 .sum{border:1px solid var(--line);border-radius:14px;background:#fff;padding:14px;margin-bottom:12px;}
 .sum-row{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid var(--line);font-size:16px;}
