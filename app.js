@@ -109,12 +109,23 @@
       }
     }catch(e){}
 
-    /* 間取り図 */
+    /* 間取り図
+       ドライブが返す URL は「閲覧ページ」のもので、そのままでは画像として
+       読めません（画像が壊れた印になります）。ファイル番号を取り出して、
+       画像として出せるアドレスに作り直します。 */
     if(DATA.plan){
+      var big = driveImg(DATA.plan, 1600);
       $('#plan').innerHTML =
-        '<img src="' + esc(DATA.plan) + '" alt="間取り図">' +
+        '<img src="' + esc(driveImg(DATA.plan, 1000)) + '" alt="間取り図">' +
         '<div class="plan-cap">間取り図（タップで大きく表示）</div>';
-      $('#plan img').addEventListener('click', function(){ zoom(this.src); });
+      var pim = $('#plan img');
+      pim.addEventListener('click', function(){ zoom(big); });
+      /* もし読めなかったときは、壊れた印を出さずに、開くリンクにします */
+      pim.addEventListener('error', function(){
+        $('#plan').innerHTML =
+          '<a class="plan-link" href="' + esc(DATA.plan) + '" target="_blank" rel="noopener">' +
+          '間取り図をひらく</a>';
+      });
     }
 
     /* 場所ごとのカード */
@@ -459,6 +470,15 @@
       if(_guard){ window.removeEventListener('beforeunload', _guard); _guard = null; }
     }
   }
+  /* ドライブの URL から、画像として出せるアドレスを作ります
+     例）https://drive.google.com/file/d/XXXX/view
+       → https://drive.google.com/thumbnail?id=XXXX&sz=w1000        */
+  function driveImg(u, w){
+    var t = String(u == null ? '' : u);
+    var m = /[-\w]{25,}/.exec(t);
+    return m ? ('https://drive.google.com/thumbnail?id=' + m[0] + '&sz=w' + (w || 1000)) : t;
+  }
+
   function zoom(src){
     var z = $('#zoom');
     z.querySelector('img').src = src;
