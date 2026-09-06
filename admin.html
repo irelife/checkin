@@ -91,6 +91,27 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
   border-radius:11px;background:#fff;font-weight:700;color:var(--ink);}
 
 /* 集計の札は押せます（押すと、その中身だけの一覧になります） */
+.tabs3{display:flex;gap:8px;margin-bottom:12px;}
+.tabs3 button{flex:1;padding:12px 6px;border-radius:12px;border:1.5px solid var(--line2);
+  background:#fff;font:inherit;font-size:15px;font-weight:800;color:var(--ink3);cursor:pointer;}
+.tabs3 button.on{background:var(--ink);border-color:var(--ink);color:#fff;}
+.tabs3 button i{font-style:normal;font-weight:800;opacity:.75;}
+.pill.exp{background:var(--ng);color:#fff;border-color:var(--ng);}
+.item.exp{border-color:var(--ng);}
+#agbox{position:fixed;inset:0;z-index:220;background:rgba(0,0,0,.55);display:none;
+  align-items:center;justify-content:center;padding:14px;}
+#agbox.on{display:flex;}
+#agbox .in{background:#fff;border-radius:14px;max-width:760px;width:100%;max-height:90vh;
+  display:flex;flex-direction:column;overflow:hidden;}
+#agbox .hd{padding:13px 15px;border-bottom:1px solid var(--line);}
+#agbox .hd b{font-size:16px;}
+#agbox .hd p{margin:4px 0 0;font-size:13px;color:var(--ink3);line-height:1.7;}
+#agbox input,#agbox textarea{width:100%;box-sizing:border-box;font:inherit;font-size:14px;
+  border:1px solid var(--line);border-radius:9px;padding:9px 11px;margin:0 0 8px;}
+#agbox textarea{min-height:280px;line-height:1.8;resize:vertical;}
+#agbox .bd{padding:13px 15px;overflow:auto;}
+#agbox .ft{display:flex;gap:8px;padding:12px 15px;border-top:1px solid var(--line);}
+
 .stat{cursor:pointer;transition:background .12s,border-color .12s;}
 .stat:active{background:#F0F0F1;}
 .stat.on{border:2px solid var(--ink);background:#FAFAFA;padding:15px 9px;}
@@ -156,6 +177,15 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
       <input type="email" id="f-mail" inputmode="email" placeholder="例: taro@example.com">
       <label class="f">入居日</label>
       <input type="date" id="f-move">
+      <label class="f">エリア（担当者が分かれます。返信の通知は、このエリアの担当者へ届きます）</label>
+      <select id="f-area" style="width:100%;box-sizing:border-box;font:inherit;font-size:15px;
+        border:1px solid var(--line);border-radius:9px;padding:10px 11px;background:#fff;"></select>
+      <label class="f">仲介業者（「説明を受けていない」と回答があったとき、ここへ連絡できます）</label>
+      <div class="row">
+        <div><input type="text" id="f-agco" placeholder="会社名　例: ○○不動産"></div>
+        <div style="max-width:150px;"><input type="text" id="f-agnm" placeholder="担当者　例: 山田"></div>
+      </div>
+      <input type="email" id="f-agml" inputmode="email" placeholder="仲介業者のメールアドレス">
       <label class="f">間取り図（写真でも可）</label>
       <input type="file" id="f-plan" accept="image/*">
       <img id="plan-th" class="thumb hide" alt="">
@@ -183,6 +213,12 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
     <div class="filt">
       <select id="f-fy"></select>
       <select id="f-mo"></select>
+      <select id="f-far"></select>
+    </div>
+    <div class="tabs3" id="tabs3">
+      <button type="button" data-t="todo" class="on">要対応 <i>0</i></button>
+      <button type="button" data-t="waiting">未返信 <i>0</i></button>
+      <button type="button" data-t="done">完了 <i>0</i></button>
     </div>
     <div class="stats" id="stats"></div>
     <div class="card" style="padding:12px;">
@@ -195,6 +231,27 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
   </section>
 
 </main>
+
+<div id="agbox">
+  <div class="in">
+    <div class="hd">
+      <b>仲介業者へ連絡する</b>
+      <p>下の文面は、そのまま直せます。送ると、自社（転送先）にも控えが届きます。</p>
+    </div>
+    <div class="bd">
+      <label class="f">宛先</label>
+      <input type="email" id="ag-to">
+      <label class="f">件名</label>
+      <input type="text" id="ag-sub">
+      <label class="f">本文</label>
+      <textarea id="ag-body"></textarea>
+    </div>
+    <div class="ft">
+      <button class="btn" id="ag-send" style="flex:1;">この内容で送る</button>
+      <button class="btn ghost" id="ag-cancel" style="flex:0 0 30%;">やめる</button>
+    </div>
+  </div>
+</div>
 
 <div id="detail">
   <div class="d-bar"><b id="d-title">　</b><button id="d-close">閉じる</button></div>
@@ -233,7 +290,9 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
       veil(false);
       if(!res.ok){ $('#key-err').textContent = res.err || '開けませんでした。'; return; }
       try{ localStorage.setItem('ire_checkin_key', KEY); }catch(e){}
-      ROWS = res.rows; buildPeriod(); drawAll();
+      ROWS = res.rows;
+      if(res.areas && res.areas.length) AREAS = res.areas;
+      buildPeriod(); buildArea(); drawAll();
       $('#s-key').classList.add('hide');
       show('list');
     }).catch(function(){ veil(false); $('#key-err').textContent = '通信できませんでした。'; });
@@ -436,6 +495,9 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
       bldg:$('#f-bldg').value.trim(), room:$('#f-room').value.trim(),
       name:$('#f-name').value.trim(), mail:$('#f-mail').value.trim(),
       moveIn:$('#f-move').value, memo:$('#f-memo').value.trim(),
+      area:$('#f-area').value,
+      agentCo:$('#f-agco').value.trim(), agentName:$('#f-agnm').value.trim(),
+      agentMail:$('#f-agml').value.trim(),
       clauses:$$('#cl-list .cl').filter(function(e){ return e.querySelector('input').checked; })
                 .map(function(e){ return e.getAttribute('data-t'); })
                 .concat(($('#f-extra').value || '').split(/\r?\n/)
@@ -473,20 +535,70 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
   /* ---- 一覧 ---- */
   var FILT = '';   /* 押している札。'' のときは、ぜんぶ出します */
 
+  var TAB = 'todo';        /* 要対応／未返信／完了 */
+  var AREAS = [];
+
   function reload(){
     veil(true);
-    post({ action:'list', key:KEY }).then(function(res){
+    /* 年度はサーバー側でしぼります。件数が増えても重くなりません。
+       0 を渡すと全部returnされます */
+    var fy = $('#f-fy').value;
+    post({ action:'list', key:KEY, fy:(fy === '' ? 0 : Number(fy)) }).then(function(res){
       veil(false);
       if(!res.ok) return;
-      ROWS = res.rows; buildPeriod(); drawAll();
+      ROWS = res.rows;
+      if(res.areas && res.areas.length) AREAS = res.areas;
+      buildPeriod(); buildArea(); drawAll();
     }).catch(function(){ veil(false); });
+  }
+
+  /* エリアのえらび */
+  function buildArea(){
+    var sel = $('#f-far');
+    if(sel.options.length && sel.getAttribute('data-built') === String(AREAS.length)) return;
+    var keep = sel.value;
+    sel.innerHTML = '<option value="">エリア：すべて</option>' +
+      AREAS.map(function(a){ return '<option value="' + esc(a) + '">' + esc(a) + '</option>'; }).join('');
+    sel.setAttribute('data-built', String(AREAS.length));
+    sel.value = keep || '';
+    /* 新規作成の画面にも、同じえらびを入れます */
+    var f = $('#f-area');
+    if(f && !f.options.length){
+      f.innerHTML = '<option value="">（未設定）</option>' +
+        AREAS.map(function(a){ return '<option value="' + esc(a) + '">' + esc(a) + '</option>'; }).join('');
+    }
   }
   $('#reload').addEventListener('click', reload);
   $('#q').addEventListener('input', drawList);
-  $('#f-fy').addEventListener('change', drawAll);
+  $('#f-fy').addEventListener('change', reload);
   $('#f-mo').addEventListener('change', drawAll);
 
-  function drawAll(){ drawStats(); drawList(); }
+  function drawAll(){ drawTabs(); drawStats(); drawList(); }
+
+  function drawTabs(){
+    var rows = ROWS.filter(inPeriod);
+    var n = { todo:0, waiting:0, done:0 };
+    rows.forEach(function(r){
+      var st = String(r.status||'');
+      if(st === '取消') return;
+      if(st === '完了') n.done++;
+      else if(st === '返信済') n.todo++;
+      else n.waiting++;
+    });
+    $$('#tabs3 button').forEach(function(b){
+      var k = b.getAttribute('data-t');
+      b.classList.toggle('on', TAB === k);
+      b.querySelector('i').textContent = n[k];
+    });
+  }
+  $$('#tabs3 button').forEach(function(b){
+    b.addEventListener('click', function(){
+      TAB = b.getAttribute('data-t');
+      FILT = '';                    /* タブを変えたら、数字のしぼり込みは外します */
+      drawAll();
+    });
+  });
+  $('#f-far').addEventListener('change', drawAll);
 
   /* 年度は4月はじまりです。2026年4月〜2027年3月＝2026年度 */
   function ymOf(v){ var m = /^(\d{4})\/(\d{2})/.exec(String(v||'')); return m ? {y:+m[1], m:+m[2]} : null; }
@@ -517,40 +629,49 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
   }
 
   function inPeriod(r){
-    var fy = $('#f-fy').value, mo = $('#f-mo').value;
+    var fy = $('#f-fy').value, mo = $('#f-mo').value, ar = $('#f-far').value;
     if(fy && String(fyOf(r.created)) !== fy) return false;
     if(mo){ var t = ymOf(r.created); if(!t || t.m !== Number(mo)) return false; }
+    if(ar && String(r.area||'') !== ar) return false;
     return true;
+  }
+
+  /* いま選んでいるタブに入るかどうか */
+  function inTab(r){
+    var st = String(r.status||'');
+    if(st === '取消') return false;
+    if(TAB === 'done')    return st === '完了';
+    if(TAB === 'waiting') return st !== '完了' && st !== '返信済';
+    return st === '返信済';                      /* 要対応 */
   }
 
   function matchFilt(r){
     if(!FILT) return true;
-    var done = (r.status === '返信済');
-    if(FILT === 'replied') return done;
-    if(FILT === 'ng')      return done && r.ng > 0;
-    if(FILT === 'waiting') return !done;
-    if(FILT === 'over')    return !done && r.over;
-    if(FILT === 'remind')  return r.remind > 0;
+    if(FILT === 'ng')     return r.ng > 0;
+    if(FILT === 'exp')    return r.noExp > 0;
+    if(FILT === 'over')   return r.over;
+    if(FILT === 'remind') return r.remind > 0;
     return true;
   }
 
   function drawStats(){
-    var rows = ROWS.filter(inPeriod);
-    var st = { all:rows.length, replied:0, ng:0, waiting:0, over:0, remind:0 };
+    var rows = ROWS.filter(inPeriod).filter(inTab);
+    var st = { all:rows.length, ng:0, exp:0, over:0, remind:0 };
     rows.forEach(function(r){
-      var done = (r.status === '返信済');
-      if(done){ st.replied++; if(r.ng > 0) st.ng++; }
-      else { st.waiting++; if(r.over) st.over++; }
+      if(r.ng > 0) st.ng++;
+      if(r.noExp > 0) st.exp++;
+      if(r.over) st.over++;
       if(r.remind > 0) st.remind++;
     });
     $('#stats').innerHTML =
-      cell('',        st.all,     'つくった件数') +
-      cell('replied', st.replied, '返信あり') +
-      cell('ng',      st.ng,      '問題の報告', st.ng > 0) +
-      cell('waiting', st.waiting, '未返信') +
-      cell('over',    st.over,    '期限すぎ', st.over > 0) +
-      cell('remind',  st.remind,  '督促を送った');
-    function cell(k,n,l,warn){
+      cell('',       st.all,    'このタブの件数') +
+      cell('ng',     st.ng,     '問題の報告', st.ng > 0) +
+      cell('exp',    st.exp,    '説明を受けていない', st.exp > 0) +
+      cell('over',   st.over,   '期限すぎ', st.over > 0) +
+      cell('remind', st.remind, '督促を送った') +
+      cell('',       0,         '', false, true);
+    function cell(k,n,l,warn,blank){
+      if(blank) return '<div class="stat" style="visibility:hidden"></div>';
       return '<div class="stat' + (warn ? ' warn' : '') + (FILT === k ? ' on' : '') +
         '" data-k="' + k + '"><b>' + n + '</b><span>' + l + '</span></div>';
     }
@@ -567,29 +688,71 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
     var q = $('#q').value.trim();
     var rows = ROWS.filter(function(r){
       if(!inPeriod(r)) return false;
+      if(!inTab(r)) return false;
       if(!matchFilt(r)) return false;
       if(!q) return true;
-      return (r.bldg + r.room + r.name).indexOf(q) >= 0;
+      return (r.bldg + r.room + r.name + (r.area||'') + (r.agentCo||'')).indexOf(q) >= 0;
     });
     if(!rows.length){ $('#list').innerHTML = '<p style="color:#71717A;font-size:15px;">ありません。</p>'; return; }
     $('#list').innerHTML = rows.map(function(r){
-      var done = (r.status === '返信済');
-      var pill = done
-        ? (r.ng > 0 ? '<span class="pill ng">要確認 ' + r.ng + '</span>' : '<span class="pill ok">問題なし</span>')
-        : (r.over ? '<span class="pill ng">期限すぎ</span>' : '<span class="pill">未返信</span>');
-      return '<div class="item' + (done ? ' done' : (r.over ? ' over' : '')) + '" data-id="' + esc(r.id) + '">' +
+      var st   = String(r.status||'');
+      var fin  = (st === '完了');
+      var done = (st === '返信済' || fin);
+      var exp  = (r.noExp > 0);
+      var pill = fin
+        ? '<span class="pill ok">完了</span>'
+        : (done
+            ? (exp ? '<span class="pill exp">説明を受けていない ' + r.noExp + '</span>'
+                   : (r.ng > 0 ? '<span class="pill ng">要確認 ' + r.ng + '</span>'
+                               : '<span class="pill ok">問題なし</span>'))
+            : (r.over ? '<span class="pill ng">期限すぎ</span>' : '<span class="pill">未返信</span>'));
+      var sub = [];
+      if(r.area) sub.push(esc(r.area));
+      if(r.agentCo || r.agentName) sub.push('仲介：' + esc(r.agentCo||'') + ' ' + esc(r.agentName||''));
+      var acts = [];
+      if(!done){
+        acts.push('<button class="btn sm ghost act-remind">督促メールを送る</button>');
+        acts.push('<button class="btn sm ghost act-copy">案内文をコピー</button>');
+      }else if(!fin){
+        if(exp && r.agentMail) acts.push('<button class="btn sm ghost act-agent">仲介へ連絡する</button>');
+        acts.push('<button class="btn sm act-done">完了にする</button>');
+      }else{
+        acts.push('<button class="btn sm ghost act-undo">完了をもどす</button>');
+      }
+      return '<div class="item' + (fin ? ' done' : (exp ? ' exp' : (done ? ' done' : (r.over ? ' over' : '')))) +
+        '" data-id="' + esc(r.id) + '">' +
         '<div class="i-h"><b>' + esc(r.bldg) + ' ' + esc(r.room) + '</b>' + pill + '</div>' +
         '<div class="i-b">' + esc(r.name) + ' 様 ／ ' + esc(r.mail) + '<br>' +
+          (sub.length ? (sub.join(' ／ ') + '<br>') : '') +
           '作成 ' + esc(String(r.created).slice(0,10)) + ' ／ 期限 ' + esc(r.due) +
-          (done ? ' ／ 返信 ' + esc(String(r.replied).slice(0,10)) : '') +
+          (r.replied ? ' ／ 返信 ' + esc(String(r.replied).slice(0,10)) : '') +
+          (r.doneAt ? ' ／ 完了 ' + esc(String(r.doneAt).slice(0,10)) : '') +
           (r.remind ? ' ／ 督促 ' + r.remind + '回' : '') + '</div>' +
-        (done ? '' :
-          '<div class="i-a">' +
-            '<button class="btn sm ghost act-remind">督促メールを送る</button>' +
-            '<button class="btn sm ghost act-copy">案内文をコピー</button>' +
-          '</div>') +
+        (acts.length ? ('<div class="i-a">' + acts.join('') + '</div>') : '') +
       '</div>';
     }).join('');
+
+    /* 完了にする／もどす */
+    $$('.act-done, .act-undo').forEach(function(b){
+      b.addEventListener('click', function(){
+        var id = b.closest('.item').getAttribute('data-id');
+        var undo = b.classList.contains('act-undo');
+        if(!confirm(undo ? '完了をもどしますか？' : 'この件を完了にしますか？\n（完了タブへ移ります）')) return;
+        veil(true);
+        post({ action:'done', key:KEY, id:id, undo:undo }).then(function(res){
+          veil(false);
+          if(!res.ok){ alert(res.err || 'できませんでした'); return; }
+          reload();
+        }).catch(function(){ veil(false); alert('通信できませんでした。'); });
+      });
+    });
+
+    /* 仲介へ連絡する */
+    $$('.act-agent').forEach(function(b){
+      b.addEventListener('click', function(){
+        openAgent(b.closest('.item').getAttribute('data-id'));
+      });
+    });
     $$('.act-remind').forEach(function(b){
       b.addEventListener('click', function(){
         var id = b.closest('.item').getAttribute('data-id');
@@ -619,6 +782,37 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
     });
   }
 
+  /* ---- 仲介業者へ連絡する ---- */
+  var AG_ID = '';
+  function openAgent(id){
+    AG_ID = id;
+    veil(true);
+    post({ action:'agentMail', key:KEY, id:id, preview:true }).then(function(d){
+      veil(false);
+      if(!d.ok){ alert(d.err || '開けませんでした。'); return; }
+      $('#ag-to').value   = d.to || '';
+      $('#ag-sub').value  = d.subject || '';
+      $('#ag-body').value = d.body || '';
+      $('#agbox').classList.add('on');
+    }).catch(function(){ veil(false); alert('通信できませんでした。'); });
+  }
+  $('#ag-cancel').addEventListener('click', function(){ $('#agbox').classList.remove('on'); });
+  $('#agbox').addEventListener('click', function(e){ if(e.target === this) this.classList.remove('on'); });
+  $('#ag-send').addEventListener('click', function(){
+    var to = $('#ag-to').value.trim();
+    if(!to){ alert('宛先を入れてください。'); return; }
+    if(!confirm(to + ' へ送ります。よろしいですか？')) return;
+    veil(true);
+    post({ action:'agentMail', key:KEY, id:AG_ID, to:to,
+           subject:$('#ag-sub').value, body:$('#ag-body').value }).then(function(res){
+      veil(false);
+      if(!res.ok){ alert(res.err || '送れませんでした'); return; }
+      $('#agbox').classList.remove('on');
+      alert('送りました。');
+      reload();
+    }).catch(function(){ veil(false); alert('通信できませんでした。'); });
+  });
+
   /* ---- 1件の中身を見る ---- */
   /* ドライブのURLから、その場で見られる画像のURLを作ります */
   function driveThumb(u){
@@ -637,6 +831,9 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
       h.push('<div class="card">');
       h.push('<div class="i-h"><b>' + esc(d.name) + ' 様</b></div>');
       h.push('<div class="i-b">' + esc(d.mail) + '<br>' +
+        (d.area ? ('エリア ' + esc(d.area) + '<br>') : '') +
+        ((d.agentCo || d.agentName || d.agentMail)
+          ? ('仲介 ' + esc(d.agentCo||'') + ' ' + esc(d.agentName||'') + ' ' + esc(d.agentMail||'') + '<br>') : '') +
         '作成 ' + esc(String(d.created).slice(0,10)) + ' ／ 状態 ' + esc(d.status) +
         (d.replied ? ' ／ 返信 ' + esc(String(d.replied).slice(0,10)) : '') +
         '<br>パスワード ' + esc(d.pass) +
@@ -677,8 +874,11 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
         h.push('<div class="d-k">ご説明の確認</div>');
         d.checks.forEach(function(x){
           var no = (x.judge !== '確認した');
+          var isExp = no && String(x.comment||'').indexOf('説明を受けていない') === 0;
           h.push('<div class="d-item' + (no ? ' ng' : '') + '"><b>' + esc(x.place) +
-                 '　<span class="pill' + (no ? ' ng' : ' ok') + '">' + esc(x.judge) + '</span></b></div>');
+                 '　<span class="pill' + (isExp ? ' exp' : (no ? ' ng' : ' ok')) + '">' +
+                 esc(isExp ? '説明を受けていない' : x.judge) + '</span></b>' +
+                 (no && x.comment ? ('<p>' + esc(x.comment) + '</p>') : '') + '</div>');
         });
       }
 
