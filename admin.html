@@ -38,13 +38,21 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
 .btn[disabled]{opacity:.4;}
 .err{color:var(--ng);font-size:15px;font-weight:700;min-height:1.2em;}
 
-/* 集計 */
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;}
-.stat{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px 10px;text-align:center;}
-.stat b{display:block;font-size:34px;font-weight:800;line-height:1.2;}
-.stat span{font-size:13.5px;color:var(--ink3);font-weight:700;}
-.stat.warn{background:var(--ngbg);border-color:#F0CFC8;}
+/* このタブの説明（1行） */
+.tabnote{font-size:13.5px;color:var(--ink3);line-height:1.7;margin:-4px 0 12px 2px;}
+
+/* しぼり込みの札。0件のものは出しません（0だらけにならないように） */
+.stats{display:flex;flex-wrap:wrap;gap:7px;align-items:center;margin-bottom:12px;}
+.stats .lab{font-size:12.5px;font-weight:800;color:#A1A1AA;letter-spacing:.06em;margin-right:2px;}
+.stat{display:inline-flex;align-items:center;gap:7px;background:#fff;border:1.5px solid var(--line2);
+  border-radius:100px;padding:8px 14px;font-size:14px;font-weight:700;color:var(--ink2);cursor:pointer;
+  white-space:nowrap;}
+.stat b{font-size:15px;font-weight:800;color:var(--ink);}
+.stat.warn{background:var(--ngbg);border-color:#E7BFB6;color:var(--ng);}
 .stat.warn b{color:var(--ng);}
+.stat.on{background:var(--ink);border-color:var(--ink);color:#fff;}
+.stat.on b{color:#fff;}
+.stat.warn.on{background:var(--ng);border-color:var(--ng);color:#fff;}
 
 /* 一覧 */
 .item{background:#fff;border:1px solid var(--line);border-radius:14px;padding:15px 14px;margin-bottom:10px;}
@@ -154,10 +162,9 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
 #agbox .bd{padding:13px 15px;overflow:auto;}
 #agbox .ft{display:flex;gap:8px;padding:12px 15px;border-top:1px solid var(--line);}
 
-.stat{cursor:pointer;transition:background .12s,border-color .12s;}
-.stat:active{background:#F0F0F1;}
-.stat.on{border:2px solid var(--ink);background:#FAFAFA;padding:15px 9px;}
-.stat.on span{color:var(--ink);}
+/* 札の押し心地（見た目そのものは、上の .stat のところで決めています） */
+.stat{transition:background .12s,border-color .12s,color .12s;}
+.stat:active{opacity:.7;}
 
 /* 一覧の1件も押せます（押すと中身が開きます） */
 .item{cursor:pointer;}
@@ -270,6 +277,7 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
       <button type="button" data-t="waiting">未返信 <i>0</i></button>
       <button type="button" data-t="done">完了 <i>0</i></button>
     </div>
+    <div class="tabnote" id="tabnote"></div>
     <div class="stats" id="stats"></div>
     <div class="card" style="padding:12px;">
       <div class="row" style="margin-bottom:10px;">
@@ -707,14 +715,24 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
     return true;
   }
 
+  /* このタブは何を集めた場所なのか、1行で説明します */
+  var TABNOTE = {
+    agent  : '特約に印が付いていない件です。<b>仲介業者へ連絡すると「要対応」へ移ります。</b>',
+    todo   : '内容をご確認のうえ、済んだら<b>「完了にする」</b>を押してください。',
+    waiting: 'まだ入居者からの返信がありません。期限をすぎると督促を自動で送ります。',
+    done   : '対応が済んだものです。すべて問題なしの返信は、自動でここに入ります。'
+  };
+
   function drawStats(){
+    $('#tabnote').innerHTML = TABNOTE[TAB] || '';
+
     var rows = ROWS.filter(inPeriod).filter(inTab);
     /* ★ 数はそれぞれ別に数えます。
          ng      … お部屋に気になるところがある件（お部屋の話）
          noCheck … 特約に印が付いていない件（ご説明の話）
          exp     … そのうち「説明を受けていない」と答えた件
        ng と noCheck は別の話なので、両方に入る件もあります。 */
-    var st = { all:rows.length, ng:0, chk:0, exp:0, over:0, late:0, remind:0 };
+    var st = { ng:0, chk:0, exp:0, over:0, late:0, remind:0 };
     rows.forEach(function(r){
       if(r.ng > 0) st.ng++;
       if(Number(r.noCheck||0) > 0) st.chk++;
@@ -723,26 +741,34 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
       if(isLate(r)) st.late++;
       if(r.remind > 0) st.remind++;
     });
-    /* 「未返信」タブでは、まだ返事が無いので、お部屋も特約も数えられません。
-       そのタブだけ、これまでどおり 期限すぎ・督促 を出します。 */
-    var h = [];
-    h.push(cell('', st.all, 'このタブの件数'));
+
+    /* タブごとに、そのタブで意味のあるものだけを出します。
+       0件のものは出しません（0ばかり並ぶと、かえって読みにくいため）。 */
+    var want;
     if(TAB === 'waiting'){
-      h.push(cell('over',   st.over,   '期限すぎ', st.over > 0));
-      h.push(cell('remind', st.remind, '督促を送った'));
+      want = [['over', st.over, '期限すぎ', true], ['remind', st.remind, '督促ずみ', false]];
+    }else if(TAB === 'agent'){
+      want = [['chk', st.chk, '特約の未確認', true], ['exp', st.exp, 'うち 説明を受けていない', true],
+              ['ng',  st.ng,  'お部屋の報告', true]];
+    }else if(TAB === 'todo'){
+      want = [['ng',   st.ng,   'お部屋の報告', true],
+              ['late', st.late, AL_AFTER + '日 対応おくれ', true],
+              ['chk',  st.chk,  '特約の未確認', false]];
     }else{
-      h.push(cell('ng',   st.ng,  'お部屋の報告', st.ng > 0));
-      h.push(cell('chk',  st.chk, '特約の未確認', st.chk > 0));
-      h.push(cell('exp',  st.exp, 'うち 説明を受けていない', st.exp > 0));
-      h.push(cell('late', st.late, AL_AFTER + '日 対応おくれ', st.late > 0));
-      h.push(cell('',     0, '', false, true));
+      want = [['ng', st.ng, 'お部屋の報告', false], ['chk', st.chk, '特約の未確認', false]];
     }
-    $('#stats').innerHTML = h.join('');
-    function cell(k,n,l,warn,blank){
-      if(blank) return '<div class="stat" style="visibility:hidden"></div>';
-      return '<div class="stat' + (warn ? ' warn' : '') + (FILT === k ? ' on' : '') +
-        '" data-k="' + k + '"><b>' + n + '</b><span>' + l + '</span></div>';
-    }
+
+    var live = want.filter(function(x){ return x[1] > 0; });
+    if(!live.length){ $('#stats').innerHTML = ''; return; }   /* 出すものが無ければ、何も出しません */
+
+    $('#stats').innerHTML =
+      '<span class="lab">しぼり込み</span>' +
+      '<div class="stat' + (FILT === '' ? ' on' : '') + '" data-k="">すべて <b>' + rows.length + '</b></div>' +
+      live.map(function(x){
+        return '<div class="stat' + (x[3] ? ' warn' : '') + (FILT === x[0] ? ' on' : '') +
+               '" data-k="' + x[0] + '">' + x[2] + ' <b>' + x[1] + '</b></div>';
+      }).join('');
+
     $$('#stats .stat').forEach(function(el){
       el.addEventListener('click', function(){
         var k = el.getAttribute('data-k');
@@ -786,6 +812,7 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
     return '<div class="i-rm' + (late ? ' hot' : '') + '"><b>返信から ' + d + '日</b>' +
            '<span>／ ' + b + '</span></div>';
   }
+
   function remindBox(r, done){
     var n = Number(r.remind||0);
     if(done){
