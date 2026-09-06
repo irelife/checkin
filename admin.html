@@ -62,6 +62,10 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
 /* 特約の選択 */
 .cl{display:block;border:1px solid var(--line);border-radius:11px;padding:11px 13px;margin-bottom:7px;cursor:pointer;}
 .cl.on{border-color:var(--ink);background:#FAFAFA;}
+/* 緑：物件ごとに「どれか1つ」を選ぶもの（選び忘れに気づけるように） */
+.cl.g{border-color:#A7D8B8;background:#F7FCF9;}
+.cl.g input{accent-color:#15803D;}
+.cl.g.on{border-color:#15803D;background:#EFFAF3;}
 .cl input{width:20px;height:20px;margin-right:10px;vertical-align:-4px;accent-color:var(--ink);}
 .cl b{font-size:15.5px;font-weight:700;}
 .clh{display:flex;align-items:center;gap:8px;}
@@ -307,7 +311,7 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
 
 <div id="veil">読み込んでいます…</div>
 
-<script src="clauses.js?v=2"></script>
+<script src="clauses.js?v=3"></script>
 <script src="config.js?v=1"></script>
 <script>
 (function(){
@@ -458,7 +462,8 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
   function drawClauses(){
     $('#cl-list').innerHTML = (window.CLAUSES||[]).map(function(c){
       var on = isDefault(c);
-      return '<div class="cl' + (on ? ' on' : '') + '" data-t="' + esc(c.t) + '">' +
+      var gr = (c && c.g === true);      /* 物件ごとに1つ選ぶもの＝緑 */
+      return '<div class="cl' + (gr ? ' g' : '') + (on ? ' on' : '') + '" data-t="' + esc(c.t) + '">' +
         '<div class="clh"><input type="checkbox"' + (on ? ' checked' : '') + '>' +
           '<b>' + esc(c.t) + '</b>' + (c.money ? '<span class="m">お金</span>' : '') +
           '<span class="ar">▾</span></div>' +
@@ -489,7 +494,7 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
     $$('#cl-list .cl').forEach(function(e){
       var on = !!map[e.getAttribute('data-t')];
       e.querySelector('input').checked = on;
-      e.classList.toggle('on', on);
+      e.classList.toggle('on', on);    /* 緑（g）はそのまま残ります */
     });
   }
 
