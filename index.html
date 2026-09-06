@@ -61,6 +61,16 @@ h2{font-size:20px;font-weight:800;margin:0 0 6px;}
 #plan{margin-bottom:14px;}
 #plan img{width:100%;border-radius:14px;border:1px solid var(--line);display:block;background:#fff;}
 .plan-cap{font-size:13px;color:var(--ink3);text-align:center;margin-top:6px;}
+/* ご質問のあて先のご案内（このページでは受けられないこと） */
+.askbox{border:1.5px solid var(--line2);background:#fff;border-radius:14px;
+  padding:15px 16px;margin-top:14px;}
+.askbox > b{display:block;font-size:15.5px;font-weight:800;color:var(--ink);margin-bottom:7px;}
+.askbox p b{font-weight:800;color:var(--ink);}
+.askbox p{margin:0;font-size:14.5px;line-height:1.85;color:var(--ink2);}
+.askbox a.hp{display:block;margin-top:12px;text-align:center;padding:14px;
+  border-radius:12px;background:var(--ink);color:#fff;font-size:16px;font-weight:800;
+  text-decoration:none;}
+
 /* 間取り図が読めなかったときの、ひらくリンク */
 .plan-link{display:block;text-align:center;padding:16px;border:1.5px solid var(--line2);
   border-radius:14px;background:#fff;font-size:16px;font-weight:700;color:var(--ink);
@@ -237,7 +247,9 @@ footer .btn.ghost{flex:0 0 34%;}
       <h2>ご契約時のご説明について</h2>
       <p class="lead">
         不動産会社から説明を受け、内容が分かったものに印を付けてください。<br>
-        分からないものは、印を付けずに送ってください。こちらからご連絡します。
+        分からないものは、印を付けずに送ってください。こちらからご連絡します。<br>
+        <b>ご質問は、この画面ではお受けできません。</b>下の「ひとこと」欄には、
+        印を付けなかった理由だけをお書きください。
       </p>
       <div class="sec-h">お金に関すること</div>
       <div id="cl-money"></div>
@@ -261,6 +273,7 @@ footer .btn.ghost{flex:0 0 34%;}
         ご退去のときにご負担をお願いすることがあります。
       </p>
     </div>
+    <div class="askbox" id="ask3"></div>
   </section>
 
   <!-- ===== 完了 ===== -->
@@ -270,6 +283,7 @@ footer .btn.ghost{flex:0 0 34%;}
       <h2>送信しました</h2>
       <p class="lead" id="done-msg">ご協力ありがとうございました。</p>
     </div>
+    <div class="askbox" id="ask4"></div>
   </section>
 
 </main>
@@ -285,7 +299,7 @@ footer .btn.ghost{flex:0 0 34%;}
 <div id="zoom"><img alt=""></div>
 
 <script src="clauses.js?v=3"></script>
-<script src="config.js?v=1"></script>
-<script src="app.js?v=2"></script>
+<script src="config.js?v=2"></script>
+<script src="app.js?v=3"></script>
 </body>
 </html>
