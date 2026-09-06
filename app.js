@@ -18,6 +18,8 @@
   var checks = {};               // { 見出し: true }
   var KEY = 'ire_checkin_' + ID; // 書きかけの置き場所
 
+  var MAXPHOTO = 10;   /* 1か所あたりの写真の上限 */
+
   function $(s){ return document.querySelector(s); }
   function $$(s){ return Array.prototype.slice.call(document.querySelectorAll(s)); }
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){
@@ -35,8 +37,26 @@
   }
 
   /* ---------- 書きかけの保存・復元 ---------- */
+  /* 書きかけを、この端末に残します。
+     写真は1枚で100KB以上あるので、端末の置き場（およそ5MB）がいっぱいになることがあります。
+     いっぱいのときは、写真を外して「選んだ内容と書いた文章」だけでも必ず残します。 */
   function save(){
-    try{ localStorage.setItem(KEY, JSON.stringify({ rooms:rooms, checks:checks, step:step })); }catch(e){}
+    var body = { rooms:rooms, checks:checks, step:step };
+    try{
+      localStorage.setItem(KEY, JSON.stringify(body));
+      return;
+    }catch(e){}
+    try{
+      var slim = { rooms:{}, checks:checks, step:step, noPhoto:true }, k;
+      for(k in rooms){
+        if(!Object.prototype.hasOwnProperty.call(rooms, k)) continue;
+        slim.rooms[k] = { ng:rooms[k].ng, comment:rooms[k].comment || '', photos:[] };
+      }
+      localStorage.setItem(KEY, JSON.stringify(slim));
+      try{ console.warn('[checkin] 端末がいっぱいのため、写真ぬきで控えました'); }catch(x){}
+    }catch(e){
+      try{ localStorage.removeItem(KEY); }catch(x){}
+    }
   }
   function load(){
     try{
@@ -103,12 +123,22 @@
       ? all.filter(function(c){ return DATA.clauses.indexOf(c.t) >= 0; })
       : [];
     if(!mine.length) mine = all;   // 指定が無いときは、ぜんぶ出します
+
+    /* 特約の一覧に無いものは「この物件について」として、そのまま出します。
+       管理画面で「個別に伝えたいこと」に書いた文が、ここに来ます。 */
+    var known = {}, extra = [];
+    all.forEach(function(c){ known[c.t] = 1; });
+    (DATA.clauses || []).forEach(function(t){
+      if(!known[t] && String(t).trim()) extra.push({ t:t, b:'', money:false, extra:true });
+    });
     $('#cl-money').innerHTML = mine.filter(function(c){ return c.money; }).map(clHtml).join('')
       || '<p class="note">該当なし</p>';
-    $('#cl-other').innerHTML = mine.filter(function(c){ return !c.money; }).map(clHtml).join('')
-      || '<p class="note">該当なし</p>';
+    $('#cl-other').innerHTML =
+      (extra.length ? '<p class="note" style="margin:2px 0 6px">この物件・お部屋について</p>' + extra.map(clHtml).join('') : '') +
+      (mine.filter(function(c){ return !c.money; }).map(clHtml).join('')
+        || (extra.length ? '' : '<p class="note">該当なし</p>'));
     $('#manners').innerHTML = (window.MANNERS||[]).map(function(m){
-      return '<label class="chk' + (checks[m] ? ' on' : '') + '" data-t="' + esc(m) + '">' +
+      return '<label class="chk mn' + (checks[m] ? ' on' : '') + '" data-t="' + esc(m) + '">' +
         '<input type="checkbox"' + (checks[m]?' checked':'') + '>' +
         '<div class="chk-h"><i class="box"></i><div class="chk-t">' + esc(m) + '</div></div></label>';
     }).join('');
@@ -120,7 +150,7 @@
       '<input type="checkbox"' + (checks[c.t]?' checked':'') + '>' +
       '<div class="chk-h"><i class="box"></i><div class="chk-t">' + esc(c.t) +
         (c.money ? '<span class="tag money">お金</span>' : '') + '</div></div>' +
-      '<div class="chk-b">' + esc(c.b) + '</div></label>';
+      (c.b ? ('<div class="chk-b">' + esc(c.b) + '</div>') : '') + '</label>';
   }
 
   function bindChk(el){
@@ -157,9 +187,9 @@
       box.innerHTML = st.photos.map(function(src, i){
         return '<div class="shot"><img src="' + src + '" alt=""><button type="button" data-i="' + i + '">×</button></div>';
       }).join('') +
-      (st.photos.length < 5
+      (st.photos.length < MAXPHOTO
         ? '<div class="addshot"><b>＋</b>写真</div>'
-        : '');
+        : '<div class="note" style="font-size:12px;color:#777;padding:6px 2px">写真は' + MAXPHOTO + '枚までです</div>');
       box.querySelectorAll('.shot button').forEach(function(b){
         b.addEventListener('click', function(ev){
           ev.stopPropagation();
@@ -178,7 +208,7 @@
       inp.type = 'file'; inp.accept = 'image/*'; inp.multiple = true;
       inp.addEventListener('change', function(){
         var files = Array.prototype.slice.call(inp.files || []);
-        var left = 5 - st.photos.length;
+        var left = MAXPHOTO - st.photos.length;
         files.slice(0, left).reduce(function(chain, f){
           return chain.then(function(){
             return shrink(f).then(function(d){ if(d) st.photos.push(d); });
@@ -189,20 +219,25 @@
     }
   }
 
-  /* 写真を小さくします（長辺1280px・JPEG）。
-     そのまま送ると1枚で数MBあり、電波の弱いところで失敗するためです。 */
+  /* 写真を小さくします（長辺1000px・JPEG）。
+     そのまま送ると1枚で数MBあり、電波の弱いところで送信に何十秒もかかるためです。
+     いちど作ってみて、まだ重いときは、もう一段だけ軽くします。
+     （傷の確認には十分な大きさです） */
   function shrink(file){
     return new Promise(function(done){
       var fr = new FileReader();
       fr.onload = function(){
         var im = new Image();
         im.onload = function(){
-          var M = 1280, w = im.width, h = im.height;
+          var M = 1000, w = im.width, h = im.height;
           if(w > M || h > M){ var s = M/Math.max(w,h); w = Math.round(w*s); h = Math.round(h*s); }
           var cv = document.createElement('canvas');
           cv.width = w; cv.height = h;
           cv.getContext('2d').drawImage(im, 0, 0, w, h);
-          done(cv.toDataURL('image/jpeg', 0.72));
+          var d = cv.toDataURL('image/jpeg', 0.60);
+          if(d.length > 240000) d = cv.toDataURL('image/jpeg', 0.45);
+          if(d.length > 240000) d = cv.toDataURL('image/jpeg', 0.35);
+          done(d);
         };
         im.onerror = function(){ done(''); };
         im.src = fr.result;
@@ -222,10 +257,17 @@
     if(step === 3) pct = 100;
     $('#bar').style.width = (step === 1 ? pct : 100) + '%';
     var okAll = (doneP === total);
-    $('#next').disabled = (step === 1 && !okAll);
+
+    /* 暮らしのルールは、全部に印が付くまで先へ進めません。 */
+    var mn = window.MANNERS || [];
+    var mnLeft = mn.filter(function(m){ return !checks[m]; }).length;
+
+    $('#next').disabled = (step === 1 && !okAll) || (step === 2 && mnLeft > 0);
     $('#next').textContent = (step === 1)
       ? (okAll ? 'つぎへ（ご説明の確認）' : '残り ' + (total - doneP) + 'か所')
-      : (step === 2 ? 'つぎへ（内容の確認）' : '送信する');
+      : (step === 2
+          ? (mnLeft > 0 ? '暮らしのルール が残り ' + mnLeft + ' 件' : '確認')
+          : '送信する');
   }
 
   /* ---------- 画面の切り替え ---------- */
@@ -276,8 +318,10 @@
         return { title:t, ok:!!checks[t] };
       })
     };
-    veil('送信しています… そのままお待ちください');
+    keepAwake(true);
+    veilCount('送信しています… 画面をそのままにしてお待ちください');
     post(payload).then(function(res){
+      keepAwake(false);
       veil(false);
       if(!res.ok){ alert(res.err || '送信できませんでした。もう一度お試しください。'); return; }
       clear();
@@ -285,6 +329,7 @@
         ? 'ありがとうございました。気になるところについて、担当者からご連絡します。'
         : 'ありがとうございました。問題なしとして承りました。');
     }).catch(function(){
+      keepAwake(false);
       veil(false);
       alert('通信できませんでした。電波の良いところで、もう一度お試しください。書いた内容は残っています。');
     });
@@ -300,10 +345,47 @@
   }
 
   /* ---------- 小道具 ---------- */
+  var _tick = null, _lock = null, _guard = null;
+
   function veil(msg){
-    if(msg === false){ $('#veil').classList.remove('on'); return; }
+    if(msg === false){
+      clearInterval(_tick); _tick = null;
+      $('#veil').classList.remove('on');
+      return;
+    }
     $('#veil-msg').textContent = msg;
     $('#veil').classList.add('on');
+  }
+
+  /* 送信のあいだ、何秒たったかを出します。
+     数字が動いていれば「止まっていない」と分かるので、
+     途中でアプリを閉じられてしまうのを防げます。 */
+  function veilCount(base){
+    var t0 = Date.now();
+    veil(base);
+    clearInterval(_tick);
+    _tick = setInterval(function(){
+      var s = Math.round((Date.now() - t0) / 1000);
+      var m = $('#veil-msg');
+      if(m) m.textContent = base + '（' + s + '秒）';
+    }, 1000);
+  }
+
+  /* 送信のあいだ、画面が暗くならないようにし、
+     うっかり閉じようとしたら聞き返します。 */
+  function keepAwake(on){
+    if(on){
+      try{
+        if(navigator.wakeLock && navigator.wakeLock.request){
+          navigator.wakeLock.request('screen').then(function(l){ _lock = l; }, function(){});
+        }
+      }catch(e){}
+      _guard = function(e){ e.preventDefault(); e.returnValue = ''; return ''; };
+      window.addEventListener('beforeunload', _guard);
+    }else{
+      try{ if(_lock){ _lock.release(); _lock = null; } }catch(e){}
+      if(_guard){ window.removeEventListener('beforeunload', _guard); _guard = null; }
+    }
   }
   function zoom(src){
     var z = $('#zoom');
@@ -324,14 +406,14 @@
       e.classList.add('on'); e.querySelector('input').checked = true;
       checks[e.getAttribute('data-t')] = true;
     });
-    save();
+    save(); progress();
   });
   $('#all-off').addEventListener('click', function(){
     $$('.chk').forEach(function(e){
       e.classList.remove('on'); e.querySelector('input').checked = false;
       checks[e.getAttribute('data-t')] = false;
     });
-    save();
+    save(); progress();
   });
 
   if(!ID){
