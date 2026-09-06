@@ -358,6 +358,8 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
     if(o.areas && o.areas.length) AREAS = o.areas;
     if(o.remindMax !== undefined){ RM_MAX = Number(o.remindMax)||0;
                                    RM_EVERY = Number(o.remindEvery)||0; }
+    if(o.alertAfter !== undefined){ AL_AFTER = Number(o.alertAfter)||3;
+                                    AL_EVERY = Number(o.alertEvery)||3; }
     buildPeriod(); buildArea(); drawAll();
     LAST_AT = at || Date.now();
   }
@@ -443,10 +445,15 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
      文面は checkin/clauses.js が正です。直すときは GitHub の
      checkin/clauses.js を書き替えてください（全員に同じ文面が出ます）。  */
 
+  /* clauses.js で d:true を付けた特約は、はじめから印が入ります。
+     増やす／減らすときは、clauses.js の d:true を足す／消すだけです。 */
+  function isDefault(c){ return c && c.d === true; }
+
   function drawClauses(){
     $('#cl-list').innerHTML = (window.CLAUSES||[]).map(function(c){
-      return '<div class="cl" data-t="' + esc(c.t) + '">' +
-        '<div class="clh"><input type="checkbox">' +
+      var on = isDefault(c);
+      return '<div class="cl' + (on ? ' on' : '') + '" data-t="' + esc(c.t) + '">' +
+        '<div class="clh"><input type="checkbox"' + (on ? ' checked' : '') + '>' +
           '<b>' + esc(c.t) + '</b>' + (c.money ? '<span class="m">お金</span>' : '') +
           '<span class="ar">▾</span></div>' +
         '<div class="clb hide"><p class="clt">' + esc(c.b) + '</p></div>' +
@@ -468,6 +475,17 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
     });
   }
   drawClauses();
+
+  /* 特約の印を、はじめの状態（clauses.js の d:true）に戻します */
+  function resetClauses(){
+    var map = {};
+    (window.CLAUSES||[]).forEach(function(c){ map[c.t] = isDefault(c); });
+    $$('#cl-list .cl').forEach(function(e){
+      var on = !!map[e.getAttribute('data-t')];
+      e.querySelector('input').checked = on;
+      e.classList.toggle('on', on);
+    });
+  }
 
   /* 前に画面で直した文面の控えが残っていれば、片づけます（もう使いません） */
   try{ localStorage.removeItem('checkin_clause_edit'); }catch(e){}
@@ -523,8 +541,10 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
     post(body).then(function(res){
       veil(false);
       if(!res.ok){ $('#new-err').textContent = res.err || 'つくれませんでした。'; return; }
-      /* 書きかけを消します（エリア・仲介・特約のチェックは、続けて作れるよう残します） */
+      /* 書きかけを消します（エリアと仲介は、続けて作れるよう残します）。
+         特約の印は、はじめの状態にそろえ直します。 */
       ['#f-bldg','#f-room','#f-name','#f-mail','#f-memo','#f-extra'].forEach(function(s){ $(s).value=''; });
+      resetClauses();
       planData = null; $('#plan-th').classList.add('hide'); $('#f-plan').value='';
       $('#made').classList.add('hide'); $('#made').innerHTML = '';
 
@@ -547,6 +567,7 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
   var TAB = 'todo';        /* 要対応／未返信／完了 */
   var AREAS = [];
   var RM_MAX = 0, RM_EVERY = 0;   /* 自動督促の 上限回数／何日おき（サーバーの設定） */
+  var AL_AFTER = 3, AL_EVERY = 3; /* 返信から何日で「対応して」を出すか（サーバーの設定） */
 
   /* bg を true にすると、画面をおおわずに、裏で読みにいきます */
   function reload(bg){
@@ -659,24 +680,31 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
     if(FILT === 'ng')     return r.ng > 0;
     if(FILT === 'exp')    return r.noExp > 0;
     if(FILT === 'over')   return r.over;
+    if(FILT === 'late')   return isLate(r);
     if(FILT === 'remind') return r.remind > 0;
     return true;
   }
 
   function drawStats(){
     var rows = ROWS.filter(inPeriod).filter(inTab);
-    var st = { all:rows.length, ng:0, exp:0, over:0, remind:0 };
+    var st = { all:rows.length, ng:0, exp:0, over:0, late:0, remind:0 };
     rows.forEach(function(r){
       if(r.ng > 0) st.ng++;
       if(r.noExp > 0) st.exp++;
       if(r.over) st.over++;
+      if(isLate(r)) st.late++;
       if(r.remind > 0) st.remind++;
     });
+    /* 「要対応」タブでは、期限すぎ（＝まだ返信が無い件の話）より
+       「対応おくれ」のほうが役に立つので、そちらを出します。 */
+    var third = (TAB === 'todo')
+      ? cell('late', st.late, AL_AFTER + '日 対応おくれ', st.late > 0)
+      : cell('over', st.over, '期限すぎ', st.over > 0);
     $('#stats').innerHTML =
       cell('',       st.all,    'このタブの件数') +
       cell('ng',     st.ng,     '問題の報告', st.ng > 0) +
       cell('exp',    st.exp,    '説明を受けていない', st.exp > 0) +
-      cell('over',   st.over,   '期限すぎ', st.over > 0) +
+      third +
       cell('remind', st.remind, '督促を送った') +
       cell('',       0,         '', false, true);
     function cell(k,n,l,warn,blank){
@@ -697,6 +725,36 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
      ・まだ返信が無いもの … これまで何回送ったか＋つぎに自動で出る日
      ・返信ずみのもの     … 何回送ったかの記録だけ */
   function mdStr(v){ return String(v||'').replace(/^\d{4}\//,''); }   /* 2026/09/05 → 09/05 */
+
+  /* 返信を受けてから何日たったか。日付だけで数えます（サーバーと同じ数え方）。
+     数えられないときは null を返します。 */
+  function waitDays(r){
+    var m = /^(\d{4})\/(\d{2})\/(\d{2})/.exec(String(r.replied||''));
+    if(!m) return null;
+    var a = new Date(+m[1], +m[2]-1, +m[3]).getTime();
+    var n = new Date(); var b = new Date(n.getFullYear(), n.getMonth(), n.getDate()).getTime();
+    var d = Math.round((b-a)/86400000);
+    return isNaN(d) ? null : d;
+  }
+  function isLate(r){
+    if(String(r.status||'') !== '返信済') return false;
+    var d = waitDays(r);
+    return d !== null && d >= AL_AFTER;
+  }
+
+  /* 要対応のカードに出す「返信から○日」の行 */
+  function waitBox(r){
+    if(String(r.status||'') !== '返信済') return '';
+    var d = waitDays(r);
+    if(d === null) return '';
+    var late = (d >= AL_AFTER);
+    var b = late
+      ? ('対応がまだです。確認したら「完了にする」を押してください' +
+         (r.alerted > 0 ? '（お知らせ済み ' + r.alerted + '回）' : ''))
+      : ('あと ' + (AL_AFTER - d) + '日で、対応をお知らせします');
+    return '<div class="i-rm' + (late ? ' hot' : '') + '"><b>返信から ' + d + '日</b>' +
+           '<span>／ ' + b + '</span></div>';
+  }
   function remindBox(r, done){
     var n = Number(r.remind||0);
     if(done){
@@ -742,6 +800,7 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
                                : '<span class="pill ok">問題なし</span>'))
             : (r.over ? '<span class="pill ng">期限すぎ</span>' : '<span class="pill">未返信</span>'));
       if(!done && r.remind > 0) pill += '<span class="pill rm">督促 ' + r.remind + '回</span>';
+      if(isLate(r)) pill += '<span class="pill rm">対応おくれ</span>';
       var sub = [];
       if(r.area) sub.push(esc(r.area));
       if(r.agentCo || r.agentName) sub.push('仲介：' + esc(r.agentCo||'') + ' ' + esc(r.agentName||''));
@@ -764,7 +823,7 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
           (r.replied ? ' ／ 返信 ' + esc(String(r.replied).slice(0,10)) : '') +
           (r.doneAt ? ' ／ 完了 ' + esc(String(r.doneAt).slice(0,10)) : '') +
           '</div>' +
-        remindBox(r, done) +
+        remindBox(r, done) + waitBox(r) +
         (acts.length ? ('<div class="i-a">' + acts.join('') + '</div>') : '') +
       '</div>';
     }).join('');
