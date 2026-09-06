@@ -15,10 +15,20 @@
   var DATA = null;               // サーバーから受け取ったご案内
   var step = 1;
   var rooms = {};                // { 場所: {ng:bool, comment:'', photos:[dataURL]} }
+  var whys  = {};                // { 特約のタイトル: {why:'…', note:'…'} } 印を付けなかった理由
   var checks = {};               // { 見出し: true }
   var KEY = 'ire_checkin_' + ID; // 書きかけの置き場所
 
   var MAXPHOTO = 10;   /* 1か所あたりの写真の上限 */
+
+  /* 印を付けなかったときに選んでもらう理由。
+     「読んでいない」のか「聞いていない」のか「分からない」のかで、
+     こちらのやることが変わるためです。 */
+  var WHYS = [
+    '説明を受けていない',
+    '説明は受けたが、意味が分からなかった',
+    '内容に納得できない'
+  ];
 
   function $(s){ return document.querySelector(s); }
   function $$(s){ return Array.prototype.slice.call(document.querySelectorAll(s)); }
@@ -41,13 +51,13 @@
      写真は1枚で100KB以上あるので、端末の置き場（およそ5MB）がいっぱいになることがあります。
      いっぱいのときは、写真を外して「選んだ内容と書いた文章」だけでも必ず残します。 */
   function save(){
-    var body = { rooms:rooms, checks:checks, step:step };
+    var body = { rooms:rooms, checks:checks, whys:whys, step:step };
     try{
       localStorage.setItem(KEY, JSON.stringify(body));
       return;
     }catch(e){}
     try{
-      var slim = { rooms:{}, checks:checks, step:step, noPhoto:true }, k;
+      var slim = { rooms:{}, checks:checks, whys:whys, step:step, noPhoto:true }, k;
       for(k in rooms){
         if(!Object.prototype.hasOwnProperty.call(rooms, k)) continue;
         slim.rooms[k] = { ng:rooms[k].ng, comment:rooms[k].comment || '', photos:[] };
@@ -61,7 +71,7 @@
   function load(){
     try{
       var v = JSON.parse(localStorage.getItem(KEY) || 'null');
-      if(v){ rooms = v.rooms || {}; checks = v.checks || {}; }
+      if(v){ rooms = v.rooms || {}; checks = v.checks || {}; whys = v.whys || {}; }
     }catch(e){}
   }
   function clear(){ try{ localStorage.removeItem(KEY); }catch(e){} }
@@ -150,15 +160,66 @@
         '<input type="checkbox"' + (checks[m]?' checked':'') + '>' +
         '<div class="chk-h"><i class="box"></i><div class="chk-t">' + esc(m) + '</div></div></label>';
     }).join('');
-    $$('.chk').forEach(bindChk);
+    $$('.clwrap').forEach(bindClause);      /* 特約（理由つき） */
+    $$('#manners .chk').forEach(bindChk);   /* 暮らしのルール（理由なし） */
   }
 
+  var _clSeq = 0;
   function clHtml(c){
-    return '<label class="chk' + (checks[c.t] ? ' on' : '') + '" data-t="' + esc(c.t) + '">' +
-      '<input type="checkbox"' + (checks[c.t]?' checked':'') + '>' +
-      '<div class="chk-h"><i class="box"></i><div class="chk-t">' + esc(c.t) +
-        (c.money ? '<span class="tag money">お金</span>' : '') + '</div></div>' +
-      (c.b ? ('<div class="chk-b">' + esc(c.b) + '</div>') : '') + '</label>';
+    var nm = 'w' + (++_clSeq);
+    var w  = whys[c.t] || {};
+    var on = !!checks[c.t];
+    return '<div class="clwrap" data-t="' + esc(c.t) + '">' +
+      '<label class="chk' + (on ? ' on' : '') + '" data-t="' + esc(c.t) + '">' +
+        '<input type="checkbox"' + (on?' checked':'') + '>' +
+        '<div class="chk-h"><i class="box"></i><div class="chk-t">' + esc(c.t) +
+          (c.money ? '<span class="tag money">お金</span>' : '') + '</div></div>' +
+        (c.b ? ('<div class="chk-b">' + esc(c.b) + '</div>') : '') +
+      '</label>' +
+      '<div class="why' + (on ? ' hide' : '') + '">' +
+        '<div class="why-q">印を付けなかった理由を、教えてください</div>' +
+        WHYS.map(function(t){
+          var sel = (w.why === t);
+          return '<label class="whyr' + (sel ? ' on' : '') + '">' +
+            '<input type="radio" name="' + nm + '" value="' + esc(t) + '"' + (sel?' checked':'') + '>' +
+            '<span>' + esc(t) + '</span></label>';
+        }).join('') +
+        '<textarea class="why-n" placeholder="ひとこと（任意）">' + esc(w.note || '') + '</textarea>' +
+      '</div>' +
+    '</div>';
+  }
+
+  /* 特約1件ぶんの動き（印の付け外しと、理由の記録） */
+  function bindClause(wrap){
+    var t   = wrap.getAttribute('data-t');
+    var lab = wrap.querySelector('.chk');
+    var why = wrap.querySelector('.why');
+    lab.addEventListener('click', function(e){
+      if(e.target.tagName === 'A') return;
+      var inp = lab.querySelector('input');
+      inp.checked = !inp.checked;
+      lab.classList.toggle('on', inp.checked);
+      checks[t] = inp.checked;
+      if(why) why.classList.toggle('hide', inp.checked);
+      save(); progress();
+    });
+    if(!why) return;
+    why.querySelectorAll('input[type=radio]').forEach(function(r){
+      r.addEventListener('change', function(){
+        if(!whys[t]) whys[t] = {};
+        whys[t].why = r.value;
+        why.querySelectorAll('.whyr').forEach(function(l){
+          l.classList.toggle('on', l.querySelector('input').checked);
+        });
+        save();
+      });
+    });
+    var ta = why.querySelector('.why-n');
+    if(ta) ta.addEventListener('input', function(){
+      if(!whys[t]) whys[t] = {};
+      whys[t].note = ta.value;
+      save();
+    });
   }
 
   function bindChk(el){
@@ -323,7 +384,10 @@
       }),
       checks: $$('.chk').map(function(e){
         var t = e.getAttribute('data-t');
-        return { title:t, ok:!!checks[t] };
+        var w = whys[t] || {};
+        return { title:t, ok:!!checks[t],
+                 why : checks[t] ? '' : (w.why  || ''),
+                 note: checks[t] ? '' : (w.note || '') };
       })
     };
     keepAwake(true);
