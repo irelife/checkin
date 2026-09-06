@@ -101,8 +101,40 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
   cursor:pointer;transition:transform .15s,box-shadow .15s;}
 .item:hover{box-shadow:var(--shadow);}
 .item:active{transform:scale(.995);}
-.item.over,.item.exp{background:var(--ngbg);}
-.item.done{background:var(--okbg);}
+
+/* ---- カードの色は、4とおりだけ -------------------------------------
+     未返信       … 赤地に白文字（いちばん急ぐもの）
+     気になる点あり … 黒地に白文字
+     問題なし      … 白地に黒文字
+     完了         … グレー地
+   -------------------------------------------------------------------- */
+.item.red{background:var(--ng);color:#fff;}
+.item.dark{background:var(--ink);color:#fff;}
+.item.gray{background:#EAEAEE;color:var(--ink2);}
+
+.item.red .i-h b,.item.dark .i-h b{color:#fff;}
+.item.red .i-b,.item.dark .i-b{color:rgba(255,255,255,.74);}
+.item.gray .i-h b{color:var(--ink2);}
+.item.gray .i-b{color:var(--ink3);}
+
+.item.red .i-ic,.item.dark .i-ic{background:rgba(255,255,255,.16);color:#fff;}
+
+.item.red .pill,.item.dark .pill{background:rgba(255,255,255,.18);color:#fff;}
+.item.red .pill.ok,.item.red .pill.ng,.item.red .pill.exp,.item.red .pill.rm,
+.item.dark .pill.ok,.item.dark .pill.ng,.item.dark .pill.exp,.item.dark .pill.rm{
+  background:#fff;color:var(--ink);}
+
+.item.red .btn,.item.dark .btn{background:#fff;color:var(--ink);}
+.item.red .btn.ghost,.item.dark .btn.ghost{background:rgba(255,255,255,.18);color:#fff;}
+.item.red .btn.ghost:hover,.item.dark .btn.ghost:hover{background:rgba(255,255,255,.28);opacity:1;}
+
+.item.red .i-rm,.item.dark .i-rm,
+.item.red .i-rm.hot,.item.dark .i-rm.hot,
+.item.red .i-rm.plan,.item.dark .i-rm.plan{background:rgba(255,255,255,.13);color:rgba(255,255,255,.78);}
+.item.red .i-rm b,.item.dark .i-rm b,
+.item.red .i-rm.hot b,.item.dark .i-rm.hot b,
+.item.red .i-rm.plan b,.item.dark .i-rm.plan b{color:#fff;}
+.item.red .i-rm.plan span,.item.dark .i-rm.plan span{color:rgba(255,255,255,.74);}
 .i-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
 .i-h b{font-size:18px;font-weight:600;letter-spacing:-.01em;}
 .pill{font-size:12.5px;font-weight:500;border-radius:100px;padding:4px 12px;border:0;
@@ -126,6 +158,9 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
 .i-ic.ok{background:var(--ink);color:#fff;}
 
 /* 1件もないとき */
+/* 一覧の入れもの。白いカードが見えるように、下地は敷きません。 */
+.listbox{padding:0;margin-bottom:18px;}
+
 .blank{grid-column:1/-1;text-align:center;padding:46px 20px 40px;}
 .blank .ring{width:96px;height:96px;margin:0 auto 18px;border-radius:50%;
   background:rgba(0,0,0,.04);color:var(--ink3);
@@ -250,7 +285,7 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
 /* ---- 中身を見る画面 ---- */
 #detail{position:fixed;inset:0;z-index:50;background:var(--bg);overflow-y:auto;display:none;}
 #detail.on{display:block;}
-#detail .inner{max-width:760px;margin:0 auto;padding:22px 20px 80px;}
+#detail .inner{max-width:1200px;margin:0 auto;padding:22px 20px 80px;}
 .d-bar{position:sticky;top:0;z-index:2;background:rgba(29,29,31,.86);color:#fff;
   -webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);
   padding:calc(13px + env(safe-area-inset-top)) 20px 13px;display:flex;align-items:center;gap:12px;}
@@ -258,9 +293,48 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
 .d-bar button{background:rgba(255,255,255,.12);color:#fff;border:0;border-radius:100px;
   padding:8px 18px;font-size:14.5px;font-weight:500;cursor:pointer;}
 .d-bar button:hover{background:rgba(255,255,255,.2);}
+#d-body > .card{max-width:760px;}
 .d-k{font-size:12.5px;font-weight:500;color:var(--ink3);margin:26px 0 10px 4px;}
 .d-item{border:0;border-radius:16px;padding:18px 20px;margin-bottom:10px;background:#fff;}
-.d-item.ng{background:var(--ngbg);}
+
+/* 気になるところがあった項目は、黒地に白文字にします（一覧のカードと同じ考え） */
+.d-item.ng{background:var(--ink);color:#fff;}
+.d-item.ng b{color:#fff;}
+.d-item.ng p{color:rgba(255,255,255,.76);}
+.d-item.ng .pill{background:rgba(255,255,255,.18);color:#fff;}
+.d-item.ng .pill.ng,.d-item.ng .pill.exp,.d-item.ng .pill.ok{background:#fff;color:var(--ink);}
+.d-item.ng .ph a{background:rgba(255,255,255,.12);}
+.d-item.ng .ph span{color:rgba(255,255,255,.82);}
+
+/* ---- 中身は、横にならべて、横スクロールで見ます -----------------------
+   ・1項目＝1枚のカード。高さはそろえます。
+   ・パソコンでは左右の丸ボタンで送れます（スマホは指でスワイプ）。
+   ---------------------------------------------------------------------- */
+.d-wrap{position:relative;}
+.d-row{display:flex;gap:14px;align-items:stretch;overflow-x:auto;overflow-y:hidden;
+  padding:2px 2px 12px;scroll-snap-type:x proximity;scroll-behavior:smooth;}
+.d-row::-webkit-scrollbar{height:8px;}
+.d-row::-webkit-scrollbar-thumb{background:rgba(0,0,0,.13);border-radius:8px;}
+.d-row::-webkit-scrollbar-track{background:transparent;}
+.d-row > .d-item{flex:0 0 330px;margin-bottom:0;scroll-snap-align:start;}
+.d-row .ph{grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;}
+.d-row .ph img{height:92px;}
+.d-row .ph span{padding:7px 4px;font-size:12px;}
+.d-nav{position:absolute;top:calc(50% - 6px);transform:translateY(-50%);
+  width:40px;height:40px;border-radius:50%;border:0;background:rgba(255,255,255,.94);
+  box-shadow:0 1px 3px rgba(0,0,0,.12), 0 8px 20px rgba(0,0,0,.14);
+  color:var(--ink);font-size:21px;line-height:1;cursor:pointer;z-index:3;
+  display:none;align-items:center;justify-content:center;}
+.d-nav.on{display:flex;}
+.d-nav.prev{left:-10px;}
+.d-nav.next{right:-10px;}
+.d-nav:hover{background:#fff;}
+@media(max-width:560px){
+  /* スマホは指でスワイプ。高さもそろえず、中身のぶんだけにします */
+  .d-row{align-items:flex-start;}
+  .d-row > .d-item{flex:0 0 82vw;}
+  .d-nav{display:none !important;}
+}
 .d-item b{font-size:16px;font-weight:600;display:block;}
 .d-item p{margin:9px 0 0;font-size:14.5px;color:var(--ink2);white-space:pre-wrap;line-height:1.8;}
 .ph{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-top:12px;}
@@ -356,8 +430,8 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
     </div>
     <div class="tabnote" id="tabnote"></div>
     <div class="stats" id="stats"></div>
-    <div class="card" style="padding:12px;">
-      <div class="row" style="margin-bottom:10px;max-width:900px;">
+    <div class="listbox">
+      <div class="row" style="margin-bottom:14px;max-width:900px;">
         <input type="text" id="q" placeholder="物件名・お名前で探す">
         <span id="sync" class="sync hide">最新を確認中…</span>
         <button class="btn sm ghost" id="reload" style="flex:0 0 auto;">更新</button>
@@ -999,13 +1073,21 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
       }else{
         acts.push('<button class="btn sm ghost act-undo">完了をもどす</button>');
       }
-      /* カードの左に置く絵柄と、その下地の色を決めます
-           完了＝黒／お部屋の話＝赤／ご説明の話＝赤／問題なし＝緑／期限すぎ＝赤／返信待ち＝灰 */
+      /* カードの左に置く絵柄 */
       var ico = fin ? ['check','ok']
               : (done ? (chk ? ['doc','ng'] : (r.ng > 0 ? ['home','ng'] : ['check','gd']))
                       : (r.over ? ['clock','ng'] : ['mail','']));
 
-      return '<div class="item' + (fin ? ' done' : (exp ? ' exp' : (done ? ' done' : (r.over ? ' over' : '')))) +
+      /* カードの色。4とおりだけです。
+           未返信       → 赤（白文字）
+           気になる点あり → 黒（白文字）
+           問題なし      → 白
+           完了         → グレー                                    */
+      var tone = fin  ? ' gray'
+               : (done ? ((chk || r.ng > 0) ? ' dark' : '')
+                       : ' red');
+
+      return '<div class="item' + tone +
         '" data-id="' + esc(r.id) + '">' +
         '<div class="i-h"><span class="i-ic ' + ico[1] + '">' + svg(ico[0]) + '</span>' +
           '<b>' + esc(r.bldg) + ' ' + esc(r.room) + '</b>' + pill + '</div>' +
@@ -1110,6 +1192,43 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
     return m ? 'https://drive.google.com/thumbnail?id=' + m[0] + '&sz=w800' : '';
   }
 
+  /* ---- 横にならべるための、外わく ----
+       中身のカードを横一列にして、はみ出したぶんは横スクロールで見ます。 */
+  function rowOpen(){ return '<div class="d-wrap"><div class="d-row">'; }
+  function rowClose(){
+    return '</div>' +
+      '<button type="button" class="d-nav prev" aria-label="左へ">\u2039</button>' +
+      '<button type="button" class="d-nav next" aria-label="右へ">\u203a</button></div>';
+  }
+  /* 左右の丸ボタンは、送るところが残っているときだけ出します */
+  function updRows(){
+    $$('#d-body .d-wrap').forEach(function(w){
+      var row = w.querySelector('.d-row');
+      var pv  = w.querySelector('.d-nav.prev');
+      var nx  = w.querySelector('.d-nav.next');
+      if(!row || !pv || !nx) return;
+      var more = row.scrollWidth - row.clientWidth;
+      pv.classList.toggle('on', more > 4 && row.scrollLeft > 4);
+      nx.classList.toggle('on', more > 4 && row.scrollLeft < more - 4);
+    });
+  }
+  function wireRows(){
+    $$('#d-body .d-wrap').forEach(function(w){
+      var row = w.querySelector('.d-row');
+      var pv  = w.querySelector('.d-nav.prev');
+      var nx  = w.querySelector('.d-nav.next');
+      if(!row || !pv || !nx) return;
+      var step = function(){ return Math.max(240, Math.round(row.clientWidth * 0.8)); };
+      pv.addEventListener('click', function(e){ e.stopPropagation();
+        row.scrollLeft -= step(); setTimeout(updRows, 350); });
+      nx.addEventListener('click', function(e){ e.stopPropagation();
+        row.scrollLeft += step(); setTimeout(updRows, 350); });
+      row.addEventListener('scroll', updRows);
+    });
+    updRows(); setTimeout(updRows, 80); setTimeout(updRows, 400);
+  }
+  window.addEventListener('resize', updRows);
+
   function openDetail(id){
     veil(true);
     post({ action:'detail', key:KEY, id:id }).then(function(d){
@@ -1142,6 +1261,7 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
 
       if(d.rooms.length){
         h.push('<div class="d-k">お部屋の中</div>');
+        h.push(rowOpen());
         d.rooms.forEach(function(x){
           var ng = (x.judge !== '問題なし');
           h.push('<div class="d-item' + (ng ? ' ng' : '') + '">');
@@ -1158,10 +1278,12 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
           }
           h.push('</div>');
         });
+        h.push(rowClose());
       }
 
       if(d.checks.length){
         h.push('<div class="d-k">ご説明の確認</div>');
+        h.push(rowOpen());
         d.checks.forEach(function(x){
           var no = (x.judge !== '確認した');
           var isExp = no && String(x.comment||'').indexOf('説明を受けていない') === 0;
@@ -1170,6 +1292,7 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
                  esc(isExp ? '説明を受けていない' : x.judge) + '</span></b>' +
                  (no && x.comment ? ('<p>' + esc(x.comment) + '</p>') : '') + '</div>');
         });
+        h.push(rowClose());
       }
 
       if(d.clauses && d.clauses.length){
@@ -1178,6 +1301,7 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
       }
 
       $('#d-body').innerHTML = h.join('');
+      wireRows();
       $('#detail').classList.add('on');
       $('#detail').scrollTop = 0;
     }).catch(function(){ veil(false); alert('通信できませんでした。'); });
