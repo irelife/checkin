@@ -14,19 +14,19 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
   font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
-  font-size:16px;line-height:1.7;-webkit-text-size-adjust:100%;}
+  font-size:18px;line-height:1.75;-webkit-text-size-adjust:100%;}
 body{padding-bottom:calc(96px + env(safe-area-inset-bottom));}
 img{max-width:100%;}
-button,input,textarea{font-family:inherit;font-size:16px;}
+button,input,textarea{font-family:inherit;font-size:18px;}
 
 /* ---- 上のバー ---- */
 header{position:sticky;top:0;z-index:20;background:var(--ink);color:#fff;
   padding:calc(10px + env(safe-area-inset-top)) 16px 10px;}
-header .h-bldg{font-size:17px;font-weight:800;letter-spacing:.01em;}
-header .h-sub{font-size:12px;color:#B9BBC1;margin-top:2px;}
+header .h-bldg{font-size:19px;font-weight:800;letter-spacing:.01em;}
+header .h-sub{font-size:13.5px;color:#B9BBC1;margin-top:2px;}
 .bar{height:4px;background:#3A3A40;border-radius:100px;margin-top:10px;overflow:hidden;}
 .bar > i{display:block;height:100%;background:#fff;border-radius:100px;transition:width .3s;}
-.steps{display:flex;gap:6px;margin-top:8px;font-size:11px;color:#8A8C93;}
+.steps{display:flex;gap:6px;margin-top:8px;font-size:12.5px;color:#8A8C93;}
 .steps span{flex:1;text-align:center;padding:3px 0;border-radius:100px;}
 .steps span.on{background:#fff;color:var(--ink);font-weight:800;}
 
@@ -34,20 +34,20 @@ header .h-sub{font-size:12px;color:#B9BBC1;margin-top:2px;}
 main{padding:16px 14px 0;max-width:640px;margin:0 auto;}
 .card{background:var(--card);border:1px solid var(--line);border-radius:16px;
   padding:16px 14px;margin-bottom:14px;}
-h2{font-size:17px;font-weight:800;margin:0 0 4px;}
-.lead{font-size:13px;color:var(--ink3);margin:0 0 14px;}
-.note{font-size:12.5px;color:var(--ink3);line-height:1.75;}
+h2{font-size:20px;font-weight:800;margin:0 0 6px;}
+.lead{font-size:15px;color:var(--ink3);margin:0 0 14px;}
+.note{font-size:14px;color:var(--ink3);line-height:1.75;}
 
 /* ---- パスワード ---- */
 #pw-box{max-width:420px;margin:40px auto;}
-#pw{width:100%;text-align:center;letter-spacing:.5em;font-size:26px;font-weight:800;
-  padding:14px 10px;border:2px solid var(--line2);border-radius:14px;text-transform:uppercase;}
+#pw{width:100%;text-align:left;letter-spacing:.12em;font-size:28px;font-weight:800;
+  padding:14px 14px;border:2px solid var(--line2);border-radius:14px;text-transform:uppercase;}
 #pw:focus{outline:none;border-color:var(--ink);}
-.err{color:var(--ng);font-size:13.5px;font-weight:700;margin-top:10px;min-height:1.2em;}
+.err{color:var(--ng);font-size:15px;font-weight:700;margin-top:10px;min-height:1.2em;}
 
 /* ---- ボタン ---- */
 .btn{display:block;width:100%;border:0;border-radius:14px;padding:16px;
-  font-size:16px;font-weight:800;background:var(--ink);color:#fff;cursor:pointer;}
+  font-size:18px;font-weight:800;background:var(--ink);color:#fff;cursor:pointer;}
 .btn:active{opacity:.85;}
 .btn.ghost{background:#fff;color:var(--ink);border:1.5px solid var(--line2);}
 .btn[disabled]{opacity:.4;}
@@ -55,18 +55,18 @@ h2{font-size:17px;font-weight:800;margin:0 0 4px;}
 /* ---- 間取り図 ---- */
 #plan{margin-bottom:14px;}
 #plan img{width:100%;border-radius:14px;border:1px solid var(--line);display:block;background:#fff;}
-.plan-cap{font-size:11.5px;color:var(--ink3);text-align:center;margin-top:6px;}
+.plan-cap{font-size:13px;color:var(--ink3);text-align:center;margin-top:6px;}
 
 /* ---- 部屋 ---- */
 .place{border:1px solid var(--line);border-radius:14px;background:#fff;
   padding:12px 12px 10px;margin-bottom:10px;}
 .place.is-ng{border-color:var(--ng);background:var(--ngbg);}
-.place-h{font-size:15.5px;font-weight:800;margin-bottom:8px;}
+.place-h{font-size:18px;font-weight:800;margin-bottom:8px;}
 .pick{display:flex;gap:8px;}
 .pick label{flex:1;position:relative;}
 .pick input{position:absolute;opacity:0;pointer-events:none;}
 .pick span{display:block;text-align:center;padding:11px 6px;border-radius:11px;
-  border:1.5px solid var(--line2);background:#fff;font-size:14px;font-weight:700;color:var(--ink2);}
+  border:1.5px solid var(--line2);background:#fff;font-size:16.5px;font-weight:700;color:var(--ink2);}
 .pick input:checked + span{background:var(--ink);border-color:var(--ink);color:#fff;}
 .pick .ng input:checked + span{background:var(--ng);border-color:var(--ng);}
 .detail{margin-top:10px;}
@@ -81,7 +81,7 @@ h2{font-size:17px;font-weight:800;margin:0 0 4px;}
 .addshot{width:74px;height:74px;border:1.5px dashed var(--line2);border-radius:10px;background:#fff;
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
   font-size:10.5px;color:var(--ink3);cursor:pointer;font-weight:700;}
-.addshot b{font-size:20px;font-weight:400;line-height:1;}
+.addshot b{font-size:22px;font-weight:400;line-height:1;}
 
 /* ---- 確認事項 ---- */
 .chk{display:block;border:1px solid var(--line);border-radius:14px;background:#fff;
@@ -94,21 +94,21 @@ h2{font-size:17px;font-weight:800;margin:0 0 4px;}
 .chk.on .box{background:var(--ink);border-color:var(--ink);}
 .chk.on .box::after{content:"";position:absolute;left:8px;top:3px;width:6px;height:12px;
   border:solid #fff;border-width:0 2.5px 2.5px 0;transform:rotate(42deg);}
-.chk-t{flex:1;min-width:0;font-size:15px;font-weight:800;line-height:1.5;}
-.chk-b{font-size:12.5px;color:var(--ink2);line-height:1.75;margin:8px 0 0 36px;}
-.tag{display:inline-block;font-size:10.5px;font-weight:800;letter-spacing:.06em;
+.chk-t{flex:1;min-width:0;font-size:17px;font-weight:800;line-height:1.5;}
+.chk-b{font-size:14.5px;color:var(--ink2);line-height:1.75;margin:8px 0 0 36px;}
+.tag{display:inline-block;font-size:12px;font-weight:800;letter-spacing:.06em;
   border:1px solid var(--line2);border-radius:100px;padding:1px 8px;color:var(--ink3);margin-left:6px;
   vertical-align:2px;white-space:nowrap;}
 .tag.money{background:var(--ink);border-color:var(--ink);color:#fff;}
-.sec-h{font-size:12px;font-weight:800;letter-spacing:.08em;color:var(--ink3);
+.sec-h{font-size:14px;font-weight:800;letter-spacing:.08em;color:var(--ink3);
   margin:20px 0 8px;padding-left:2px;}
 .allbtn{display:flex;gap:8px;margin-bottom:12px;}
 .allbtn button{flex:1;padding:10px;border-radius:11px;border:1.5px solid var(--line2);
-  background:#fff;font-size:13px;font-weight:700;color:var(--ink2);cursor:pointer;}
+  background:#fff;font-size:15px;font-weight:700;color:var(--ink2);cursor:pointer;}
 
 /* ---- まとめ ---- */
 .sum{border:1px solid var(--line);border-radius:14px;background:#fff;padding:14px;margin-bottom:12px;}
-.sum-row{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid var(--line);font-size:14px;}
+.sum-row{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid var(--line);font-size:16px;}
 .sum-row:last-child{border-bottom:0;}
 .sum-row b{font-weight:800;}
 .sum-ng{color:var(--ng);}
@@ -125,7 +125,7 @@ footer .btn.ghost{flex:0 0 34%;}
 #veil{position:fixed;inset:0;z-index:60;background:rgba(255,255,255,.92);
   display:none;align-items:center;justify-content:center;text-align:center;padding:30px;}
 #veil.on{display:flex;}
-#veil .in{font-size:15px;font-weight:800;}
+#veil .in{font-size:17px;font-weight:800;}
 .spin{width:30px;height:30px;border:3px solid var(--line2);border-top-color:var(--ink);
   border-radius:50%;margin:0 auto 14px;animation:sp .8s linear infinite;}
 @keyframes sp{to{transform:rotate(360deg);}}
@@ -161,7 +161,11 @@ footer .btn.ghost{flex:0 0 34%;}
         <h2>パスワードを入れてください</h2>
         <p class="lead">ご案内のメールに書いてある 6文字です。</p>
         <input id="pw" type="text" inputmode="latin" autocapitalize="characters"
-               autocomplete="off" maxlength="6" placeholder="－－－－－－">
+               autocomplete="one-time-code" autocorrect="off" spellcheck="false"
+               maxlength="6" placeholder="ここに貼り付け">
+        <p class="note" style="margin:8px 2px 0;">
+          メールのパスワードを長押しでコピーして、上の欄を長押し →「ペースト」で貼り付けられます。
+        </p>
         <div class="err" id="pw-err"></div>
         <button class="btn" id="pw-go" style="margin-top:6px;">はじめる</button>
       </div>
@@ -179,7 +183,8 @@ footer .btn.ghost{flex:0 0 34%;}
       <p class="lead">
         入居前からあるキズ・汚れ・不具合が無いか、場所ごとに教えてください。<br>
         気になるところがあれば、<b>写真</b>を撮って送ってください。<br>
-        あとから「入居前からあった」と分かるようにするための確認です。
+        あとから「入居前からあった」と分かるようにするための確認です。<br>
+        <b>お部屋にその場所や設備が無いときは、「問題なし」を選んでください。</b>
       </p>
       <div id="places"></div>
     </div>
@@ -201,7 +206,7 @@ footer .btn.ghost{flex:0 0 34%;}
       <div id="cl-money"></div>
       <div class="sec-h">そのほか</div>
       <div id="cl-other"></div>
-      <div class="sec-h">暮らしのお願い</div>
+      <div class="sec-h">暮らしのルール（すべてに印が必要です）</div>
       <div id="manners"></div>
     </div>
   </section>
