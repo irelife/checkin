@@ -50,6 +50,7 @@ main{max-width:1240px;margin:0 auto;padding:22px 20px 80px;}
 h2{font-size:22px;font-weight:600;letter-spacing:-.01em;margin:0 0 18px;}
 
 label.f{display:block;font-size:13px;font-weight:500;color:var(--ink3);margin:20px 0 7px;}
+textarea{line-height:1.85;resize:vertical;}
 input[type=text],input[type=password],input[type=email],input[type=date],textarea,select{
   width:100%;padding:13px 15px;border:0;border-radius:12px;background:var(--fill);
   color:var(--ink);appearance:none;-webkit-appearance:none;transition:background .15s,box-shadow .15s;}
@@ -280,8 +281,7 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
       <label class="f">契約開始日（この日から7日で、ご返信の期限になります）</label>
       <input type="date" id="f-move">
       <label class="f">エリア（担当者が分かれます。返信の通知は、このエリアの担当者へ届きます）</label>
-      <select id="f-area" style="width:100%;box-sizing:border-box;font:inherit;font-size:15px;
-        border:1px solid var(--line);border-radius:9px;padding:10px 11px;background:#fff;"></select>
+      <select id="f-area"></select>
       <label class="f">仲介業者（「説明を受けていない」と回答があったとき、ここへ連絡できます）</label>
       <div class="row">
         <div><input type="text" id="f-agco" placeholder="会社名　例: ○○不動産"></div>
@@ -298,8 +298,8 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
       </div>
       <div class="scroll" id="cl-list"></div>
       <label class="f">個別に伝えたいこと（1行に1件。入居者側でも印を付けていただきます）</label>
-      <textarea id="f-extra" rows="3" placeholder="例）バルコニーの物干し竿は、前の入居者のものです。ご自由にお使いください。"
-        style="width:100%;box-sizing:border-box;font:inherit;font-size:14px;line-height:1.8;border:1px solid var(--line);border-radius:9px;padding:9px 11px;"></textarea>
+      <textarea id="f-extra" rows="3"
+        placeholder="例）バルコニーの物干し竿は、前の入居者のものです。ご自由にお使いください。"></textarea>
       <label class="f">社内メモ（入居者には出ません）</label>
       <input type="text" id="f-memo" placeholder="任意">
       <div class="err" id="new-err"></div>
