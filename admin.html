@@ -60,6 +60,16 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
 .cl.on{border-color:var(--ink);background:#FAFAFA;}
 .cl input{width:20px;height:20px;margin-right:10px;vertical-align:-4px;accent-color:var(--ink);}
 .cl b{font-size:15.5px;font-weight:700;}
+.clh{display:flex;align-items:center;gap:8px;}
+.clh .ar{margin-left:auto;font-size:13px;color:#888;flex:0 0 auto;}
+.cl.open .clh .ar{transform:rotate(180deg);}
+.clb{margin-top:9px;}
+.cle{width:100%;box-sizing:border-box;font:inherit;font-size:13.5px;line-height:1.75;
+     border:1px solid var(--line);border-radius:9px;padding:9px 11px;min-height:96px;background:#fff;}
+.cl.edited{border-color:#c2410c;}
+.cl.edited .clh b:after{content:'（直しました）';font-size:11px;color:#c2410c;font-weight:700;margin-left:6px;}
+.warn{background:#fff7ed;border:1px solid #fdba74;color:#9a3412;border-radius:10px;
+      padding:10px 12px;font-size:13px;line-height:1.8;margin:8px 0;}
 .cl .m{font-size:12px;font-weight:800;background:var(--ink);color:#fff;border-radius:100px;padding:1px 7px;margin-left:6px;}
 .scroll{max-height:340px;overflow-y:auto;border:1px solid var(--line);border-radius:12px;padding:8px;background:#FAFAFA;}
 
@@ -149,17 +159,21 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
       <label class="f">間取り図（写真でも可）</label>
       <input type="file" id="f-plan" accept="image/*">
       <img id="plan-th" class="thumb hide" alt="">
-      <label class="f">この契約に該当する特約（チェックしたものだけ入居者に出ます）</label>
+      <label class="f">この契約に該当する特約（チェックしたものだけ入居者に出ます／<b>タイトルを押すと文面が開きます</b>）</label>
+      <div id="cl-warn" class="warn hide"></div>
       <div class="row" style="margin-bottom:8px;">
-        <button type="button" class="btn ghost sm" id="cl-all">すべて選ぶ</button>
-        <button type="button" class="btn ghost sm" id="cl-none">ぜんぶ外す</button>
+        <button type="button" class="btn ghost sm" id="cl-all">全選択</button>
+        <button type="button" class="btn ghost sm" id="cl-none">全解除</button>
+        <button type="button" class="btn ghost sm" id="cl-out" style="margin-left:auto;">特約の文面を書き出す</button>
       </div>
       <div class="scroll" id="cl-list"></div>
+      <label class="f">個別に伝えたいこと（1行に1件。入居者側でも印を付けていただきます）</label>
+      <textarea id="f-extra" rows="3" placeholder="例）バルコニーの物干し竿は、前の入居者のものです。ご自由にお使いください。"
+        style="width:100%;box-sizing:border-box;font:inherit;font-size:14px;line-height:1.8;border:1px solid var(--line);border-radius:9px;padding:9px 11px;"></textarea>
       <label class="f">社内メモ（入居者には出ません）</label>
       <input type="text" id="f-memo" placeholder="任意">
       <div class="err" id="new-err"></div>
-      <button class="btn" id="new-go">つくって、入居者へメールを送る</button>
-      <button class="btn ghost" id="new-go2">つくるだけ（メールは送らない）</button>
+      <button class="btn" id="new-go">送信する</button>
       <div id="made" class="made hide"></div>
     </div>
   </section>
@@ -234,18 +248,105 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
   $('#tab-new').addEventListener('click', function(){ if(KEY) show('new'); });
   $('#tab-list').addEventListener('click', function(){ if(KEY){ show('list'); reload(); } });
 
-  /* ---- 特約の一覧 ---- */
-  $('#cl-list').innerHTML = (window.CLAUSES||[]).map(function(c){
-    return '<label class="cl" data-t="' + esc(c.t) + '"><input type="checkbox">' +
-      '<b>' + esc(c.t) + '</b>' + (c.money ? '<span class="m">お金</span>' : '') + '</label>';
-  }).join('');
-  $$('#cl-list .cl').forEach(function(el){
-    el.addEventListener('change', function(){ el.classList.toggle('on', el.querySelector('input').checked); });
-  });
+  /* ---- 特約の一覧（タイトルを押すと文面が開きます。文面はその場で直せます） ----
+
+     直した文面は、この端末に控えます。
+     ほかの人にも反映するには「特約の文面を書き出す」で clauses.js を作り、
+     GitHub の checkin/clauses.js に貼り替えてください。
+     貼り替えるまでは、この画面にオレンジの注意が出ます。         */
+  var EDKEY = 'checkin_clause_edit';
+  function edLoad(){ try{ return JSON.parse(localStorage.getItem(EDKEY) || '{}') || {}; }catch(e){ return {}; } }
+  function edSave(o){ try{ localStorage.setItem(EDKEY, JSON.stringify(o||{})); }catch(e){} }
+  var EDITS = edLoad();
+
+  function bodyOf(c){ return (EDITS[c.t] !== undefined) ? EDITS[c.t] : c.b; }
+
+  function edWarn(){
+    var k = Object.keys(EDITS), el = $('#cl-warn');
+    if(!k.length){ el.classList.add('hide'); el.innerHTML = ''; return; }
+    el.classList.remove('hide');
+    el.innerHTML = '⚠️ 文面を ' + k.length + ' 件 直しました。<b>この端末にしか残っていません。</b><br>' +
+                   '「特約の文面を書き出す」を押して、GitHub の <b>checkin/clauses.js</b> に貼り替えてください。';
+  }
+
+  function drawClauses(){
+    $('#cl-list').innerHTML = (window.CLAUSES||[]).map(function(c){
+      var ed = (EDITS[c.t] !== undefined);
+      return '<div class="cl' + (ed ? ' edited' : '') + '" data-t="' + esc(c.t) + '">' +
+        '<div class="clh"><input type="checkbox">' +
+          '<b>' + esc(c.t) + '</b>' + (c.money ? '<span class="m">お金</span>' : '') +
+          '<span class="ar">▾</span></div>' +
+        '<div class="clb hide"><textarea class="cle" rows="4">' + esc(bodyOf(c)) + '</textarea></div>' +
+      '</div>';
+    }).join('');
+
+    $$('#cl-list .cl').forEach(function(el){
+      var t   = el.getAttribute('data-t');
+      var box = el.querySelector('input');
+      var bd  = el.querySelector('.clb');
+      var ta  = el.querySelector('.cle');
+
+      box.addEventListener('click', function(ev){ ev.stopPropagation(); });
+      box.addEventListener('change', function(){ el.classList.toggle('on', box.checked); });
+
+      el.querySelector('.clh').addEventListener('click', function(ev){
+        if(ev.target === box) return;
+        bd.classList.toggle('hide');
+        el.classList.toggle('open', !bd.classList.contains('hide'));
+      });
+
+      ta.addEventListener('click', function(ev){ ev.stopPropagation(); });
+      ta.addEventListener('input', function(){
+        var org = '';
+        (window.CLAUSES||[]).forEach(function(c){ if(c.t === t) org = c.b; });
+        if(ta.value === org) delete EDITS[t]; else EDITS[t] = ta.value;
+        edSave(EDITS);
+        el.classList.toggle('edited', EDITS[t] !== undefined);
+        edWarn();
+      });
+    });
+    edWarn();
+  }
+  drawClauses();
+
   $('#cl-all').addEventListener('click', function(){
     $$('#cl-list .cl').forEach(function(e){ e.querySelector('input').checked = true; e.classList.add('on'); }); });
   $('#cl-none').addEventListener('click', function(){
     $$('#cl-list .cl').forEach(function(e){ e.querySelector('input').checked = false; e.classList.remove('on'); }); });
+
+  /* 直した文面を入れた clauses.js を作って、ダウンロードします */
+  $('#cl-out').addEventListener('click', function(){
+    function q(v){ return "'" + String(v == null ? '' : v).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\r?\n/g, '\\n') + "'"; }
+    var L = [];
+    L.push('/* =====================================================================');
+    L.push('   重要事項説明書の 特約事項（入居者に確認していただく内容）');
+    L.push('   ※ 管理画面の「特約の文面を書き出す」で作りました  ' + new Date().toLocaleString('ja-JP'));
+    L.push('   ===================================================================== */');
+    L.push('window.CLAUSES = [');
+    (window.CLAUSES||[]).forEach(function(c, i, arr){
+      L.push('  { no:' + c.no + ', money:' + (c.money ? 'true' : 'false') + ', t:' + q(c.t) + ',');
+      L.push('    b:' + q(bodyOf(c)) + ' }' + (i < arr.length - 1 ? ',' : ''));
+    });
+    L.push('];');
+    L.push('');
+    L.push('/* 室内で見ていただく場所（既定） */');
+    L.push('window.PLACES = [');
+    L.push('  ' + (window.PLACES||[]).map(q).join(',\n  ') );
+    L.push('];');
+    L.push('');
+    L.push('/* 暮らしのルール（お住まいのあいだ、守っていただくこと） */');
+    L.push('window.MANNERS = [');
+    L.push('  ' + (window.MANNERS||[]).map(q).join(',\n  ') );
+    L.push('];');
+    var txt = L.join('\n') + '\n';
+    try{
+      var a = document.createElement('a');
+      a.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(txt);
+      a.download = 'clauses.js';
+      document.body.appendChild(a); a.click(); a.remove();
+      alert('clauses.js を書き出しました。\n\nGitHub の checkin/clauses.js に丸ごと貼り替えてください。\n貼り替えたら、この画面の「直しました」の印は消して構いません。');
+    }catch(e){ alert('書き出せませんでした： ' + e.message); }
+  });
 
   /* ---- 間取り図 ---- */
   $('#f-plan').addEventListener('change', function(){
@@ -275,7 +376,10 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
       name:$('#f-name').value.trim(), mail:$('#f-mail').value.trim(),
       moveIn:$('#f-move').value, memo:$('#f-memo').value.trim(),
       clauses:$$('#cl-list .cl').filter(function(e){ return e.querySelector('input').checked; })
-                .map(function(e){ return e.getAttribute('data-t'); }),
+                .map(function(e){ return e.getAttribute('data-t'); })
+                .concat(($('#f-extra').value || '').split(/\r?\n/)
+                  .map(function(x){ return x.trim(); })
+                  .filter(function(x){ return x; })),
       sendMail: !!sendMail
     };
     if(planData) body.plan = { data:planData, name:'madori.jpg' };
@@ -299,12 +403,11 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
           '▼ 入力ページ\n' + res.url + '\n　パスワード： ' + res.pass + '\n';
         navigator.clipboard.writeText(t).then(function(){ $('#copy').textContent = 'コピーしました'; });
       });
-      ['#f-bldg','#f-room','#f-name','#f-mail','#f-memo'].forEach(function(s){ $(s).value=''; });
+      ['#f-bldg','#f-room','#f-name','#f-mail','#f-memo','#f-extra'].forEach(function(s){ $(s).value=''; });
       planData = null; $('#plan-th').classList.add('hide'); $('#f-plan').value='';
     }).catch(function(){ veil(false); $('#new-err').textContent = '通信できませんでした。'; });
   }
   $('#new-go').addEventListener('click', function(){ create(true); });
-  $('#new-go2').addEventListener('click', function(){ create(false); });
 
   /* ---- 一覧 ---- */
   var FILT = '';   /* 押している札。'' のときは、ぜんぶ出します */
