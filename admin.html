@@ -97,6 +97,14 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
 .tabs3 button.on{background:var(--ink);border-color:var(--ink);color:#fff;}
 .tabs3 button i{font-style:normal;font-weight:800;opacity:.75;}
 .pill.exp{background:var(--ng);color:#fff;border-color:var(--ng);}
+.pill.rm{background:#B45309;color:#fff;border-color:#B45309;}
+/* 督促のようす（カードの中の1行） */
+.i-rm{display:flex;align-items:baseline;gap:7px;flex-wrap:wrap;font-size:14.5px;
+  margin-top:6px;padding:7px 10px;border-radius:9px;background:#FAFAFA;
+  border:1px solid var(--line);color:var(--ink2);line-height:1.7;}
+.i-rm b{font-weight:800;color:var(--ink);}
+.i-rm.hot{background:#FFF7ED;border-color:#FDBA74;color:#9A3412;}
+.i-rm.hot b{color:#9A3412;}
 .item.exp{border-color:var(--ng);}
 #agbox{position:fixed;inset:0;z-index:220;background:rgba(0,0,0,.55);display:none;
   align-items:center;justify-content:center;padding:14px;}
@@ -292,6 +300,8 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
       try{ localStorage.setItem('ire_checkin_key', KEY); }catch(e){}
       ROWS = res.rows;
       if(res.areas && res.areas.length) AREAS = res.areas;
+      if(res.remindMax !== undefined){ RM_MAX = Number(res.remindMax)||0;
+                                       RM_EVERY = Number(res.remindEvery)||0; }
       buildPeriod(); buildArea(); drawAll();
       $('#s-key').classList.add('hide');
       show('list');
@@ -537,6 +547,7 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
 
   var TAB = 'todo';        /* 要対応／未返信／完了 */
   var AREAS = [];
+  var RM_MAX = 0, RM_EVERY = 0;   /* 自動督促の 上限回数／何日おき（サーバーの設定） */
 
   function reload(){
     veil(true);
@@ -548,6 +559,8 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
       if(!res.ok) return;
       ROWS = res.rows;
       if(res.areas && res.areas.length) AREAS = res.areas;
+      if(res.remindMax !== undefined){ RM_MAX = Number(res.remindMax)||0;
+                                       RM_EVERY = Number(res.remindEvery)||0; }
       buildPeriod(); buildArea(); drawAll();
     }).catch(function(){ veil(false); });
   }
@@ -684,6 +697,32 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
     });
   }
 
+  /* 督促のようすを、ことばにします。
+     ・まだ返信が無いもの … これまで何回送ったか＋つぎに自動で出る日
+     ・返信ずみのもの     … 何回送ったかの記録だけ */
+  function mdStr(v){ return String(v||'').replace(/^\d{4}\//,''); }   /* 2026/09/05 → 09/05 */
+  function remindBox(r, done){
+    var n = Number(r.remind||0);
+    if(done){
+      if(!n) return '';
+      return '<div class="i-rm"><b>督促 ' + n + '回</b>' +
+             (r.lastRemind ? '<span>最終 ' + esc(mdStr(r.lastRemind)) + '</span>' : '') + '</div>';
+    }
+    var hot = false, a, b;
+    a = n ? ('督促 ' + n + '回') : '督促 まだ 0回';
+    if(r.remindNext){
+      b = '次の自動督促 ' + esc(mdStr(r.remindNext));
+    }else if(RM_MAX && n >= RM_MAX){
+      b = '自動督促は終わり（上限 ' + RM_MAX + '回）。ここから先は手で送ってください';
+      hot = true;                    /* いちばん気にかけてほしい状態 */
+    }else{
+      b = '期限までは、自動督促は出ません';
+    }
+    return '<div class="i-rm' + (hot ? ' hot' : '') + '"><b>' + a + '</b>' +
+      (n && r.lastRemind ? '<span>最終 ' + esc(mdStr(r.lastRemind)) + '</span>' : '') +
+      '<span>／ ' + b + '</span></div>';
+  }
+
   function drawList(){
     var q = $('#q').value.trim();
     var rows = ROWS.filter(function(r){
@@ -706,6 +745,7 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
                    : (r.ng > 0 ? '<span class="pill ng">要確認 ' + r.ng + '</span>'
                                : '<span class="pill ok">問題なし</span>'))
             : (r.over ? '<span class="pill ng">期限すぎ</span>' : '<span class="pill">未返信</span>'));
+      if(!done && r.remind > 0) pill += '<span class="pill rm">督促 ' + r.remind + '回</span>';
       var sub = [];
       if(r.area) sub.push(esc(r.area));
       if(r.agentCo || r.agentName) sub.push('仲介：' + esc(r.agentCo||'') + ' ' + esc(r.agentName||''));
@@ -727,7 +767,8 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
           '作成 ' + esc(String(r.created).slice(0,10)) + ' ／ 期限 ' + esc(r.due) +
           (r.replied ? ' ／ 返信 ' + esc(String(r.replied).slice(0,10)) : '') +
           (r.doneAt ? ' ／ 完了 ' + esc(String(r.doneAt).slice(0,10)) : '') +
-          (r.remind ? ' ／ 督促 ' + r.remind + '回' : '') + '</div>' +
+          '</div>' +
+        remindBox(r, done) +
         (acts.length ? ('<div class="i-a">' + acts.join('') + '</div>') : '') +
       '</div>';
     }).join('');
