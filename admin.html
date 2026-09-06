@@ -42,8 +42,12 @@ header button{background:rgba(255,255,255,.12);color:#fff;border:0;border-radius
   padding:8px 18px;font-size:14.5px;font-weight:500;cursor:pointer;transition:background .15s;}
 header button:hover{background:rgba(255,255,255,.2);}
 
-main{max-width:1240px;margin:0 auto;padding:22px 20px 80px;}
+/* 一覧は、画面の幅いっぱいに使います。
+   カードは幅のぶんだけ横に並び、入りきらなくなったところで折り返します。
+   新規作成とログインだけ、読みやすさのために細いままにします。 */
+main{max-width:none;margin:0;padding:22px 24px 80px;}
 #s-new{max-width:720px;margin:0 auto;}
+#s-key{max-width:none;}
 
 /* ---- ふつうの箱（枠線なし） ---- */
 .card{background:#fff;border:0;border-radius:20px;padding:26px 24px;margin-bottom:18px;}
