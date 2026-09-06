@@ -30,6 +30,23 @@
     '内容に納得できない'
   ];
 
+  /* ご質問のあて先のご案内。
+     このページは「お部屋の確認」と「ご説明の確認」だけを受け取る場所です。
+     それ以外のご質問をここに書かれても、こちらでは受けられないため、
+     はじめに、はっきりお伝えしておきます。 */
+  function askHtml(){
+    var hp = '';
+    try{ hp = String((window.APP_CONFIG||{}).HP_URL || '').trim(); }catch(e){}
+    return '<b>ご質問・ご要望について</b>' +
+      '<p>このページでお受けしているのは、<b>お部屋の状態の確認</b>と' +
+      '<b>ご契約時のご説明内容の確認</b>の、2つだけです。<br>' +
+      'それ以外のご質問・ご要望につきましては、このページではお答えいたしかねます。<br>' +
+      'お手数ですが、弊社ホームページの<b>お問い合わせ</b>よりご連絡くださいますよう、' +
+      'くれぐれもよろしくお願いいたします。</p>' +
+      (hp ? ('<a class="hp" href="' + esc(hp) + '" target="_blank" rel="noopener">' +
+             'お問い合わせページをひらく</a>') : '');
+  }
+
   function $(s){ return document.querySelector(s); }
   function $$(s){ return Array.prototype.slice.call(document.querySelectorAll(s)); }
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){
@@ -358,7 +375,7 @@
     $('#foot').classList.remove('hide');
     $('#back').classList.toggle('hide', n === 1);
     $$('#steps span').forEach(function(sp){ sp.classList.toggle('on', Number(sp.getAttribute('data-s')) === n); });
-    if(n === 3) drawSum();
+    if(n === 3){ drawSum(); $('#ask3').innerHTML = askHtml(); }
     window.scrollTo(0,0);
     save(); progress();
   }
@@ -423,6 +440,7 @@
     $('#foot').classList.add('hide');
     $('#s-done').classList.remove('hide');
     $('#done-msg').textContent = msg;
+    $('#ask4').innerHTML = askHtml();
     $('#bar').style.width = '100%';
     window.scrollTo(0,0);
   }
