@@ -91,9 +91,14 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
   border-radius:11px;background:#fff;font-weight:700;color:var(--ink);}
 
 /* 集計の札は押せます（押すと、その中身だけの一覧になります） */
-.tabs3{display:flex;gap:8px;margin-bottom:12px;}
-.tabs3 button{flex:1;padding:12px 6px;border-radius:12px;border:1.5px solid var(--line2);
-  background:#fff;font:inherit;font-size:15px;font-weight:800;color:var(--ink3);cursor:pointer;}
+.tabs3{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;}
+@media (max-width:640px){ .tabs3{grid-template-columns:repeat(2,1fr);} }
+.tabs3 button{padding:12px 4px;border-radius:12px;border:1.5px solid var(--line2);
+  background:#fff;font:inherit;font-size:14.5px;font-weight:800;color:var(--ink3);cursor:pointer;
+  min-width:0;white-space:nowrap;}
+/* 仲介へ確認は、いちばん先に手を打つところなので、色を付けます */
+.tabs3 button[data-t=agent]{border-color:#FDBA74;color:#9A3412;background:#FFF7ED;}
+.tabs3 button[data-t=agent].on{background:#9A3412;border-color:#9A3412;color:#fff;}
 .tabs3 button.on{background:var(--ink);border-color:var(--ink);color:#fff;}
 .tabs3 button i{font-style:normal;font-weight:800;opacity:.75;}
 .pill.exp{background:var(--ng);color:#fff;border-color:var(--ng);}
@@ -256,6 +261,7 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
       <select id="f-far"></select>
     </div>
     <div class="tabs3" id="tabs3">
+      <button type="button" data-t="agent">仲介へ確認 <i>0</i></button>
       <button type="button" data-t="todo" class="on">要対応 <i>0</i></button>
       <button type="button" data-t="waiting">未返信 <i>0</i></button>
       <button type="button" data-t="done">完了 <i>0</i></button>
@@ -301,7 +307,7 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
 
 <div id="veil">読み込んでいます…</div>
 
-<script src="clauses.js?v=1"></script>
+<script src="clauses.js?v=2"></script>
 <script src="config.js?v=1"></script>
 <script>
 (function(){
@@ -607,12 +613,12 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
 
   function drawTabs(){
     var rows = ROWS.filter(inPeriod);
-    var n = { todo:0, waiting:0, done:0 };
+    var n = { agent:0, todo:0, waiting:0, done:0 };
     rows.forEach(function(r){
       var st = String(r.status||'');
       if(st === '取消') return;
       if(st === '完了') n.done++;
-      else if(st === '返信済') n.todo++;
+      else if(st === '返信済'){ if(needAgent(r)) n.agent++; else n.todo++; }
       else n.waiting++;
     });
     $$('#tabs3 button').forEach(function(b){
@@ -666,18 +672,29 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
     return true;
   }
 
-  /* いま選んでいるタブに入るかどうか */
+  /* 仲介へ確認すべきか。
+     印の付かなかった特約が1つでもあり、まだ仲介へ連絡していないもの。
+     理由は問いません（説明を受けていない／意味が分からない／納得できない、どれでも）。 */
+  function needAgent(r){
+    return String(r.status||'') === '返信済' && Number(r.noCheck||0) > 0 && !r.agentAt;
+  }
+
+  /* いま選んでいるタブに入るかどうか。
+     1件がどれか1つのタブにだけ入るようにしています（数が重ならないように）。
+       未返信 → 仲介へ確認 → 要対応 → 完了  の順に流れます。 */
   function inTab(r){
     var st = String(r.status||'');
     if(st === '取消') return false;
     if(TAB === 'done')    return st === '完了';
     if(TAB === 'waiting') return st !== '完了' && st !== '返信済';
-    return st === '返信済';                      /* 要対応 */
+    if(TAB === 'agent')   return needAgent(r);
+    return st === '返信済' && !needAgent(r);     /* 要対応 */
   }
 
   function matchFilt(r){
     if(!FILT) return true;
     if(FILT === 'ng')     return r.ng > 0;
+    if(FILT === 'chk')    return Number(r.noCheck||0) > 0;
     if(FILT === 'exp')    return r.noExp > 0;
     if(FILT === 'over')   return r.over;
     if(FILT === 'late')   return isLate(r);
@@ -687,26 +704,35 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
 
   function drawStats(){
     var rows = ROWS.filter(inPeriod).filter(inTab);
-    var st = { all:rows.length, ng:0, exp:0, over:0, late:0, remind:0 };
+    /* ★ 数はそれぞれ別に数えます。
+         ng      … お部屋に気になるところがある件（お部屋の話）
+         noCheck … 特約に印が付いていない件（ご説明の話）
+         exp     … そのうち「説明を受けていない」と答えた件
+       ng と noCheck は別の話なので、両方に入る件もあります。 */
+    var st = { all:rows.length, ng:0, chk:0, exp:0, over:0, late:0, remind:0 };
     rows.forEach(function(r){
       if(r.ng > 0) st.ng++;
+      if(Number(r.noCheck||0) > 0) st.chk++;
       if(r.noExp > 0) st.exp++;
       if(r.over) st.over++;
       if(isLate(r)) st.late++;
       if(r.remind > 0) st.remind++;
     });
-    /* 「要対応」タブでは、期限すぎ（＝まだ返信が無い件の話）より
-       「対応おくれ」のほうが役に立つので、そちらを出します。 */
-    var third = (TAB === 'todo')
-      ? cell('late', st.late, AL_AFTER + '日 対応おくれ', st.late > 0)
-      : cell('over', st.over, '期限すぎ', st.over > 0);
-    $('#stats').innerHTML =
-      cell('',       st.all,    'このタブの件数') +
-      cell('ng',     st.ng,     '問題の報告', st.ng > 0) +
-      cell('exp',    st.exp,    '説明を受けていない', st.exp > 0) +
-      third +
-      cell('remind', st.remind, '督促を送った') +
-      cell('',       0,         '', false, true);
+    /* 「未返信」タブでは、まだ返事が無いので、お部屋も特約も数えられません。
+       そのタブだけ、これまでどおり 期限すぎ・督促 を出します。 */
+    var h = [];
+    h.push(cell('', st.all, 'このタブの件数'));
+    if(TAB === 'waiting'){
+      h.push(cell('over',   st.over,   '期限すぎ', st.over > 0));
+      h.push(cell('remind', st.remind, '督促を送った'));
+    }else{
+      h.push(cell('ng',   st.ng,  'お部屋の報告', st.ng > 0));
+      h.push(cell('chk',  st.chk, '特約の未確認', st.chk > 0));
+      h.push(cell('exp',  st.exp, 'うち 説明を受けていない', st.exp > 0));
+      h.push(cell('late', st.late, AL_AFTER + '日 対応おくれ', st.late > 0));
+      h.push(cell('',     0, '', false, true));
+    }
+    $('#stats').innerHTML = h.join('');
     function cell(k,n,l,warn,blank){
       if(blank) return '<div class="stat" style="visibility:hidden"></div>';
       return '<div class="stat' + (warn ? ' warn' : '') + (FILT === k ? ' on' : '') +
@@ -792,12 +818,14 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
       var fin  = (st === '完了');
       var done = (st === '返信済' || fin);
       var exp  = (r.noExp > 0);
+      var chk  = (Number(r.noCheck||0) > 0);
       var pill = fin
         ? '<span class="pill ok">完了</span>'
         : (done
-            ? (exp ? '<span class="pill exp">説明を受けていない ' + r.noExp + '</span>'
-                   : (r.ng > 0 ? '<span class="pill ng">要確認 ' + r.ng + '</span>'
-                               : '<span class="pill ok">問題なし</span>'))
+            ? ((chk ? '<span class="pill exp">特約の未確認 ' + r.noCheck +
+                       (exp ? '（説明なし ' + r.noExp + '）' : '') + '</span>' : '') +
+               (r.ng > 0 ? '<span class="pill ng">お部屋 ' + r.ng + '</span>' : '') +
+               (!chk && !(r.ng > 0) ? '<span class="pill ok">問題なし</span>' : ''))
             : (r.over ? '<span class="pill ng">期限すぎ</span>' : '<span class="pill">未返信</span>'));
       if(!done && r.remind > 0) pill += '<span class="pill rm">督促 ' + r.remind + '回</span>';
       if(isLate(r)) pill += '<span class="pill rm">対応おくれ</span>';
@@ -809,7 +837,12 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
         acts.push('<button class="btn sm ghost act-remind">督促メールを送る</button>');
         acts.push('<button class="btn sm ghost act-copy">案内文をコピー</button>');
       }else if(!fin){
-        if(exp && r.agentMail) acts.push('<button class="btn sm ghost act-agent">仲介へ連絡する</button>');
+        /* 印の付かなかった特約が1つでもあれば出します（理由は問いません）。
+           仲介のメールが未登録でも、その場で宛先を入れて送れます。 */
+        if(Number(r.noCheck||0) > 0){
+          acts.push('<button class="btn sm ghost act-agent">' +
+                    (r.agentAt ? 'もう一度 仲介へ連絡' : '仲介へ連絡する') + '</button>');
+        }
         acts.push('<button class="btn sm act-done">完了にする</button>');
       }else{
         acts.push('<button class="btn sm ghost act-undo">完了をもどす</button>');
@@ -821,6 +854,8 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
           (sub.length ? (sub.join(' ／ ') + '<br>') : '') +
           '作成 ' + esc(String(r.created).slice(0,10)) + ' ／ 期限 ' + esc(r.due) +
           (r.replied ? ' ／ 返信 ' + esc(String(r.replied).slice(0,10)) : '') +
+          (r.agentAt ? ' ／ 仲介へ連絡 ' + esc(String(r.agentAt).slice(0,10)) +
+                       (r.agentN > 1 ? '（' + r.agentN + '回）' : '') : '') +
           (r.doneAt ? ' ／ 完了 ' + esc(String(r.doneAt).slice(0,10)) : '') +
           '</div>' +
         remindBox(r, done) + waitBox(r) +
