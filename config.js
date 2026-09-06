@@ -11,5 +11,5 @@
 window.APP_CONFIG = {
   GAS_URL : 'https://script.google.com/macros/s/AKfycbxzykPPtK2uIM-UWOPtPX7JoAF5d0t01my8zS0skp9b_pFnkevT3L7dPxuKkKGNfAHt/exec',
   COMPANY : 'IREライフ株式会社',
-  HP_URL  : ''
+  HP_URL  : 'https://www.ire-life.net/'
 };
