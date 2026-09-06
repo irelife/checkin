@@ -403,13 +403,8 @@
   $('#back').addEventListener('click', function(){ if(step > 1) go(step - 1); });
   /* 「すべてに印を付ける」は外しました。
      一括で付けられると、文面を読まずに送れてしまうためです。 */
-  $('#all-off').addEventListener('click', function(){
-    $$('.chk').forEach(function(e){
-      e.classList.remove('on'); e.querySelector('input').checked = false;
-      checks[e.getAttribute('data-t')] = false;
-    });
-    save(); progress();
-  });
+  /* 「すべてに印を付ける」「ぜんぶ外す」は、どちらも外しました。
+     まとめて操作できると、文面を読まずに送れてしまうためです。 */
 
   if(!ID){
     $('#pw-box').innerHTML =
