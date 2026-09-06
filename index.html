@@ -83,6 +83,12 @@ h2{font-size:20px;font-weight:800;margin:0 0 6px;}
   font-size:10.5px;color:var(--ink3);cursor:pointer;font-weight:700;}
 .addshot b{font-size:22px;font-weight:400;line-height:1;}
 
+/* ---- 期限のお知らせ ---- */
+.duebox{border:1.5px solid var(--ng);background:var(--ngbg);border-radius:14px;
+  padding:13px 14px;margin-bottom:14px;}
+.duebox b{display:block;font-size:15.5px;font-weight:800;color:var(--ng);margin-bottom:6px;}
+.duebox p{margin:0;font-size:14.5px;line-height:1.8;color:var(--ink2);}
+
 /* ---- 確認事項 ---- */
 .chk{display:block;border:1px solid var(--line);border-radius:14px;background:#fff;
   padding:12px 12px;margin-bottom:9px;position:relative;cursor:pointer;}
@@ -175,6 +181,16 @@ footer .btn.ghost{flex:0 0 34%;}
   <!-- ===== ① 室内 ===== -->
   <section id="s1" class="hide">
     <div id="plan"></div>
+    <div class="duebox">
+      <b>ご返信の期限について</b>
+      <p id="due-note">
+        この確認は、入居されたときのお部屋の状態を、記録として残すためのものです。<br>
+        <b style="display:inline;font-size:14.5px;">期限までにご返信がないと</b>、入居前からあったキズや汚れであっても、
+        ご退去のときにご負担をお願いすることがあります。<br>
+        期限を過ぎてもご返信がないときは、こちらからご連絡いたします。
+      </p>
+    </div>
+
     <div class="card">
       <h2>お部屋の中を見てください</h2>
       <p class="lead">
@@ -212,7 +228,9 @@ footer .btn.ghost{flex:0 0 34%;}
       <div class="sum" id="sum"></div>
       <p class="note">
         送ったあとの控えは、管理会社で保管します。<br>
-        修正が必要なときは、管理会社までご連絡ください。
+        修正が必要なときは、管理会社までご連絡ください。<br>
+        <b>期限までにご返信がないと</b>、入居前からあったキズや汚れであっても、
+        ご退去のときにご負担をお願いすることがあります。
       </p>
     </div>
   </section>
