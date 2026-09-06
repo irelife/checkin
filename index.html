@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="format-detection" content="telephone=no">
-<title>入居時のお部屋チェック</title>
+<title>check｜お部屋の確認</title>
 <style>
 :root{
   --ink:#17171A; --ink2:#3F3F46; --ink3:#71717A; --ink4:#A1A1AA;
@@ -22,6 +22,11 @@ button,input,textarea{font-family:inherit;font-size:18px;}
 /* ---- 上のバー ---- */
 header{position:sticky;top:0;z-index:20;background:var(--ink);color:#fff;
   padding:calc(10px + env(safe-area-inset-top)) 16px 10px;}
+/* アプリの名前（check）。物件名の上に、小さく出します */
+header .h-logo{display:flex;align-items:center;gap:6px;margin-bottom:5px;
+  color:rgba(255,255,255,.62);}
+header .h-logo .ic{width:17px;height:17px;flex:0 0 auto;}
+header .h-logo span{font-size:14px;font-weight:800;letter-spacing:.06em;}
 header .h-bldg{font-size:19px;font-weight:800;letter-spacing:.01em;}
 header .h-sub{font-size:13.5px;color:#B9BBC1;margin-top:2px;}
 .bar{height:4px;background:#3A3A40;border-radius:100px;margin-top:10px;overflow:hidden;}
@@ -165,6 +170,7 @@ footer .btn.ghost{flex:0 0 34%;}
 <body>
 
 <header>
+  <div class="h-logo"><svg class="ic" viewBox="0 0 100 100" fill="currentColor" aria-hidden="true"><circle cx="34" cy="30" r="16"/><path d="M34 51C18 51 8 66 6 88h40c0-4 .6-8 1.8-11.5l9.4 4.4c1.6.8 3.5 0 4.2-1.6.8-1.6 0-3.5-1.6-4.2l-9.6-4.5C54 60 45 51 34 51Z"/><path d="M58.5 63.5 85 53.5 94 76 67.5 86Z" fill="none" stroke="currentColor" stroke-width="6.5" stroke-linejoin="round"/><path fill-rule="evenodd" d="M79 6a21 21 0 1 0 0 42 21 21 0 0 0 0-42ZM76.2 36.4 66 26.2l4.6-4.6 5.6 5.6 12-12 4.6 4.6Z"/></svg><span>check</span></div>
   <div class="h-bldg" id="h-bldg">入居時のお部屋チェック</div>
   <div class="h-sub"  id="h-sub">お部屋の確認と、ご説明内容の確認</div>
   <div class="bar"><i id="bar" style="width:0"></i></div>
