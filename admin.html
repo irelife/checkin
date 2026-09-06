@@ -54,8 +54,13 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
 .stat.on b{color:#fff;}
 .stat.warn.on{background:var(--ng);border-color:var(--ng);color:#fff;}
 
-/* 一覧 */
-.item{background:#fff;border:1px solid var(--line);border-radius:14px;padding:15px 14px;margin-bottom:10px;}
+/* 一覧
+   広い画面では横に並べ、幅に合わせて折り返します。
+   （1枚あたり 330px を下回らないところで、自動で列数が決まります） */
+#list{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));
+  gap:10px;align-items:start;}
+#list > p{grid-column:1/-1;}
+.item{background:#fff;border:1px solid var(--line);border-radius:14px;padding:15px 14px;margin-bottom:0;}
 .item.over{border-color:var(--ng);background:var(--ngbg);}
 .item.done{background:var(--okbg);}
 .i-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
@@ -147,6 +152,10 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
 .i-rm b{font-weight:800;color:var(--ink);}
 .i-rm.hot{background:#FFF7ED;border-color:#FDBA74;color:#9A3412;}
 .i-rm.hot b{color:#9A3412;}
+/* これから自動で督促を送る予定（赤字で目立たせます） */
+.i-rm.plan{background:var(--ngbg);border-color:#E7BFB6;}
+.i-rm.plan b{color:var(--ng);font-size:15px;}
+.i-rm.plan span{color:#8C4436;}
 .item.exp{border-color:var(--ng);}
 #agbox{position:fixed;inset:0;z-index:220;background:rgba(0,0,0,.55);display:none;
   align-items:center;justify-content:center;padding:14px;}
@@ -232,7 +241,7 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
       <input type="text" id="f-name" placeholder="例: 山田 太郎">
       <label class="f">メールアドレス *</label>
       <input type="email" id="f-mail" inputmode="email" placeholder="例: taro@example.com">
-      <label class="f">入居日</label>
+      <label class="f">契約開始日（この日から7日で、ご返信の期限になります）</label>
       <input type="date" id="f-move">
       <label class="f">エリア（担当者が分かれます。返信の通知は、このエリアの担当者へ届きます）</label>
       <select id="f-area" style="width:100%;box-sizing:border-box;font:inherit;font-size:15px;
@@ -313,7 +322,7 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
 </div>
 
 <div id="detail">
-  <div class="d-bar"><b id="d-title">　</b><button id="d-close">閉じる</button></div>
+  <div class="d-bar"><b id="d-title">　</b><button id="d-close">一覧にもどる</button></div>
   <div class="inner" id="d-body"></div>
 </div>
 
@@ -376,8 +385,7 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
     if(o.areas && o.areas.length) AREAS = o.areas;
     if(o.remindMax !== undefined){ RM_MAX = Number(o.remindMax)||0;
                                    RM_EVERY = Number(o.remindEvery)||0; }
-    if(o.alertAfter !== undefined){ AL_AFTER = Number(o.alertAfter)||3;
-                                    AL_EVERY = Number(o.alertEvery)||3; }
+    if(o.doneAfterRemind !== undefined) DONE_AFTER_REMIND = (o.doneAfterRemind === true);
     buildPeriod(); buildArea(); drawAll();
     LAST_AT = at || Date.now();
   }
@@ -586,7 +594,7 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
   var TAB = 'todo';        /* 要対応／未返信／完了 */
   var AREAS = [];
   var RM_MAX = 0, RM_EVERY = 0;   /* 自動督促の 上限回数／何日おき（サーバーの設定） */
-  var AL_AFTER = 3, AL_EVERY = 3; /* 返信から何日で「対応して」を出すか（サーバーの設定） */
+  var DONE_AFTER_REMIND = true;   /* 自動督促を送ったら完了へ移すか（サーバーの設定） */
 
   /* bg を true にすると、画面をおおわずに、裏で読みにいきます */
   function reload(bg){
@@ -710,7 +718,6 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
     if(FILT === 'chk')    return Number(r.noCheck||0) > 0;
     if(FILT === 'exp')    return r.noExp > 0;
     if(FILT === 'over')   return r.over;
-    if(FILT === 'late')   return isLate(r);
     if(FILT === 'remind') return r.remind > 0;
     return true;
   }
@@ -719,8 +726,10 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
   var TABNOTE = {
     agent  : '特約に印が付いていない件です。<b>仲介業者へ連絡すると「要対応」へ移ります。</b>',
     todo   : '内容をご確認のうえ、済んだら<b>「完了にする」</b>を押してください。',
-    waiting: 'まだ入居者からの返信がありません。期限をすぎると督促を自動で送ります。',
-    done   : '対応が済んだものです。すべて問題なしの返信は、自動でここに入ります。'
+    waiting: 'まだ入居者からの返信がありません。<b>契約開始日から7日</b>をすぎると、'
+           + '自動で督促メールを送り、そのまま「完了」へ移します。',
+    done   : '対応が済んだものです。すべて問題なしの返信と、自動督促を送ったものは、'
+           + '自動でここに入ります。'
   };
 
   function drawStats(){
@@ -732,13 +741,12 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
          noCheck … 特約に印が付いていない件（ご説明の話）
          exp     … そのうち「説明を受けていない」と答えた件
        ng と noCheck は別の話なので、両方に入る件もあります。 */
-    var st = { ng:0, chk:0, exp:0, over:0, late:0, remind:0 };
+    var st = { ng:0, chk:0, exp:0, over:0, remind:0 };
     rows.forEach(function(r){
       if(r.ng > 0) st.ng++;
       if(Number(r.noCheck||0) > 0) st.chk++;
       if(r.noExp > 0) st.exp++;
       if(r.over) st.over++;
-      if(isLate(r)) st.late++;
       if(r.remind > 0) st.remind++;
     });
 
@@ -751,9 +759,8 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
       want = [['chk', st.chk, '特約の未確認', true], ['exp', st.exp, 'うち 説明を受けていない', true],
               ['ng',  st.ng,  'お部屋の報告', true]];
     }else if(TAB === 'todo'){
-      want = [['ng',   st.ng,   'お部屋の報告', true],
-              ['late', st.late, AL_AFTER + '日 対応おくれ', true],
-              ['chk',  st.chk,  '特約の未確認', false]];
+      want = [['ng',  st.ng,  'お部屋の報告', true],
+              ['chk', st.chk, '特約の未確認', false]];
     }else{
       want = [['ng', st.ng, 'お部屋の報告', false], ['chk', st.chk, '特約の未確認', false]];
     }
@@ -783,36 +790,15 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
      ・返信ずみのもの     … 何回送ったかの記録だけ */
   function mdStr(v){ return String(v||'').replace(/^\d{4}\//,''); }   /* 2026/09/05 → 09/05 */
 
-  /* 返信を受けてから何日たったか。日付だけで数えます（サーバーと同じ数え方）。
-     数えられないときは null を返します。 */
-  function waitDays(r){
-    var m = /^(\d{4})\/(\d{2})\/(\d{2})/.exec(String(r.replied||''));
-    if(!m) return null;
-    var a = new Date(+m[1], +m[2]-1, +m[3]).getTime();
-    var n = new Date(); var b = new Date(n.getFullYear(), n.getMonth(), n.getDate()).getTime();
-    var d = Math.round((b-a)/86400000);
-    return isNaN(d) ? null : d;
-  }
-  function isLate(r){
-    if(String(r.status||'') !== '返信済') return false;
-    var d = waitDays(r);
-    return d !== null && d >= AL_AFTER;
+  /* 2026/09/13 → 9月13日 */
+  function jpDate(v){
+    var m = /^(\d{4})\/(\d{2})\/(\d{2})/.exec(String(v||''));
+    return m ? (Number(m[2]) + '月' + Number(m[3]) + '日') : '';
   }
 
-  /* 要対応のカードに出す「返信から○日」の行 */
-  function waitBox(r){
-    if(String(r.status||'') !== '返信済') return '';
-    var d = waitDays(r);
-    if(d === null) return '';
-    var late = (d >= AL_AFTER);
-    var b = late
-      ? ('対応がまだです。確認したら「完了にする」を押してください' +
-         (r.alerted > 0 ? '（お知らせ済み ' + r.alerted + '回）' : ''))
-      : ('あと ' + (AL_AFTER - d) + '日で、対応をお知らせします');
-    return '<div class="i-rm' + (late ? ' hot' : '') + '"><b>返信から ' + d + '日</b>' +
-           '<span>／ ' + b + '</span></div>';
-  }
-
+  /* 督促のようす。
+     ・まだ返信が無いもの … いつ自動で督促を送るか（赤字）＋送ったあとどうなるか
+     ・返信ずみ・完了のもの … 送った記録だけ */
   function remindBox(r, done){
     var n = Number(r.remind||0);
     if(done){
@@ -820,19 +806,22 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
       return '<div class="i-rm"><b>督促 ' + n + '回</b>' +
              (r.lastRemind ? '<span>最終 ' + esc(mdStr(r.lastRemind)) + '</span>' : '') + '</div>';
     }
-    var hot = false, a, b;
-    a = n ? ('督促 ' + n + '回') : '督促 まだ 0回';
     if(r.remindNext){
-      b = '次の自動督促 ' + esc(mdStr(r.remindNext));
-    }else if(RM_MAX && n >= RM_MAX){
-      b = '自動督促は終わり（上限 ' + RM_MAX + '回）。ここから先は手で送ってください';
-      hot = true;                    /* いちばん気にかけてほしい状態 */
-    }else{
-      b = '期限までは、自動督促は出ません';
+      /* これから自動で送る予定がある */
+      return '<div class="i-rm plan">' +
+        '<b>' + esc(jpDate(r.remindNext)) + ' に 自動で督促メールを送ります</b>' +
+        '<span>送信後は、この件を自動で「完了」へ移します' +
+        (DONE_AFTER_REMIND ? '' : '（いまは移しません）') + '</span>' +
+        (n ? '<span>／ これまで ' + n + '回 送りました</span>' : '') + '</div>';
     }
-    return '<div class="i-rm' + (hot ? ' hot' : '') + '"><b>' + a + '</b>' +
-      (n && r.lastRemind ? '<span>最終 ' + esc(mdStr(r.lastRemind)) + '</span>' : '') +
-      '<span>／ ' + b + '</span></div>';
+    if(RM_MAX && n >= RM_MAX){
+      return '<div class="i-rm hot"><b>督促 ' + n + '回 送信ずみ</b>' +
+        (r.lastRemind ? '<span>最終 ' + esc(mdStr(r.lastRemind)) + '</span>' : '') +
+        '<span>／ 自動督促は終わりです。ここから先は手で送ってください</span></div>';
+    }
+    return '<div class="i-rm"><b>督促 まだ 0回</b>' +
+           '<span>／ 契約開始日から ' + (r.due ? esc(jpDate(r.due)) + ' まで' : '7日') +
+           'は、自動督促は出ません</span></div>';
   }
 
   function drawList(){
@@ -860,7 +849,6 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
                (!chk && !(r.ng > 0) ? '<span class="pill ok">問題なし</span>' : ''))
             : (r.over ? '<span class="pill ng">期限すぎ</span>' : '<span class="pill">未返信</span>'));
       if(!done && r.remind > 0) pill += '<span class="pill rm">督促 ' + r.remind + '回</span>';
-      if(isLate(r)) pill += '<span class="pill rm">対応おくれ</span>';
       var sub = [];
       if(r.area) sub.push(esc(r.area));
       if(r.agentCo || r.agentName) sub.push('仲介：' + esc(r.agentCo||'') + ' ' + esc(r.agentName||''));
@@ -890,7 +878,7 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
                        (r.agentN > 1 ? '（' + r.agentN + '回）' : '') : '') +
           (r.doneAt ? ' ／ 完了 ' + esc(String(r.doneAt).slice(0,10)) : '') +
           '</div>' +
-        remindBox(r, done) + waitBox(r) +
+        remindBox(r, done) +
         (acts.length ? ('<div class="i-a">' + acts.join('') + '</div>') : '') +
       '</div>';
     }).join('');
