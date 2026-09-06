@@ -90,6 +90,14 @@
   function build(){
     $('#h-bldg').textContent = (DATA.bldg || '') + ' ' + (DATA.room || '');
     $('#h-sub').textContent  = (DATA.name || '') + ' 様' + (DATA.due ? '　／　' + DATA.due + ' までにご返信ください' : '');
+    /* 期限を、注意書きの中にも入れます（上のバーは小さく、見落とされるため） */
+    try{
+      var dn = $('#due-note');
+      if(dn && DATA.due){
+        dn.insertAdjacentHTML('afterbegin',
+          '<b style="display:inline;font-size:15px;">' + esc(DATA.due) + ' まで</b>にご返信ください。<br>');
+      }
+    }catch(e){}
 
     /* 間取り図 */
     if(DATA.plan){
