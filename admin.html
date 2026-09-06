@@ -5,200 +5,236 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>check｜管理</title>
 <style>
-:root{--ink:#17171A;--ink2:#3F3F46;--ink3:#71717A;--line:#E4E4E7;--line2:#D4D4D8;
-      --bg:#F5F5F6;--ng:#B23A28;--ngbg:#FCEFEC;--okbg:#F1F5F2;}
+/* =====================================================================
+   見た目のきまり
+     ・枠線はつかいません。うすい塗りと、余白で分けます。
+     ・角はやわらかく、文字は太くしすぎません。
+     ・色は白・グレー・黒。気にかけてほしいところだけ、うすい赤にします。
+   ===================================================================== */
+:root{
+  --ink:#1D1D1F;        /* 文字（いちばん濃い） */
+  --ink2:#424245;       /* 文字（ふつう） */
+  --ink3:#86868B;       /* 文字（うすい・説明用） */
+  --bg:#F5F5F7;         /* 画面の下地 */
+  --fill:#F0F0F2;       /* 入力欄・札の塗り */
+  --fill2:#E8E8ED;      /* すこし濃い塗り */
+  --ng:#C7362A;         /* 気にかけてほしい */
+  --ngbg:#FCF0EE;
+  --okbg:#F2F6F3;
+  --shadow:0 1px 2px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.04);
+}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 html,body{margin:0;background:var(--bg);color:var(--ink);font-size:17px;line-height:1.7;
+  -webkit-font-smoothing:antialiased;
   font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;}
 button,input,textarea,select{font-family:inherit;font-size:17px;}
-header{position:sticky;top:0;z-index:20;background:var(--ink);color:#fff;
-  padding:calc(12px + env(safe-area-inset-top)) 16px 12px;
+
+/* ---- 上のバー ---- */
+header{position:sticky;top:0;z-index:20;background:rgba(29,29,31,.86);color:#fff;
+  -webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);
+  padding:calc(13px + env(safe-area-inset-top)) 20px 13px;
   display:flex;align-items:center;gap:12px;}
-header b{font-size:19px;font-weight:800;}
-/* ロゴ（check ＋ しるし） */
-.logo{display:inline-flex;align-items:center;gap:8px;letter-spacing:.03em;}
-.logo .ic{width:1.35em;height:1.35em;flex:0 0 auto;}
-header .hsub{font-size:14.5px;font-weight:700;color:rgba(255,255,255,.5);flex:1;}
-header button{background:rgba(255,255,255,.14);color:#fff;border:0;border-radius:100px;
-  padding:9px 17px;font-size:15px;font-weight:700;cursor:pointer;}
-main{max-width:760px;margin:0 auto;padding:14px 14px 60px;}
-.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 16px;margin-bottom:14px;}
-h2{font-size:19px;font-weight:800;margin:0 0 12px;}
-label.f{display:block;font-size:13.5px;font-weight:800;color:var(--ink3);
-  letter-spacing:.04em;margin:12px 0 4px;}
-input[type=text],input[type=password],input[type=email],input[type=date],textarea{
-  width:100%;padding:13px 14px;border:1.5px solid var(--line2);border-radius:11px;background:#fff;}
-input:focus,textarea:focus{outline:none;border-color:var(--ink);}
+header b{font-size:19px;font-weight:600;}
+.logo{display:inline-flex;align-items:center;gap:8px;letter-spacing:.02em;}
+.logo .ic{width:1.3em;height:1.3em;flex:0 0 auto;}
+header .hsub{font-size:14px;font-weight:500;color:rgba(255,255,255,.55);flex:1;}
+header button{background:rgba(255,255,255,.12);color:#fff;border:0;border-radius:100px;
+  padding:8px 18px;font-size:14.5px;font-weight:500;cursor:pointer;transition:background .15s;}
+header button:hover{background:rgba(255,255,255,.2);}
+
+main{max-width:1240px;margin:0 auto;padding:22px 20px 80px;}
+#s-new{max-width:720px;margin:0 auto;}
+
+/* ---- ふつうの箱（枠線なし） ---- */
+.card{background:#fff;border:0;border-radius:20px;padding:26px 24px;margin-bottom:18px;}
+h2{font-size:22px;font-weight:600;letter-spacing:-.01em;margin:0 0 18px;}
+
+label.f{display:block;font-size:13px;font-weight:500;color:var(--ink3);margin:20px 0 7px;}
+input[type=text],input[type=password],input[type=email],input[type=date],textarea,select{
+  width:100%;padding:13px 15px;border:0;border-radius:12px;background:var(--fill);
+  color:var(--ink);appearance:none;-webkit-appearance:none;transition:background .15s,box-shadow .15s;}
+input:hover,textarea:hover,select:hover{background:var(--fill2);}
+input:focus,textarea:focus,select:focus{outline:none;background:#fff;
+  box-shadow:0 0 0 4px rgba(29,29,31,.10);}
 .row{display:flex;gap:10px;}
 .row > *{flex:1;min-width:0;}
-.btn{display:block;width:100%;border:0;border-radius:13px;padding:15px;
-  font-size:17.5px;font-weight:800;background:var(--ink);color:#fff;cursor:pointer;margin-top:16px;}
-.btn.ghost{background:#fff;color:var(--ink);border:1.5px solid var(--line2);}
-.btn.sm{padding:11px 18px;font-size:15px;width:auto;margin:0;border-radius:100px;}
-.btn[disabled]{opacity:.4;}
-.err{color:var(--ng);font-size:15px;font-weight:700;min-height:1.2em;}
 
-/* このタブの説明（1行） */
-.tabnote{font-size:13.5px;color:var(--ink3);line-height:1.7;margin:-4px 0 12px 2px;}
+.btn{display:block;width:100%;border:0;border-radius:100px;padding:15px;
+  font-size:17px;font-weight:500;background:var(--ink);color:#fff;cursor:pointer;margin-top:20px;
+  transition:opacity .15s,background .15s;}
+.btn:hover{opacity:.85;}
+.btn.ghost{background:var(--fill);color:var(--ink);}
+.btn.ghost:hover{background:var(--fill2);opacity:1;}
+.btn.sm{padding:10px 20px;font-size:14.5px;width:auto;margin:0;}
+.btn[disabled]{opacity:.35;}
+.err{color:var(--ng);font-size:14.5px;font-weight:500;min-height:1.2em;}
 
-/* しぼり込みの札。0件のものは出しません（0だらけにならないように） */
-.stats{display:flex;flex-wrap:wrap;gap:7px;align-items:center;margin-bottom:12px;}
-.stats .lab{font-size:12.5px;font-weight:800;color:#A1A1AA;letter-spacing:.06em;margin-right:2px;}
-.stat{display:inline-flex;align-items:center;gap:7px;background:#fff;border:1.5px solid var(--line2);
-  border-radius:100px;padding:8px 14px;font-size:14px;font-weight:700;color:var(--ink2);cursor:pointer;
-  white-space:nowrap;}
-.stat b{font-size:15px;font-weight:800;color:var(--ink);}
-.stat.warn{background:var(--ngbg);border-color:#E7BFB6;color:var(--ng);}
+/* ---- このタブの説明 ---- */
+.tabnote{font-size:13.5px;color:var(--ink3);line-height:1.7;margin:2px 0 16px 4px;}
+
+/* ---- しぼり込みの札 ---- */
+.stats{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:18px;}
+.stats .lab{font-size:12.5px;font-weight:500;color:var(--ink3);margin-right:2px;}
+.stat{display:inline-flex;align-items:center;gap:7px;background:var(--fill);border:0;
+  border-radius:100px;padding:8px 16px;font-size:14px;font-weight:500;color:var(--ink2);
+  cursor:pointer;white-space:nowrap;transition:background .15s,color .15s;}
+.stat:hover{background:var(--fill2);}
+.stat b{font-size:14.5px;font-weight:600;color:var(--ink);}
+.stat.warn{background:var(--ngbg);color:var(--ng);}
 .stat.warn b{color:var(--ng);}
-.stat.on{background:var(--ink);border-color:var(--ink);color:#fff;}
+.stat.on{background:var(--ink);color:#fff;}
 .stat.on b{color:#fff;}
-.stat.warn.on{background:var(--ng);border-color:var(--ng);color:#fff;}
+.stat.warn.on{background:var(--ng);color:#fff;}
+.stat.warn.on b{color:#fff;}
+.stat:active{opacity:.6;}
 
-/* 一覧
-   広い画面では横に並べ、幅に合わせて折り返します。
-   （1枚あたり 330px を下回らないところで、自動で列数が決まります） */
+/* ---- 一覧（広い画面では、幅に合わせて折り返します） ---- */
 #list{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));
-  gap:10px;align-items:start;}
+  gap:14px;align-items:start;}
 #list > p{grid-column:1/-1;}
-.item{background:#fff;border:1px solid var(--line);border-radius:14px;padding:15px 14px;margin-bottom:0;}
-.item.over{border-color:var(--ng);background:var(--ngbg);}
+.item{background:#fff;border:0;border-radius:18px;padding:20px 20px;margin-bottom:0;
+  cursor:pointer;transition:transform .15s,box-shadow .15s;}
+.item:hover{box-shadow:var(--shadow);}
+.item:active{transform:scale(.995);}
+.item.over,.item.exp{background:var(--ngbg);}
 .item.done{background:var(--okbg);}
 .i-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
-.i-h b{font-size:18px;font-weight:800;}
-.pill{font-size:13px;font-weight:800;letter-spacing:.04em;border-radius:100px;
-  padding:4px 12px;border:1px solid var(--line2);color:var(--ink2);background:#fff;white-space:nowrap;}
-.pill.ok{background:var(--ink);border-color:var(--ink);color:#fff;}
-.pill.ng{background:var(--ng);border-color:var(--ng);color:#fff;}
-.i-b{font-size:15px;color:var(--ink3);margin-top:7px;line-height:1.75;}
-.i-a{display:flex;gap:8px;margin-top:9px;flex-wrap:wrap;}
+.i-h b{font-size:18px;font-weight:600;letter-spacing:-.01em;}
+.pill{font-size:12.5px;font-weight:500;border-radius:100px;padding:4px 12px;border:0;
+  color:var(--ink2);background:var(--fill);white-space:nowrap;}
+.pill.ok{background:var(--ink);color:#fff;}
+.pill.ng,.pill.exp{background:var(--ng);color:#fff;}
+.pill.rm{background:#8A5A2B;color:#fff;}
+.i-b{font-size:14.5px;color:var(--ink3);margin-top:10px;line-height:1.8;}
+.i-a{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;}
 
-/* 特約の選択 */
-.cl{display:block;border:1px solid var(--line);border-radius:11px;padding:11px 13px;margin-bottom:7px;cursor:pointer;}
-.cl.on{border-color:var(--ink);background:#FAFAFA;}
-/* 緑：物件ごとに「どれか1つ」を選ぶもの（選び忘れに気づけるように） */
-.cl.g{border-color:#A7D8B8;background:#F7FCF9;}
+/* ---- 督促のようす（カードの中の1行） ---- */
+.i-rm{display:flex;align-items:baseline;gap:7px;flex-wrap:wrap;font-size:14px;
+  margin-top:12px;padding:11px 14px;border-radius:12px;background:var(--fill);border:0;
+  color:var(--ink2);line-height:1.8;}
+.i-rm b{font-weight:600;color:var(--ink);}
+.i-rm.hot{background:#FBF3E9;color:#7C4A16;}
+.i-rm.hot b{color:#7C4A16;}
+.i-rm.plan{background:var(--ngbg);}
+.i-rm.plan b{color:var(--ng);font-size:14.5px;}
+.i-rm.plan span{color:#8C5147;}
+
+/* ---- 特約のえらび ---- */
+.scroll{max-height:360px;overflow-y:auto;border:0;border-radius:16px;padding:8px;background:var(--fill);}
+.cl{display:block;border:0;border-radius:13px;padding:12px 14px;margin-bottom:6px;
+  cursor:pointer;background:#fff;transition:background .15s;}
+.cl:hover{background:#FAFAFA;}
+.cl input{width:20px;height:20px;margin-right:11px;vertical-align:-4px;accent-color:var(--ink);}
+.cl b{font-size:15px;font-weight:500;color:var(--ink3);transition:color .15s;}
+.cl.on b{color:var(--ink);font-weight:600;}
+/* 緑：物件ごとに「どれか1つ」を選ぶもの */
+.cl.g{background:#F0FAF4;}
+.cl.g:hover{background:#E9F7EF;}
 .cl.g input{accent-color:#15803D;}
-.cl.g.on{border-color:#15803D;background:#EFFAF3;}
-.cl input{width:20px;height:20px;margin-right:10px;vertical-align:-4px;accent-color:var(--ink);}
-.cl b{font-size:15.5px;font-weight:700;}
+.cl.g.on b{color:#14532D;}
 .clh{display:flex;align-items:center;gap:8px;}
-.clh .ar{margin-left:auto;font-size:13px;color:#888;flex:0 0 auto;}
+.clh .ar{margin-left:auto;font-size:12px;color:#B0B0B5;flex:0 0 auto;transition:transform .2s;}
 .cl.open .clh .ar{transform:rotate(180deg);}
-.clb{margin-top:9px;}
-.clt{font-size:13.5px;line-height:1.75;color:var(--ink2);white-space:pre-wrap;
-     border:1px solid var(--line);border-radius:9px;padding:9px 11px;background:#fff;margin:0;}
-.cl .m{font-size:12px;font-weight:800;background:var(--ink);color:#fff;border-radius:100px;padding:1px 7px;margin-left:6px;}
-.scroll{max-height:340px;overflow-y:auto;border:1px solid var(--line);border-radius:12px;padding:8px;background:#FAFAFA;}
+.clb{margin-top:11px;}
+.clt{font-size:13.5px;line-height:1.85;color:var(--ink2);white-space:pre-wrap;
+     border:0;border-radius:11px;padding:12px 14px;background:var(--fill);margin:0;}
+.cl .m{font-size:11.5px;font-weight:500;background:var(--fill2);color:var(--ink2);
+  border-radius:100px;padding:2px 9px;margin-left:7px;}
 
-.made{background:#fff;border:2px solid var(--ink);border-radius:14px;padding:14px;margin-top:14px;}
-.made .k{font-size:13px;font-weight:800;color:var(--ink3);letter-spacing:.06em;margin-top:10px;}
-.made .v{font-size:16px;word-break:break-all;background:#F5F5F6;border-radius:9px;padding:8px 10px;margin-top:3px;}
-.made .pass{font-size:34px;font-weight:800;letter-spacing:.28em;text-align:center;}
+/* ---- つくったあとの控え ---- */
+.made{background:var(--fill);border:0;border-radius:18px;padding:20px;margin-top:18px;}
+.made .k{font-size:12.5px;font-weight:500;color:var(--ink3);margin-top:14px;}
+.made .v{font-size:15.5px;word-break:break-all;background:#fff;border-radius:11px;
+  padding:11px 13px;margin-top:5px;}
+.made .pass{font-size:32px;font-weight:600;letter-spacing:.24em;text-align:center;}
+
 .hide{display:none !important;}
-#veil{position:fixed;inset:0;z-index:60;background:rgba(255,255,255,.9);display:none;
-  align-items:center;justify-content:center;font-weight:800;}
+#veil{position:fixed;inset:0;z-index:60;background:rgba(245,245,247,.82);
+  -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);display:none;
+  align-items:center;justify-content:center;font-weight:500;color:var(--ink2);}
 #veil.on{display:flex;}
-.thumb{width:100%;border-radius:11px;border:1px solid var(--line);margin-top:8px;display:block;}
+.thumb{width:100%;border-radius:14px;border:0;margin-top:10px;display:block;background:var(--fill);}
 
-/* ============ ここから追加 ============ */
+/* ---- 年度・月・エリアのえらび ---- */
+.filt{display:flex;gap:10px;margin-bottom:14px;max-width:900px;}
+.filt select{flex:1;min-width:0;padding:11px 14px;border:0;border-radius:12px;
+  background:var(--fill);font-size:14.5px;font-weight:500;color:var(--ink);}
 
-/* 期間のえらび（年度・月） */
-.filt{display:flex;gap:8px;margin-bottom:12px;}
-.filt select{flex:1;min-width:0;padding:12px 12px;border:1.5px solid var(--line2);
-  border-radius:11px;background:#fff;font-weight:700;color:var(--ink);}
-
-/* 集計の札は押せます（押すと、その中身だけの一覧になります） */
-.tabs3{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;}
+/* ---- タブ（Apple の切りかえボタンのような形） ---- */
+.tabs3{display:grid;grid-template-columns:repeat(4,1fr);gap:3px;margin-bottom:14px;
+  max-width:900px;background:var(--fill);padding:3px;border-radius:14px;}
 @media (max-width:640px){ .tabs3{grid-template-columns:repeat(2,1fr);} }
-.tabs3 button{padding:12px 4px;border-radius:12px;border:1.5px solid var(--line2);
-  background:#fff;font:inherit;font-size:14.5px;font-weight:800;color:var(--ink3);cursor:pointer;
-  min-width:0;white-space:nowrap;}
-/* 仲介へ確認は、いちばん先に手を打つところなので、色を付けます */
-.tabs3 button[data-t=agent]{border-color:#FDBA74;color:#9A3412;background:#FFF7ED;}
-.tabs3 button[data-t=agent].on{background:#9A3412;border-color:#9A3412;color:#fff;}
-.tabs3 button.on{background:var(--ink);border-color:var(--ink);color:#fff;}
-.tabs3 button i{font-style:normal;font-weight:800;opacity:.75;}
-.pill.exp{background:var(--ng);color:#fff;border-color:var(--ng);}
-.pill.rm{background:#B45309;color:#fff;border-color:#B45309;}
-/* ---- ログイン画面（モノクロ） ---- */
-#s-key{min-height:calc(100vh - 120px);display:flex;align-items:center;justify-content:center;}
-.login{width:100%;max-width:340px;text-align:center;padding:8px 0 40px;}
-.login-mark{width:78px;height:78px;margin:0 auto 16px;border-radius:22px;background:var(--ink);
+.tabs3 button{padding:11px 4px;border-radius:11px;border:0;background:transparent;
+  font:inherit;font-size:14px;font-weight:500;color:var(--ink3);cursor:pointer;
+  min-width:0;white-space:nowrap;transition:background .18s,color .18s,box-shadow .18s;}
+.tabs3 button:hover{color:var(--ink2);}
+.tabs3 button[data-t=agent]{color:var(--ng);}
+.tabs3 button.on{background:#fff;color:var(--ink);font-weight:600;
+  box-shadow:0 1px 3px rgba(0,0,0,.10);}
+.tabs3 button[data-t=agent].on{color:var(--ng);}
+.tabs3 button i{font-style:normal;font-weight:500;opacity:.6;margin-left:2px;}
+
+/* ---- ログイン画面 ---- */
+#s-key{min-height:calc(100vh - 140px);display:flex;align-items:center;justify-content:center;}
+.login{width:100%;max-width:330px;text-align:center;padding:8px 0 40px;}
+.login-mark{width:76px;height:76px;margin:0 auto 20px;border-radius:22px;background:var(--ink);
   color:#fff;display:flex;align-items:center;justify-content:center;}
-.login-mark .ic{width:46px;height:46px;}
-.login-name{font-size:44px;font-weight:900;letter-spacing:.06em;line-height:1.1;color:var(--ink);}
-.login-sub{font-size:13px;color:var(--ink3);letter-spacing:.10em;margin-top:6px;margin-bottom:28px;}
-.login-lab{display:block;text-align:left;font-size:12px;font-weight:800;color:var(--ink3);
-  letter-spacing:.16em;text-transform:uppercase;margin-bottom:6px;}
-.login input{width:100%;padding:14px 15px;border:1.5px solid var(--line2);border-radius:12px;
-  background:#fff;font-size:16px;text-align:center;letter-spacing:.14em;}
-.login input:focus{outline:none;border-color:var(--ink);}
-.login .btn{width:100%;margin-top:16px;border-radius:14px;padding:16px;font-size:17px;}
-.login .err{margin-top:14px;font-size:13.5px;}
-.login-foot{margin-top:26px;font-size:11.5px;color:#A1A1AA;letter-spacing:.10em;}
+.login-mark .ic{width:44px;height:44px;}
+.login-name{font-size:42px;font-weight:600;letter-spacing:.02em;line-height:1.1;color:var(--ink);}
+.login-sub{font-size:13px;color:var(--ink3);letter-spacing:.06em;margin-top:8px;margin-bottom:34px;}
+.login-lab{display:block;text-align:left;font-size:12px;font-weight:500;color:var(--ink3);
+  letter-spacing:.14em;text-transform:uppercase;margin-bottom:7px;}
+.login input{width:100%;padding:14px 16px;border:0;border-radius:12px;
+  background:var(--fill);font-size:16px;text-align:center;letter-spacing:.14em;}
+.login .btn{width:100%;margin-top:14px;padding:15px;font-size:16.5px;}
+.login .err{margin-top:16px;font-size:13.5px;}
+.login-foot{margin-top:32px;font-size:11.5px;color:#B0B0B5;letter-spacing:.08em;}
 
-/* 裏で最新を取りにいっているあいだの表示 */
-.sync{flex:0 0 auto;align-self:center;font-size:12.5px;font-weight:700;color:var(--ink3);
-  letter-spacing:.02em;white-space:nowrap;}
+.sync{flex:0 0 auto;align-self:center;font-size:12.5px;font-weight:500;color:var(--ink3);
+  white-space:nowrap;}
 
-/* つくったあとのお知らせ（数秒で消えます） */
-.flash{background:#F1F5F2;border:1.5px solid #A7C4B0;color:#1F3D2B;border-radius:12px;
-  padding:13px 15px;font-size:15px;font-weight:700;line-height:1.7;margin-bottom:12px;}
-.flash b{font-weight:800;}
-/* 督促のようす（カードの中の1行） */
-.i-rm{display:flex;align-items:baseline;gap:7px;flex-wrap:wrap;font-size:14.5px;
-  margin-top:6px;padding:7px 10px;border-radius:9px;background:#FAFAFA;
-  border:1px solid var(--line);color:var(--ink2);line-height:1.7;}
-.i-rm b{font-weight:800;color:var(--ink);}
-.i-rm.hot{background:#FFF7ED;border-color:#FDBA74;color:#9A3412;}
-.i-rm.hot b{color:#9A3412;}
-/* これから自動で督促を送る予定（赤字で目立たせます） */
-.i-rm.plan{background:var(--ngbg);border-color:#E7BFB6;}
-.i-rm.plan b{color:var(--ng);font-size:15px;}
-.i-rm.plan span{color:#8C4436;}
-.item.exp{border-color:var(--ng);}
-#agbox{position:fixed;inset:0;z-index:220;background:rgba(0,0,0,.55);display:none;
-  align-items:center;justify-content:center;padding:14px;}
+/* ---- つくったあとのお知らせ ---- */
+.flash{background:#EAF3EC;border:0;color:#1F3D2B;border-radius:16px;
+  padding:16px 18px;font-size:14.5px;font-weight:500;line-height:1.8;margin-bottom:16px;}
+.flash b{font-weight:600;}
+
+/* ---- 仲介への連絡（かさねて出す画面） ---- */
+#agbox{position:fixed;inset:0;z-index:220;background:rgba(0,0,0,.4);
+  -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);display:none;
+  align-items:center;justify-content:center;padding:16px;}
 #agbox.on{display:flex;}
-#agbox .in{background:#fff;border-radius:14px;max-width:760px;width:100%;max-height:90vh;
+#agbox .in{background:#fff;border-radius:20px;max-width:760px;width:100%;max-height:90vh;
   display:flex;flex-direction:column;overflow:hidden;}
-#agbox .hd{padding:13px 15px;border-bottom:1px solid var(--line);}
-#agbox .hd b{font-size:16px;}
-#agbox .hd p{margin:4px 0 0;font-size:13px;color:var(--ink3);line-height:1.7;}
+#agbox .hd{padding:20px 22px 14px;border:0;}
+#agbox .hd b{font-size:17px;font-weight:600;}
+#agbox .hd p{margin:6px 0 0;font-size:13px;color:var(--ink3);line-height:1.7;}
 #agbox input,#agbox textarea{width:100%;box-sizing:border-box;font:inherit;font-size:14px;
-  border:1px solid var(--line);border-radius:9px;padding:9px 11px;margin:0 0 8px;}
-#agbox textarea{min-height:280px;line-height:1.8;resize:vertical;}
-#agbox .bd{padding:13px 15px;overflow:auto;}
-#agbox .ft{display:flex;gap:8px;padding:12px 15px;border-top:1px solid var(--line);}
+  border:0;border-radius:12px;padding:12px 14px;margin:0 0 10px;background:var(--fill);}
+#agbox textarea{min-height:280px;line-height:1.85;resize:vertical;}
+#agbox .bd{padding:0 22px 6px;overflow:auto;}
+#agbox .ft{display:flex;gap:10px;padding:14px 22px 20px;border:0;}
 
-/* 札の押し心地（見た目そのものは、上の .stat のところで決めています） */
-.stat{transition:background .12s,border-color .12s,color .12s;}
-.stat:active{opacity:.7;}
-
-/* 一覧の1件も押せます（押すと中身が開きます） */
-.item{cursor:pointer;}
-.item:active{background:#F4F4F5;}
-
-/* 中身を見る画面 */
+/* ---- 中身を見る画面 ---- */
 #detail{position:fixed;inset:0;z-index:50;background:var(--bg);overflow-y:auto;display:none;}
 #detail.on{display:block;}
-#detail .inner{max-width:760px;margin:0 auto;padding:14px 14px 60px;}
-.d-bar{position:sticky;top:0;z-index:2;background:var(--ink);color:#fff;
-  padding:calc(12px + env(safe-area-inset-top)) 16px 12px;display:flex;align-items:center;gap:12px;}
-.d-bar b{font-size:19px;font-weight:800;flex:1;}
-.d-bar button{background:rgba(255,255,255,.14);color:#fff;border:0;border-radius:100px;
-  padding:9px 17px;font-size:15px;font-weight:700;cursor:pointer;}
-.d-k{font-size:13px;font-weight:800;color:var(--ink3);letter-spacing:.06em;margin:16px 0 7px;}
-.d-item{border:1px solid var(--line);border-radius:12px;padding:13px;margin-bottom:8px;background:#fff;}
-.d-item.ng{border-color:var(--ng);background:var(--ngbg);}
-.d-item b{font-size:16px;font-weight:800;display:block;}
-.d-item p{margin:7px 0 0;font-size:15px;color:var(--ink2);white-space:pre-wrap;}
-.ph{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-top:10px;}
-.ph a{display:block;border:1px solid var(--line);border-radius:10px;
-  overflow:hidden;background:#fff;text-align:center;text-decoration:none;}
-.ph img{width:100%;height:140px;object-fit:cover;display:block;background:#F0F0F1;}
-.ph span{display:block;font-size:13px;font-weight:800;padding:9px 4px;color:var(--ink2);}
-/* ============ ここまで追加 ============ */
+#detail .inner{max-width:760px;margin:0 auto;padding:22px 20px 80px;}
+.d-bar{position:sticky;top:0;z-index:2;background:rgba(29,29,31,.86);color:#fff;
+  -webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);
+  padding:calc(13px + env(safe-area-inset-top)) 20px 13px;display:flex;align-items:center;gap:12px;}
+.d-bar b{font-size:19px;font-weight:600;flex:1;}
+.d-bar button{background:rgba(255,255,255,.12);color:#fff;border:0;border-radius:100px;
+  padding:8px 18px;font-size:14.5px;font-weight:500;cursor:pointer;}
+.d-bar button:hover{background:rgba(255,255,255,.2);}
+.d-k{font-size:12.5px;font-weight:500;color:var(--ink3);margin:26px 0 10px 4px;}
+.d-item{border:0;border-radius:16px;padding:18px 20px;margin-bottom:10px;background:#fff;}
+.d-item.ng{background:var(--ngbg);}
+.d-item b{font-size:16px;font-weight:600;display:block;}
+.d-item p{margin:9px 0 0;font-size:14.5px;color:var(--ink2);white-space:pre-wrap;line-height:1.8;}
+.ph{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-top:12px;}
+.ph a{display:block;border:0;border-radius:14px;overflow:hidden;background:var(--fill);
+  text-align:center;text-decoration:none;}
+.ph img{width:100%;height:140px;object-fit:cover;display:block;background:var(--fill2);}
+.ph span{display:block;font-size:12.5px;font-weight:500;padding:10px 4px;color:var(--ink2);}
 </style>
 </head>
 <body>
@@ -289,7 +325,7 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
     <div class="tabnote" id="tabnote"></div>
     <div class="stats" id="stats"></div>
     <div class="card" style="padding:12px;">
-      <div class="row" style="margin-bottom:10px;">
+      <div class="row" style="margin-bottom:10px;max-width:900px;">
         <input type="text" id="q" placeholder="物件名・お名前で探す">
         <span id="sync" class="sync hide">最新を確認中…</span>
         <button class="btn sm ghost" id="reload" style="flex:0 0 auto;">更新</button>
@@ -859,9 +895,10 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
       }else if(!fin){
         /* 印の付かなかった特約が1つでもあれば出します（理由は問いません）。
            仲介のメールが未登録でも、その場で宛先を入れて送れます。 */
+        /* 連絡ずみかどうかは、上の「仲介へ連絡 ○/○」の行で分かるので、
+           ボタンの名前は変えません（「もう一度」は分かりにくい、というご指摘） */
         if(Number(r.noCheck||0) > 0){
-          acts.push('<button class="btn sm ghost act-agent">' +
-                    (r.agentAt ? 'もう一度 仲介へ連絡' : '仲介へ連絡する') + '</button>');
+          acts.push('<button class="btn sm ghost act-agent">仲介へ連絡する</button>');
         }
         acts.push('<button class="btn sm act-done">完了にする</button>');
       }else{
