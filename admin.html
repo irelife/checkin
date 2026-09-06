@@ -64,12 +64,8 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
 .clh .ar{margin-left:auto;font-size:13px;color:#888;flex:0 0 auto;}
 .cl.open .clh .ar{transform:rotate(180deg);}
 .clb{margin-top:9px;}
-.cle{width:100%;box-sizing:border-box;font:inherit;font-size:13.5px;line-height:1.75;
-     border:1px solid var(--line);border-radius:9px;padding:9px 11px;min-height:96px;background:#fff;}
-.cl.edited{border-color:#c2410c;}
-.cl.edited .clh b:after{content:'（直しました）';font-size:11px;color:#c2410c;font-weight:700;margin-left:6px;}
-.warn{background:#fff7ed;border:1px solid #fdba74;color:#9a3412;border-radius:10px;
-      padding:10px 12px;font-size:13px;line-height:1.8;margin:8px 0;}
+.clt{font-size:13.5px;line-height:1.75;color:var(--ink2);white-space:pre-wrap;
+     border:1px solid var(--line);border-radius:9px;padding:9px 11px;background:#fff;margin:0;}
 .cl .m{font-size:12px;font-weight:800;background:var(--ink);color:#fff;border-radius:100px;padding:1px 7px;margin-left:6px;}
 .scroll{max-height:340px;overflow-y:auto;border:1px solid var(--line);border-radius:12px;padding:8px;background:#FAFAFA;}
 
@@ -98,6 +94,10 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
 .tabs3 button i{font-style:normal;font-weight:800;opacity:.75;}
 .pill.exp{background:var(--ng);color:#fff;border-color:var(--ng);}
 .pill.rm{background:#B45309;color:#fff;border-color:#B45309;}
+/* つくったあとのお知らせ（数秒で消えます） */
+.flash{background:#F1F5F2;border:1.5px solid #A7C4B0;color:#1F3D2B;border-radius:12px;
+  padding:13px 15px;font-size:15px;font-weight:700;line-height:1.7;margin-bottom:12px;}
+.flash b{font-weight:800;}
 /* 督促のようす（カードの中の1行） */
 .i-rm{display:flex;align-items:baseline;gap:7px;flex-wrap:wrap;font-size:14.5px;
   margin-top:6px;padding:7px 10px;border-radius:9px;background:#FAFAFA;
@@ -198,11 +198,9 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
       <input type="file" id="f-plan" accept="image/*">
       <img id="plan-th" class="thumb hide" alt="">
       <label class="f">この契約に該当する特約（チェックしたものだけ入居者に出ます／<b>タイトルを押すと文面が開きます</b>）</label>
-      <div id="cl-warn" class="warn hide"></div>
       <div class="row" style="margin-bottom:8px;">
         <button type="button" class="btn ghost sm" id="cl-all">全選択</button>
         <button type="button" class="btn ghost sm" id="cl-none">全解除</button>
-        <button type="button" class="btn ghost sm" id="cl-out" style="margin-left:auto;">特約の文面を書き出す</button>
       </div>
       <div class="scroll" id="cl-list"></div>
       <label class="f">個別に伝えたいこと（1行に1件。入居者側でも印を付けていただきます）</label>
@@ -218,6 +216,7 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
 
   <!-- 一覧 -->
   <section id="s-list" class="hide">
+    <div id="flash" class="flash hide"></div>
     <div class="filt">
       <select id="f-fy"></select>
       <select id="f-mo"></select>
@@ -309,51 +308,46 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
   });
   try{ var k = localStorage.getItem('ire_checkin_key'); if(k) $('#key').value = k; }catch(e){}
 
+  /* 一覧のいちばん上に、しばらく出るお知らせ */
+  var _flashT = null;
+  function flash(html){
+    var el = $('#flash');
+    el.innerHTML = html;
+    el.classList.remove('hide');
+    if(_flashT) clearTimeout(_flashT);
+    _flashT = setTimeout(function(){ el.classList.add('hide'); el.innerHTML = ''; }, 12000);
+  }
+
   function show(which){
     $('#s-new').classList.toggle('hide', which !== 'new');
     $('#s-list').classList.toggle('hide', which !== 'list');
     window.scrollTo(0,0);
   }
-  $('#tab-new').addEventListener('click', function(){ if(KEY) show('new'); });
+  $('#tab-new').addEventListener('click', function(){
+    if(!KEY) return;
+    $('#flash').classList.add('hide'); $('#flash').innerHTML = '';
+    show('new');
+  });
   $('#tab-list').addEventListener('click', function(){ if(KEY){ show('list'); reload(); } });
 
-  /* ---- 特約の一覧（タイトルを押すと文面が開きます。文面はその場で直せます） ----
+  /* ---- 特約の一覧（タイトルを押すと文面が開きます。読むだけです） ----
 
-     直した文面は、この端末に控えます。
-     ほかの人にも反映するには「特約の文面を書き出す」で clauses.js を作り、
-     GitHub の checkin/clauses.js に貼り替えてください。
-     貼り替えるまでは、この画面にオレンジの注意が出ます。         */
-  var EDKEY = 'checkin_clause_edit';
-  function edLoad(){ try{ return JSON.parse(localStorage.getItem(EDKEY) || '{}') || {}; }catch(e){ return {}; } }
-  function edSave(o){ try{ localStorage.setItem(EDKEY, JSON.stringify(o||{})); }catch(e){} }
-  var EDITS = edLoad();
-
-  function bodyOf(c){ return (EDITS[c.t] !== undefined) ? EDITS[c.t] : c.b; }
-
-  function edWarn(){
-    var k = Object.keys(EDITS), el = $('#cl-warn');
-    if(!k.length){ el.classList.add('hide'); el.innerHTML = ''; return; }
-    el.classList.remove('hide');
-    el.innerHTML = '⚠️ 文面を ' + k.length + ' 件 直しました。<b>この端末にしか残っていません。</b><br>' +
-                   '「特約の文面を書き出す」を押して、GitHub の <b>checkin/clauses.js</b> に貼り替えてください。';
-  }
+     文面は checkin/clauses.js が正です。直すときは GitHub の
+     checkin/clauses.js を書き替えてください（全員に同じ文面が出ます）。  */
 
   function drawClauses(){
     $('#cl-list').innerHTML = (window.CLAUSES||[]).map(function(c){
-      var ed = (EDITS[c.t] !== undefined);
-      return '<div class="cl' + (ed ? ' edited' : '') + '" data-t="' + esc(c.t) + '">' +
+      return '<div class="cl" data-t="' + esc(c.t) + '">' +
         '<div class="clh"><input type="checkbox">' +
           '<b>' + esc(c.t) + '</b>' + (c.money ? '<span class="m">お金</span>' : '') +
           '<span class="ar">▾</span></div>' +
-        '<div class="clb hide"><textarea class="cle" rows="4">' + esc(bodyOf(c)) + '</textarea></div>' +
+        '<div class="clb hide"><p class="clt">' + esc(c.b) + '</p></div>' +
       '</div>';
     }).join('');
 
     $$('#cl-list .cl').forEach(function(el){
-      var t   = el.getAttribute('data-t');
       var box = el.querySelector('input');
       var bd  = el.querySelector('.clb');
-      var ta  = el.querySelector('.cle');
 
       box.addEventListener('click', function(ev){ ev.stopPropagation(); });
       box.addEventListener('change', function(){ el.classList.toggle('on', box.checked); });
@@ -363,120 +357,17 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
         bd.classList.toggle('hide');
         el.classList.toggle('open', !bd.classList.contains('hide'));
       });
-
-      ta.addEventListener('click', function(ev){ ev.stopPropagation(); });
-      ta.addEventListener('input', function(){
-        var org = '';
-        (window.CLAUSES||[]).forEach(function(c){ if(c.t === t) org = c.b; });
-        if(ta.value === org) delete EDITS[t]; else EDITS[t] = ta.value;
-        edSave(EDITS);
-        el.classList.toggle('edited', EDITS[t] !== undefined);
-        edWarn();
-      });
     });
-    edWarn();
   }
   drawClauses();
+
+  /* 前に画面で直した文面の控えが残っていれば、片づけます（もう使いません） */
+  try{ localStorage.removeItem('checkin_clause_edit'); }catch(e){}
 
   $('#cl-all').addEventListener('click', function(){
     $$('#cl-list .cl').forEach(function(e){ e.querySelector('input').checked = true; e.classList.add('on'); }); });
   $('#cl-none').addEventListener('click', function(){
     $$('#cl-list .cl').forEach(function(e){ e.querySelector('input').checked = false; e.classList.remove('on'); }); });
-
-  /* 直した文面を入れた clauses.js を作って、ダウンロードします */
-  $('#cl-out').addEventListener('click', function(){
-    function q(v){ return "'" + String(v == null ? '' : v).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\r?\n/g, '\\n') + "'"; }
-    var L = [];
-    L.push('/* =====================================================================');
-    L.push('   重要事項説明書の 特約事項（入居者に確認していただく内容）');
-    L.push('   ※ 管理画面の「特約の文面を書き出す」で作りました  ' + new Date().toLocaleString('ja-JP'));
-    L.push('   ===================================================================== */');
-    L.push('window.CLAUSES = [');
-    (window.CLAUSES||[]).forEach(function(c, i, arr){
-      L.push('  { no:' + c.no + ', money:' + (c.money ? 'true' : 'false') + ', t:' + q(c.t) + ',');
-      L.push('    b:' + q(bodyOf(c)) + ' }' + (i < arr.length - 1 ? ',' : ''));
-    });
-    L.push('];');
-    L.push('');
-    L.push('/* 室内で見ていただく場所（既定） */');
-    L.push('window.PLACES = [');
-    L.push('  ' + (window.PLACES||[]).map(q).join(',\n  ') );
-    L.push('];');
-    L.push('');
-    L.push('/* 暮らしのルール（お住まいのあいだ、守っていただくこと） */');
-    L.push('window.MANNERS = [');
-    L.push('  ' + (window.MANNERS||[]).map(q).join(',\n  ') );
-    L.push('];');
-    var txt = L.join('\n') + '\n';
-    showOut(txt);
-  });
-
-  /* 書き出した文面を、画面に出します。
-     以前はファイルとして落としていましたが、.js は Windows がメモ帳で開いてくれず、
-     「開かない」ということが起きました。GitHub へ貼るだけなので、
-     画面に出して「すべてコピー」できれば十分です。 */
-  function showOut(txt){
-    var back = document.getElementById('out-back');
-    if(!back){
-      back = document.createElement('div');
-      back.id = 'out-back';
-      back.style.cssText = 'position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.55);' +
-                           'display:flex;align-items:center;justify-content:center;padding:16px;';
-      back.innerHTML =
-        '<div style="background:#fff;border-radius:14px;max-width:820px;width:100%;' +
-             'max-height:88vh;display:flex;flex-direction:column;overflow:hidden;">' +
-          '<div style="padding:14px 16px;border-bottom:1px solid #e4e4e7;">' +
-            '<div style="font-size:16px;font-weight:800;">特約の文面（clauses.js）</div>' +
-            '<div style="font-size:13px;color:#71717a;margin-top:4px;line-height:1.7;">' +
-              '下の「すべてコピー」を押してから、GitHub の <b>checkin/clauses.js</b> を開いて、' +
-              '中身を全部消して貼り付けてください。<br>' +
-              '貼り替えたら、この画面の「直しました」の印は消して構いません。' +
-            '</div>' +
-          '</div>' +
-          '<textarea id="out-txt" readonly spellcheck="false" ' +
-            'style="flex:1;min-height:300px;margin:0;border:0;border-bottom:1px solid #e4e4e7;' +
-                   'padding:12px 14px;font-family:ui-monospace,Menlo,Consolas,monospace;' +
-                   'font-size:12.5px;line-height:1.6;resize:none;outline:none;"></textarea>' +
-          '<div style="display:flex;gap:8px;padding:12px 16px;">' +
-            '<button type="button" id="out-copy" class="btn" style="flex:1;">すべてコピー</button>' +
-            '<button type="button" id="out-save" class="btn ghost" style="flex:0 0 34%;">.txt で保存</button>' +
-            '<button type="button" id="out-close" class="btn ghost" style="flex:0 0 20%;">閉じる</button>' +
-          '</div>' +
-        '</div>';
-      document.body.appendChild(back);
-
-      back.addEventListener('click', function(e){ if(e.target === back) back.style.display = 'none'; });
-      document.getElementById('out-close').addEventListener('click', function(){ back.style.display = 'none'; });
-
-      document.getElementById('out-copy').addEventListener('click', function(){
-        var ta = document.getElementById('out-txt'), btn = this;
-        ta.focus(); ta.select(); ta.setSelectionRange(0, ta.value.length);
-        var done = false;
-        try{ done = document.execCommand('copy'); }catch(e){}
-        if(!done && navigator.clipboard){
-          navigator.clipboard.writeText(ta.value).then(function(){
-            btn.textContent = 'コピーしました'; setTimeout(function(){ btn.textContent = 'すべてコピー'; }, 1600);
-          }, function(){ alert('コピーできませんでした。文字を選んで Ctrl+C を押してください。'); });
-          return;
-        }
-        btn.textContent = done ? 'コピーしました' : 'コピーできませんでした';
-        setTimeout(function(){ btn.textContent = 'すべてコピー'; }, 1600);
-      });
-
-      document.getElementById('out-save').addEventListener('click', function(){
-        try{
-          var a = document.createElement('a');
-          a.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(document.getElementById('out-txt').value);
-          a.download = 'clauses_貼り付け用.txt';       /* .js だと開けないので .txt にします */
-          document.body.appendChild(a); a.click(); a.remove();
-        }catch(e){ alert('保存できませんでした： ' + e.message); }
-      });
-    }
-    back.style.display = 'flex';
-    var t = document.getElementById('out-txt');
-    t.value = txt;
-    t.focus(); t.select();
-  }
 
   /* ---- 間取り図 ---- */
   $('#f-plan').addEventListener('change', function(){
@@ -524,20 +415,20 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
     post(body).then(function(res){
       veil(false);
       if(!res.ok){ $('#new-err').textContent = res.err || 'つくれませんでした。'; return; }
-      $('#made').classList.remove('hide');
-      $('#made').innerHTML =
-        '<b>つくりました' + (sendMail ? '（入居者へメールを送りました）' : '（メールは送っていません）') + '</b>' +
-        '<div class="k">入力ページ</div><div class="v" id="mv-url">' + esc(res.url) + '</div>' +
-        '<div class="k">パスワード</div><div class="v pass">' + esc(res.pass) + '</div>' +
-        '<button class="btn ghost sm" id="copy" style="margin-top:12px;">案内文をコピー</button>';
-      $('#copy').addEventListener('click', function(){
-        var t = body.name + ' 様\n\n' +
-          body.bldg + ' ' + body.room + ' のお部屋の確認をお願いいたします。\n\n' +
-          '▼ 入力ページ\n' + res.url + '\n　パスワード： ' + res.pass + '\n';
-        navigator.clipboard.writeText(t).then(function(){ $('#copy').textContent = 'コピーしました'; });
-      });
+      /* 書きかけを消します（エリア・仲介・特約のチェックは、続けて作れるよう残します） */
       ['#f-bldg','#f-room','#f-name','#f-mail','#f-memo','#f-extra'].forEach(function(s){ $(s).value=''; });
       planData = null; $('#plan-th').classList.add('hide'); $('#f-plan').value='';
+      $('#made').classList.add('hide'); $('#made').innerHTML = '';
+
+      /* つくったら、そのまま一覧へ戻ります。
+         いま作ったものは「未返信」に入るので、そのタブを開いておきます。 */
+      TAB = 'waiting';
+      FILT = '';
+      show('list');
+      reload();
+      flash('<b>✅ つくりました。入居者へメールを送りました。</b><br>' +
+            esc(body.bldg) + ' ' + esc(body.room) + '　' + esc(body.name) + ' 様<br>' +
+            'パスワードは、下のカードを押すと見られます。');
     }).catch(function(){ veil(false); $('#new-err').textContent = '通信できませんでした。'; });
   }
   $('#new-go').addEventListener('click', function(){ create(true); });
