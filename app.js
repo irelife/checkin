@@ -44,7 +44,9 @@
       'お手数ですが、弊社ホームページの<b>お問い合わせ</b>よりご連絡くださいますよう、' +
       'くれぐれもよろしくお願いいたします。</p>' +
       (hp ? ('<a class="hp" href="' + esc(hp) + '" target="_blank" rel="noopener">' +
-             'お問い合わせページをひらく</a>') : '');
+             (/contact|inquiry|toiawase|form/i.test(hp)
+                ? 'お問い合わせページをひらく'
+                : '弊社ホームページをひらく') + '</a>') : '');
   }
 
   function $(s){ return document.querySelector(s); }
