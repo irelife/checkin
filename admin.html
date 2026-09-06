@@ -113,6 +113,34 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
 .i-b{font-size:14.5px;color:var(--ink3);margin-top:10px;line-height:1.8;}
 .i-a{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;}
 
+/* ---- 絵柄（線画）------------------------------------------------------
+   ・すべて画面のなかに直接描いています。外から画像を読みません。
+   ・線は細く、色は文字の色をそのまま使います。うるさくならないように。
+   -------------------------------------------------------------------- */
+.i-ic{width:38px;height:38px;flex:0 0 auto;border-radius:12px;
+  display:inline-flex;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.055);color:var(--ink2);}
+.i-ic svg{width:20px;height:20px;display:block;}
+.i-ic.ng{background:rgba(199,54,42,.12);color:var(--ng);}
+.i-ic.gd{background:rgba(45,122,74,.12);color:#2D7A4A;}
+.i-ic.ok{background:var(--ink);color:#fff;}
+
+/* 1件もないとき */
+.blank{grid-column:1/-1;text-align:center;padding:46px 20px 40px;}
+.blank .ring{width:96px;height:96px;margin:0 auto 18px;border-radius:50%;
+  background:rgba(0,0,0,.04);color:var(--ink3);
+  display:flex;align-items:center;justify-content:center;}
+.blank .ring svg{width:42px;height:42px;display:block;}
+.blank b{display:block;font-size:16.5px;font-weight:600;color:var(--ink2);}
+.blank span{display:block;font-size:14px;color:var(--ink3);margin-top:5px;}
+
+/* いちばん下の街なみ */
+.foot{padding:58px 0 6px;text-align:center;}
+.foot svg{width:min(560px,86%);height:auto;display:block;margin:0 auto;
+  color:var(--ink3);opacity:.3;}
+.foot .ft{font-size:12.5px;color:var(--ink3);margin-top:10px;letter-spacing:.04em;}
+
+
 /* ---- 督促のようす（カードの中の1行） ---- */
 .i-rm{display:flex;align-items:baseline;gap:7px;flex-wrap:wrap;font-size:14px;
   margin-top:12px;padding:11px 14px;border-radius:12px;background:var(--fill);border:0;
@@ -335,6 +363,31 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
         <button class="btn sm ghost" id="reload" style="flex:0 0 auto;">更新</button>
       </div>
       <div id="list"></div>
+    </div>
+
+    <!-- いちばん下の街なみ（ただの絵です。押しても何も起きません） -->
+    <div class="foot" aria-hidden="true">
+      <svg viewBox="0 0 560 124" fill="none" stroke="currentColor" stroke-width="1.6"
+           stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="492" cy="26" r="13"/>
+        <path d="M60 112V52h70v60"/>
+        <path d="M74 64h14M74 78h14M74 92h14M102 64h14M102 78h14M102 92h14"/>
+        <path d="M140 112V28h54v84"/>
+        <path d="M152 40h12M152 56h12M152 72h12M152 88h12M172 40h12M172 56h12M172 72h12M172 88h12"/>
+        <path d="M204 112V66h86v46"/>
+        <path d="M198 68l49-24 49 24"/>
+        <path d="M222 112V88h20v24"/>
+        <path d="M258 80h18v14h-18z"/>
+        <path d="M300 112V40h58v72"/>
+        <path d="M312 52h14M312 68h14M312 84h14M334 52h14M334 68h14M334 84h14"/>
+        <path d="M370 112V62h76v50"/>
+        <path d="M364 64l44-20 44 20"/>
+        <path d="M388 78h18v16h-18zM418 78h18v16h-18z"/>
+        <path d="M472 112V96"/><circle cx="472" cy="86" r="13"/>
+        <path d="M508 112V99"/><circle cx="508" cy="90" r="10"/>
+        <path d="M20 112h520"/>
+      </svg>
+      <div class="ft">IREライフ株式会社　入居時チェック</div>
     </div>
   </section>
 
@@ -864,6 +917,41 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
            'は、自動督促は出ません</span></div>';
   }
 
+  /* ---- 線画のもと（20px の升目に描いています）----
+       home … お部屋の話　／　doc … ご説明（特約）の話
+       mail … まだ返信がない　／　clock … 期限をすぎた　／　check … 済んだ    */
+  var GLYPH = {
+    home : '<path d="M3 10.2 12 3l9 7.2"/><path d="M5.6 9.2V20a1 1 0 0 0 1 1h10.8a1 1 0 0 0 1-1V9.2"/>'
+         + '<path d="M10 21v-5.4h4V21"/>',
+    doc  : '<path d="M6.2 2.8h7.6L18 7v14.2H6.2z"/><path d="M13.6 2.8V7H18"/>'
+         + '<path d="M9 12h6M9 15.6h6M9 8.4h2.4"/>',
+    mail : '<path d="M3.2 5.8h17.6v12.4H3.2z"/><path d="m3.6 6.4 8.4 6 8.4-6"/>',
+    clock: '<circle cx="12" cy="12" r="9"/><path d="M12 6.8V12l3.6 2.2"/>',
+    check: '<circle cx="12" cy="12" r="9"/><path d="m7.8 12.2 2.9 2.9 5.5-6"/>',
+    chat : '<path d="M4.2 4.6h15.6a1.2 1.2 0 0 1 1.2 1.2v8.8a1.2 1.2 0 0 1-1.2 1.2h-8.3L7.4 19.4v-3.6H4.2'
+         + 'A1.2 1.2 0 0 1 3 14.6V5.8a1.2 1.2 0 0 1 1.2-1.2Z"/><path d="M7.4 8.6h9.2M7.4 11.9h6"/>'
+  };
+  function svg(name, cls){
+    return '<svg class="' + (cls||'') + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+         + 'stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+         + (GLYPH[name] || '') + '</svg>';
+  }
+
+  /* 1件もないときに出す絵とことば（タブごとに変えます） */
+  var BLANK = {
+    agent  : ['chat',  '仲介業者へ確認する件は、ありません。', '特約に印が付かなかった件が出ると、ここに並びます。'],
+    todo   : ['home',  '対応が必要な件は、ありません。',       '入居者からの返信が届くと、ここに並びます。'],
+    waiting: ['mail',  '返信待ちの件は、ありません。',         '新しくご案内を送ると、ここに並びます。'],
+    done   : ['check', '完了した件は、まだありません。',       '対応が済んだ件が、ここにたまっていきます。']
+  };
+  function blankHtml(searching){
+    var b = searching
+      ? ['doc', '見つかりませんでした。', 'べつのことばで、お探しください。']
+      : (BLANK[TAB] || ['doc', 'ありません。', '']);
+    return '<div class="blank"><div class="ring">' + svg(b[0]) + '</div>' +
+           '<b>' + b[1] + '</b>' + (b[2] ? ('<span>' + b[2] + '</span>') : '') + '</div>';
+  }
+
   function drawList(){
     var q = $('#q').value.trim();
     var rows = ROWS.filter(function(r){
@@ -873,7 +961,10 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
       if(!q) return true;
       return (r.bldg + r.room + r.name + (r.area||'') + (r.agentCo||'')).indexOf(q) >= 0;
     });
-    if(!rows.length){ $('#list').innerHTML = '<p style="color:#71717A;font-size:15px;">ありません。</p>'; return; }
+    if(!rows.length){
+      $('#list').innerHTML = blankHtml(!!q || FILT !== '');
+      return;
+    }
     $('#list').innerHTML = rows.map(function(r){
       var st   = String(r.status||'');
       var fin  = (st === '完了');
@@ -908,9 +999,16 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
       }else{
         acts.push('<button class="btn sm ghost act-undo">完了をもどす</button>');
       }
+      /* カードの左に置く絵柄と、その下地の色を決めます
+           完了＝黒／お部屋の話＝赤／ご説明の話＝赤／問題なし＝緑／期限すぎ＝赤／返信待ち＝灰 */
+      var ico = fin ? ['check','ok']
+              : (done ? (chk ? ['doc','ng'] : (r.ng > 0 ? ['home','ng'] : ['check','gd']))
+                      : (r.over ? ['clock','ng'] : ['mail','']));
+
       return '<div class="item' + (fin ? ' done' : (exp ? ' exp' : (done ? ' done' : (r.over ? ' over' : '')))) +
         '" data-id="' + esc(r.id) + '">' +
-        '<div class="i-h"><b>' + esc(r.bldg) + ' ' + esc(r.room) + '</b>' + pill + '</div>' +
+        '<div class="i-h"><span class="i-ic ' + ico[1] + '">' + svg(ico[0]) + '</span>' +
+          '<b>' + esc(r.bldg) + ' ' + esc(r.room) + '</b>' + pill + '</div>' +
         '<div class="i-b">' + esc(r.name) + ' 様 ／ ' + esc(r.mail) + '<br>' +
           (sub.length ? (sub.join(' ／ ') + '<br>') : '') +
           '作成 ' + esc(String(r.created).slice(0,10)) + ' ／ 期限 ' + esc(r.due) +
