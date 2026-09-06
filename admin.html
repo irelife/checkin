@@ -115,6 +115,10 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
 .login .err{margin-top:14px;font-size:13.5px;}
 .login-foot{margin-top:26px;font-size:11.5px;color:#A1A1AA;letter-spacing:.10em;}
 
+/* 裏で最新を取りにいっているあいだの表示 */
+.sync{flex:0 0 auto;align-self:center;font-size:12.5px;font-weight:700;color:var(--ink3);
+  letter-spacing:.02em;white-space:nowrap;}
+
 /* つくったあとのお知らせ（数秒で消えます） */
 .flash{background:#F1F5F2;border:1.5px solid #A7C4B0;color:#1F3D2B;border-radius:12px;
   padding:13px 15px;font-size:15px;font-weight:700;line-height:1.7;margin-bottom:12px;}
@@ -260,6 +264,7 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
     <div class="card" style="padding:12px;">
       <div class="row" style="margin-bottom:10px;">
         <input type="text" id="q" placeholder="物件名・お名前で探す">
+        <span id="sync" class="sync hide">最新を確認中…</span>
         <button class="btn sm ghost" id="reload" style="flex:0 0 auto;">更新</button>
       </div>
       <div id="list"></div>
@@ -317,6 +322,46 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
       .then(function(r){ return r.json(); });
   }
 
+  /* ---- 前に見た一覧の控え ----------------------------------------
+     Apps Script は往復に数秒かかります。そこで、前に見た一覧を
+     この端末に控えておき、ログインした瞬間にまずそれを出します。
+     そのあと裏で最新を取りにいって、届いたら静かに差し替えます。
+
+     ・控えるのは「今年度・エリアぜんぶ」の分だけです
+       （年度をしぼった分を控えると、次に開いたとき中身がずれるため）
+     ・パスワードが違っていたら、控えは消して入口へ戻します
+     ・保存はサーバーが正です。控えは見せるためだけに使います   */
+  var CKEY = 'ire_checkin_cache';
+  var LAST_AT = 0;                  /* 最後にサーバーから受け取った時刻 */
+  var FRESH_MS = 60000;             /* これより新しければ、読み直しません */
+
+  function cacheLoad(){
+    try{ var c = JSON.parse(localStorage.getItem(CKEY) || 'null');
+         return (c && c.rows && c.rows.length !== undefined) ? c : null; }catch(e){ return null; }
+  }
+  function cacheSave(res, fyUsed){
+    if(fyUsed !== '') return;       /* 年度をしぼった分は控えません */
+    try{
+      var t = JSON.stringify({ rows:res.rows, areas:res.areas || [],
+        remindMax:res.remindMax, remindEvery:res.remindEvery, at:Date.now() });
+      if(t.length > 1500000) return; /* 大きすぎるときは、あきらめます */
+      localStorage.setItem(CKEY, t);
+    }catch(e){}
+  }
+  function cacheClear(){ try{ localStorage.removeItem(CKEY); }catch(e){} }
+
+  function syncing(on){ $('#sync').classList.toggle('hide', !on); }
+
+  /* 受け取った一覧を、画面に反映します */
+  function applyList(o, at){
+    ROWS = o.rows || [];
+    if(o.areas && o.areas.length) AREAS = o.areas;
+    if(o.remindMax !== undefined){ RM_MAX = Number(o.remindMax)||0;
+                                   RM_EVERY = Number(o.remindEvery)||0; }
+    buildPeriod(); buildArea(); drawAll();
+    LAST_AT = at || Date.now();
+  }
+
   /* ---- パスワード（ログイン） ----
      ボタンを押しても、パスワード欄で Enter を押しても入れます。
      form なので、ブラウザにパスワードを覚えてもらえます。 */
@@ -324,19 +369,44 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
     ev.preventDefault();
     KEY = $('#key').value.trim();
     if(!KEY){ $('#key-err').textContent = 'パスワードを入れてください。'; return; }
-    veil(true);
-    post({ action:'list', key:KEY }).then(function(res){
-      veil(false);
-      if(!res.ok){ $('#key-err').textContent = res.err || '開けませんでした。'; return; }
-      try{ localStorage.setItem('ire_checkin_key', KEY); }catch(e){}
-      ROWS = res.rows;
-      if(res.areas && res.areas.length) AREAS = res.areas;
-      if(res.remindMax !== undefined){ RM_MAX = Number(res.remindMax)||0;
-                                       RM_EVERY = Number(res.remindEvery)||0; }
-      buildPeriod(); buildArea(); drawAll();
+    $('#key-err').textContent = '';
+
+    /* 前と同じパスワードで、控えがあるときだけ、先に出します */
+    var saved = ''; try{ saved = localStorage.getItem('ire_checkin_key') || ''; }catch(e){}
+    var c = (KEY === saved) ? cacheLoad() : null;
+    if(c){
+      applyList(c, c.at);
       $('#s-key').classList.add('hide');
       show('list');
-    }).catch(function(){ veil(false); $('#key-err').textContent = '通信できませんでした。'; });
+      syncing(true);
+    }else{
+      veil(true);
+    }
+
+    post({ action:'list', key:KEY }).then(function(res){
+      veil(false); syncing(false);
+      if(!res.ok){
+        /* パスワードが通らなかったら、控えも消して入口へ戻します */
+        cacheClear();
+        $('#s-list').classList.add('hide'); $('#s-new').classList.add('hide');
+        $('#s-key').classList.remove('hide');
+        $('#key-err').textContent = res.err || '開けませんでした。';
+        return;
+      }
+      try{ localStorage.setItem('ire_checkin_key', KEY); }catch(e){}
+      applyList(res); cacheSave(res, '');
+      $('#s-key').classList.add('hide');
+      show('list');
+    }).catch(function(){
+      veil(false); syncing(false);
+      if(c){
+        /* 控えは出せているので、そのままにして、取れなかったことだけ伝えます */
+        flash('通信できませんでした。<b>前に見た内容を表示しています。</b><br>' +
+              'つながったら「更新」を押してください。');
+      }else{
+        $('#key-err').textContent = '通信できませんでした。';
+      }
+    });
   });
   try{ var k = localStorage.getItem('ire_checkin_key'); if(k) $('#key').value = k; }catch(e){}
 
@@ -360,7 +430,13 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
     $('#flash').classList.add('hide'); $('#flash').innerHTML = '';
     show('new');
   });
-  $('#tab-list').addEventListener('click', function(){ if(KEY){ show('list'); reload(); } });
+  $('#tab-list').addEventListener('click', function(){
+    if(!KEY) return;
+    show('list');
+    /* さっき読んだばかりなら、読み直しません（そのぶん速くなります）。
+       いつでも「更新」を押せば取り直せます。 */
+    if(Date.now() - LAST_AT > FRESH_MS) reload(true);
+  });
 
   /* ---- 特約の一覧（タイトルを押すと文面が開きます。読むだけです） ----
 
@@ -457,7 +533,7 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
       TAB = 'waiting';
       FILT = '';
       show('list');
-      reload();
+      reload(true);
       flash('<b>✅ つくりました。入居者へメールを送りました。</b><br>' +
             esc(body.bldg) + ' ' + esc(body.room) + '　' + esc(body.name) + ' 様<br>' +
             'パスワードは、下のカードを押すと見られます。');
@@ -472,20 +548,17 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
   var AREAS = [];
   var RM_MAX = 0, RM_EVERY = 0;   /* 自動督促の 上限回数／何日おき（サーバーの設定） */
 
-  function reload(){
-    veil(true);
+  /* bg を true にすると、画面をおおわずに、裏で読みにいきます */
+  function reload(bg){
+    if(bg) syncing(true); else veil(true);
     /* 年度はサーバー側でしぼります。件数が増えても重くなりません。
        0 を渡すと全部returnされます */
     var fy = $('#f-fy').value;
     post({ action:'list', key:KEY, fy:(fy === '' ? 0 : Number(fy)) }).then(function(res){
-      veil(false);
+      veil(false); syncing(false);
       if(!res.ok) return;
-      ROWS = res.rows;
-      if(res.areas && res.areas.length) AREAS = res.areas;
-      if(res.remindMax !== undefined){ RM_MAX = Number(res.remindMax)||0;
-                                       RM_EVERY = Number(res.remindEvery)||0; }
-      buildPeriod(); buildArea(); drawAll();
-    }).catch(function(){ veil(false); });
+      applyList(res); cacheSave(res, fy);
+    }).catch(function(){ veil(false); syncing(false); });
   }
 
   /* エリアのえらび */
@@ -504,9 +577,9 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
         AREAS.map(function(a){ return '<option value="' + esc(a) + '">' + esc(a) + '</option>'; }).join('');
     }
   }
-  $('#reload').addEventListener('click', reload);
+  $('#reload').addEventListener('click', function(){ reload(false); });
   $('#q').addEventListener('input', drawList);
-  $('#f-fy').addEventListener('change', reload);
+  $('#f-fy').addEventListener('change', function(){ reload(false); });
   $('#f-mo').addEventListener('change', drawAll);
 
   function drawAll(){ drawTabs(); drawStats(); drawList(); }
@@ -706,7 +779,7 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
         post({ action:'done', key:KEY, id:id, undo:undo }).then(function(res){
           veil(false);
           if(!res.ok){ alert(res.err || 'できませんでした'); return; }
-          reload();
+          reload(true);
         }).catch(function(){ veil(false); alert('通信できませんでした。'); });
       });
     });
@@ -724,7 +797,7 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
         veil(true);
         post({ action:'remind', key:KEY, id:id }).then(function(res){
           veil(false); alert(res.ok ? '送りました。' : (res.err||'送れませんでした'));
-          reload();
+          reload(true);
         }).catch(function(){ veil(false); alert('通信できませんでした。'); });
       });
     });
@@ -773,7 +846,7 @@ input:focus,textarea:focus{outline:none;border-color:var(--ink);}
       if(!res.ok){ alert(res.err || '送れませんでした'); return; }
       $('#agbox').classList.remove('on');
       alert('送りました。');
-      reload();
+      reload(true);
     }).catch(function(){ veil(false); alert('通信できませんでした。'); });
   });
 
