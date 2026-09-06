@@ -401,13 +401,8 @@
     if(step < 3) go(step + 1); else submit();
   });
   $('#back').addEventListener('click', function(){ if(step > 1) go(step - 1); });
-  $('#all-on').addEventListener('click', function(){
-    $$('.chk').forEach(function(e){
-      e.classList.add('on'); e.querySelector('input').checked = true;
-      checks[e.getAttribute('data-t')] = true;
-    });
-    save(); progress();
-  });
+  /* 「すべてに印を付ける」は外しました。
+     一括で付けられると、文面を読まずに送れてしまうためです。 */
   $('#all-off').addEventListener('click', function(){
     $$('.chk').forEach(function(e){
       e.classList.remove('on'); e.querySelector('input').checked = false;
