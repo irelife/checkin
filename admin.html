@@ -191,8 +191,54 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
    見出しは黒の太字。「必須」は黒い札。入力欄は下線だけで、塗りません。
    （一覧・詳細・ログインは、これまでどおりの塗りのままです）
    -------------------------------------------------------------------- */
-#s-new h2{letter-spacing:.06em;margin-bottom:30px;}
-#s-new .card{padding:34px 32px 30px;}
+#s-new{max-width:960px;margin:0 auto;}
+#s-new h2{letter-spacing:.06em;margin-bottom:26px;}
+#s-new .card{padding:34px 34px 30px;}
+
+/* 2段組み（画面が狭いときは1段になります） */
+#s-new .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:0 44px;}
+#s-new .sec{padding-bottom:20px;}
+#s-new .sec-t{display:flex;align-items:center;gap:8px;
+  font-size:15px;font-weight:600;color:var(--ink);
+  margin:26px 0 16px;padding-bottom:10px;border-bottom:1px solid #DCDCE1;}
+#s-new .cols > .sec > .sec-t{margin-top:0;}
+#s-new .fr{margin-bottom:20px;}
+#s-new .fr:last-child{margin-bottom:0;}
+#s-new .fr2{display:grid;grid-template-columns:2fr 1fr;gap:18px;}
+#s-new .fr2 > div{margin-bottom:0;}
+#s-new p.hint{font-size:12.5px;color:var(--ink3);margin:0 0 4px;line-height:1.6;}
+#s-new p.hint b{font-weight:600;color:var(--ink2);}
+#s-new .fe{font-size:12px;color:var(--ng);margin:5px 0 0;min-height:1em;line-height:1.4;}
+
+/* 間取り図 */
+#s-new .file-row{display:grid;grid-template-columns:190px 1fr;gap:22px;align-items:center;}
+#s-new .thumb-b{height:126px;background:var(--fill);border-radius:12px;overflow:hidden;
+  display:flex;align-items:center;justify-content:center;color:var(--ink3);font-size:13px;}
+#s-new .thumb-b img{width:100%;height:100%;object-fit:contain;display:block;}
+#s-new .note{font-size:12.5px;color:var(--ink3);margin:9px 0 0;}
+
+/* 下書きのお知らせ */
+.dr{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  background:var(--fill);border-radius:12px;padding:11px 15px;margin-bottom:22px;
+  font-size:13.5px;color:var(--ink2);}
+.dr b{font-weight:600;color:var(--ink);}
+.dr .sp{margin-left:auto;display:flex;gap:8px;}
+
+/* いちばん下のボタン */
+#s-new .acts{display:flex;justify-content:flex-end;gap:12px;
+  margin-top:26px;padding-top:22px;border-top:1px solid #DCDCE1;}
+#s-new .abtn{min-width:132px;padding:11px 22px;border:1px solid var(--ink);border-radius:8px;
+  background:transparent;color:var(--ink);font-size:14.5px;font-weight:500;cursor:pointer;
+  transition:opacity .15s;}
+#s-new .abtn.primary{background:var(--ink);color:#fff;}
+#s-new .abtn:hover{opacity:.82;}
+
+@media(max-width:640px){
+  #s-new .card{padding:24px 20px 26px;}
+  #s-new .fr2,#s-new .file-row{grid-template-columns:1fr;}
+  #s-new .acts{flex-direction:column-reverse;}
+  #s-new .abtn{width:100%;}
+}
 #s-new label.f{font-size:14.5px;font-weight:600;color:var(--ink);margin:28px 0 4px;}
 #s-new #pick-list{margin-top:14px;}
 #s-new label.f .req{display:inline-block;margin-left:8px;padding:2px 9px;border-radius:6px;
@@ -209,6 +255,11 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
   border-bottom-color:#B8B8C0;}
 #s-new input:focus,#s-new textarea:focus,#s-new select:focus{
   background:transparent;box-shadow:none;border-bottom-color:var(--ink);}
+/* 入れもれ・形ちがいの欄は、下線を赤くします（下の書式より後ろに置きます） */
+#s-new input.bad,#s-new select.bad,#s-new textarea.bad,
+#s-new input.bad:hover,#s-new select.bad:hover,#s-new textarea.bad:hover,
+#s-new input.bad:focus,#s-new select.bad:focus,#s-new textarea.bad:focus{
+  border-bottom-color:var(--ng);}
 #s-new select{background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5l5-5' fill='none' stroke='%2386868B' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat:no-repeat;background-position:right 4px center;background-size:12px 8px;
   padding-right:26px;}
@@ -419,44 +470,128 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
   <section id="s-new" class="hide">
     <div class="card">
       <h2>新しいチェック依頼をつくる</h2>
-      <div class="row">
-        <div><label class="f">物件名<span class="req">必須</span></label><input type="text" id="f-bldg" placeholder="例: テタンジェ"></div>
-        <div style="max-width:120px;"><label class="f">号室<span class="req">必須</span></label><input type="text" id="f-room" placeholder="例: 203"></div>
-      </div>
-      <label class="f">契約者名<span class="req">必須</span></label>
-      <input type="text" id="f-name" placeholder="例: 山田 太郎">
-      <label class="f">メールアドレス<span class="req">必須</span></label>
-      <input type="email" id="f-mail" inputmode="email" placeholder="例: taro@example.com">
-      <label class="f">契約開始日<span class="hint">（この日から7日で、ご返信の期限になります）</span></label>
-      <input type="date" id="f-move">
-      <label class="f">エリア<span class="hint">（担当者が分かれます。返信の通知は、このエリアの担当者へ届きます）</span></label>
-      <select id="f-area"></select>
-      <label class="f">仲介業者<span class="hint">（「説明を受けていない」と回答があったとき、ここへ連絡できます）</span></label>
-      <div class="row">
-        <div><input type="text" id="f-agco" placeholder="会社名　例: ○○不動産"></div>
-        <div style="max-width:150px;"><input type="text" id="f-agnm" placeholder="担当者　例: 山田"></div>
-      </div>
-      <input type="email" id="f-agml" inputmode="email" placeholder="仲介業者のメールアドレス">
-      <label class="f">間取り図<span class="hint">（写真でも可）</span></label>
-      <input type="file" id="f-plan" accept="image/*">
-      <img id="plan-th" class="thumb hide" alt="">
-      <label class="f">この物件のえらび<span class="hint">（あてはまるものを1つずつ。なければ、そのままで結構です）</span></label>
-      <div id="bp-note" class="bp hide"></div>
-      <div id="pick-list"></div>
+      <div id="dr-bar" class="dr hide"></div>
 
-      <label class="f">この契約に該当する特約<span class="hint">（チェックしたものだけ入居者に出ます／<b>タイトルを押すと文面が開きます</b>）</span></label>
-      <div class="row" style="margin-bottom:8px;">
-        <button type="button" class="btn ghost sm" id="cl-all">全選択</button>
-        <button type="button" class="btn ghost sm" id="cl-none">全解除</button>
+      <div class="cols">
+        <div class="sec">
+          <p class="sec-t">物件情報</p>
+
+          <div class="fr fr2">
+            <div>
+              <label class="f" for="f-bldg">物件名<span class="req">必須</span></label>
+              <input type="text" id="f-bldg" placeholder="例: テタンジェ" data-need>
+              <p class="fe"></p>
+            </div>
+            <div>
+              <label class="f" for="f-room">号室<span class="req">必須</span></label>
+              <input type="text" id="f-room" placeholder="例: 203" data-need>
+              <p class="fe"></p>
+            </div>
+          </div>
+
+          <div class="fr">
+            <label class="f" for="f-name">契約者名<span class="req">必須</span></label>
+            <input type="text" id="f-name" placeholder="例: 山田 太郎" data-need>
+            <p class="fe"></p>
+          </div>
+
+          <div class="fr">
+            <label class="f" for="f-mail">メールアドレス<span class="req">必須</span></label>
+            <input type="email" id="f-mail" inputmode="email" placeholder="例: taro@example.com" data-need>
+            <p class="fe"></p>
+          </div>
+
+          <div class="fr">
+            <label class="f" for="f-move">契約開始日<span class="req">必須</span></label>
+            <p class="hint">この日から7日で、ご返信の期限になります</p>
+            <input type="date" id="f-move" data-need>
+            <p class="fe"></p>
+          </div>
+        </div>
+
+        <div class="sec">
+          <p class="sec-t">担当・仲介業者</p>
+
+          <div class="fr">
+            <label class="f" for="f-area">エリア<span class="req">必須</span></label>
+            <p class="hint">担当者が分かれます。返信の通知は、このエリアの担当者へ届きます</p>
+            <select id="f-area" data-need></select>
+            <p class="fe"></p>
+          </div>
+
+          <div class="fr fr2">
+            <div>
+              <label class="f" for="f-agco">仲介業者<span class="req">必須</span></label>
+              <input type="text" id="f-agco" placeholder="例: ○○不動産" autocomplete="off" data-need>
+              <p class="fe"></p>
+            </div>
+            <div>
+              <label class="f" for="f-agnm">担当者</label>
+              <input type="text" id="f-agnm" placeholder="例: 山田" autocomplete="off">
+              <p class="fe"></p>
+            </div>
+          </div>
+
+          <div class="fr">
+            <label class="f" for="f-agml">業者メールアドレス<span class="req">必須</span></label>
+            <p class="hint">「説明を受けていない」と回答があったとき、ここへ連絡できます</p>
+            <input type="email" id="f-agml" inputmode="email" autocomplete="off" data-need>
+            <p class="fe"></p>
+          </div>
+        </div>
       </div>
-      <div class="scroll" id="cl-list"></div>
-      <label class="f">個別に伝えたいこと<span class="hint">（1行に1件。入居者側でも印を付けていただきます）</span></label>
-      <textarea id="f-extra" rows="3"
-        placeholder="例）バルコニーの物干し竿は、前の入居者のものです。ご自由にお使いください。"></textarea>
-      <label class="f">社内メモ<span class="hint">（入居者には出ません）</span></label>
-      <input type="text" id="f-memo" placeholder="任意">
+
+      <div class="sec">
+        <p class="sec-t">間取り図</p>
+        <div class="file-row">
+          <div class="thumb-b" id="plan-box">
+            <img id="plan-th" class="hide" alt="">
+            <span id="plan-ph">プレビュー</span>
+          </div>
+          <div>
+            <input type="file" id="f-plan" accept="image/*">
+            <p class="note" id="plan-name">写真でも可</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="sec">
+        <p class="sec-t">この物件のえらび</p>
+        <p class="hint">あてはまるものを1つずつ。なければ、そのままで結構です</p>
+        <div id="bp-note" class="bp hide"></div>
+        <div id="pick-list"></div>
+      </div>
+
+      <div class="sec">
+        <p class="sec-t">この契約に該当する特約</p>
+        <p class="hint">チェックしたものだけ入居者に出ます／<b>タイトルを押すと文面が開きます</b></p>
+        <div class="row" style="margin:12px 0 10px;">
+          <button type="button" class="btn ghost sm" id="cl-all">全選択</button>
+          <button type="button" class="btn ghost sm" id="cl-none">全解除</button>
+        </div>
+        <div class="scroll" id="cl-list"></div>
+      </div>
+
+      <div class="sec">
+        <p class="sec-t">そのほか</p>
+        <div class="fr">
+          <label class="f" for="f-extra">個別に伝えたいこと</label>
+          <p class="hint">1行に1件。入居者側でも印を付けていただきます</p>
+          <textarea id="f-extra" rows="3"
+            placeholder="例）バルコニーの物干し竿は、前の入居者のものです。ご自由にお使いください。"></textarea>
+        </div>
+        <div class="fr">
+          <label class="f" for="f-memo">社内メモ</label>
+          <p class="hint">入居者には出ません</p>
+          <input type="text" id="f-memo" placeholder="任意">
+        </div>
+      </div>
+
       <div class="err" id="new-err"></div>
-      <button class="btn" id="new-go">送信する</button>
+      <div class="acts">
+        <button type="button" class="abtn" id="new-draft">下書き保存</button>
+        <button type="button" class="abtn primary" id="new-go">依頼を送る</button>
+      </div>
       <div id="made" class="made hide"></div>
     </div>
   </section>
@@ -671,6 +806,7 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
     if(!KEY) return;
     $('#flash').classList.add('hide'); $('#flash').innerHTML = '';
     show('new');
+    draftBar();          /* 下書きが残っていれば、上でお知らせします */
   });
   $('#tab-list').addEventListener('click', function(){
     if(!KEY) return;
@@ -727,7 +863,8 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
 
   /* ---- 同じ物件の、前のご案内から引き継ぎます ---------------------------
        ・物件名（と号室）を入れると、前に作ったご案内をさがします。
-       ・見つかったら、えらび（プルダウン）とエリア・仲介を入れておきます。
+       ・見つかったら、えらび（プルダウン）とエリアを入れておきます。
+         仲介業者は、ご契約ごとに変わるので、引き継ぎません。
        ・号室まで同じときは、特約の印も、そのまま引き継ぎます。
        ・手で入れたところには、さわりません。引き継ぎで入れたところだけ、
          あとから物件名・号室を直すと、入れ直します。
@@ -770,10 +907,9 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
 
       var have = {}; (d.clauses||[]).forEach(function(t){ have[t] = 1; });
 
+      /* エリアは物件のものなので引き継ぎます。
+         仲介業者は、同じ物件でもご契約ごとに変わるため、引き継ぎません。 */
       bpSet('#f-area', use.area);
-      bpSet('#f-agco', use.agentCo);
-      bpSet('#f-agnm', use.agentName);
-      bpSet('#f-agml', use.agentMail);
 
       var got = 0;
       $$('#pick-list select').forEach(function(sl){
@@ -868,9 +1004,18 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
     $$('#cl-list .cl').forEach(function(e){ e.querySelector('input').checked = false; e.classList.remove('on'); }); });
 
   /* ---- 間取り図 ---- */
+  function planReset(){
+    planData = null;
+    $('#f-plan').value = '';
+    $('#plan-th').classList.add('hide'); $('#plan-th').removeAttribute('src');
+    $('#plan-ph').classList.remove('hide');
+    $('#plan-name').textContent = '写真でも可';
+  }
+
   $('#f-plan').addEventListener('change', function(){
     var f = this.files && this.files[0];
-    if(!f) return;
+    if(!f){ planReset(); return; }
+    $('#plan-name').textContent = f.name;
     var fr = new FileReader();
     fr.onload = function(){
       var im = new Image();
@@ -880,11 +1025,107 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
         var cv = document.createElement('canvas'); cv.width = w; cv.height = h;
         cv.getContext('2d').drawImage(im, 0, 0, w, h);
         planData = cv.toDataURL('image/jpeg', 0.8);
-        $('#plan-th').src = planData; $('#plan-th').classList.remove('hide');
+        $('#plan-th').src = planData;
+        $('#plan-th').classList.remove('hide');
+        $('#plan-ph').classList.add('hide');
       };
       im.src = fr.result;
     };
     fr.readAsDataURL(f);
+  });
+
+  /* ---- 入力のチェック（欄ごとに、その場で赤く出します）---------------- */
+  function feBox(el){
+    var r = el.closest('.fr2 > div') || el.closest('.fr');
+    return r ? r.querySelector('.fe') : null;
+  }
+  function feClear(el){
+    el.classList.remove('bad');
+    var b = feBox(el); if(b) b.textContent = '';
+  }
+  function feSet(el, m){
+    el.classList.add('bad');
+    var b = feBox(el); if(b) b.textContent = m;
+  }
+  function feOk(el){
+    var v = String(el.value || '').trim();
+    if(!v){ feSet(el, el.tagName === 'SELECT' ? 'えらんでください' : '入力してください'); return false; }
+    if(el.type === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)){
+      feSet(el, 'メールアドレスの形をご確認ください'); return false;
+    }
+    feClear(el); return true;
+  }
+  var NEED = $$('#s-new [data-need]');
+  NEED.forEach(function(el){
+    el.addEventListener('input',  function(){ feClear(el); });
+    el.addEventListener('change', function(){ feClear(el); });
+    el.addEventListener('blur',   function(){ if(String(el.value||'').trim()) feOk(el); });
+  });
+  function feAllClear(){ NEED.forEach(feClear); }
+
+  /* ---- 下書き（この端末にだけ残します。サーバーへは送りません）--------- */
+  var DKEY = 'ire_check_draft';
+  var DFLD = ['#f-bldg','#f-room','#f-name','#f-mail','#f-move','#f-area',
+              '#f-agco','#f-agnm','#f-agml','#f-extra','#f-memo'];
+
+  function draftSave(){
+    var d = { at: nowLabel(), v:{} };
+    DFLD.forEach(function(k){ d.v[k] = $(k).value; });
+    d.picks = $$('#pick-list select').map(function(sl){ return sl.value; });
+    d.cl = $$('#cl-list .cl').filter(function(e){ return e.querySelector('input').checked; })
+             .map(function(e){ return e.getAttribute('data-t'); });
+    try{ localStorage.setItem(DKEY, JSON.stringify(d)); }catch(e){}
+  }
+  function draftGet(){
+    try{ return JSON.parse(localStorage.getItem(DKEY) || 'null'); }catch(e){ return null; }
+  }
+  function draftDrop(){ try{ localStorage.removeItem(DKEY); }catch(e){} $('#dr-bar').classList.add('hide'); }
+
+  function draftPut(d){
+    if(!d) return;
+    DFLD.forEach(function(k){ if(typeof d.v[k] === 'string') $(k).value = d.v[k]; });
+    var sl = $$('#pick-list select');
+    (d.picks || []).forEach(function(v, i){ if(sl[i]) sl[i].value = v || ''; });
+    if(d.cl){
+      var on = {}; d.cl.forEach(function(t){ on[t] = 1; });
+      $$('#cl-list .cl').forEach(function(e){
+        var y = !!on[e.getAttribute('data-t')];
+        e.querySelector('input').checked = y;
+        e.classList.toggle('on', y);
+      });
+    }
+    feAllClear();
+    $('#dr-bar').classList.add('hide');
+  }
+
+  function nowLabel(){
+    var d = new Date();
+    return (d.getMonth()+1) + '月' + d.getDate() + '日 ' +
+           ('0'+d.getHours()).slice(-2) + ':' + ('0'+d.getMinutes()).slice(-2);
+  }
+
+  /* 新規の画面をひらいたとき、下書きがあればお知らせします */
+  function draftBar(){
+    var d = draftGet();
+    if(!d){ $('#dr-bar').classList.add('hide'); return; }
+    var who = (d.v && (d.v['#f-bldg'] || '')) + ' ' + (d.v && (d.v['#f-room'] || ''));
+    $('#dr-bar').innerHTML =
+      '<span><b>下書きがあります</b>　' + esc(who.trim() || '（物件名なし）') +
+        '　' + esc(d.at || '') + '</span>' +
+      '<span class="sp">' +
+        '<button type="button" class="btn ghost sm" id="dr-use">読みこむ</button>' +
+        '<button type="button" class="btn ghost sm" id="dr-del">消す</button></span>';
+    $('#dr-bar').classList.remove('hide');
+    $('#dr-use').addEventListener('click', function(){ draftPut(draftGet()); });
+    $('#dr-del').addEventListener('click', function(){ draftDrop(); });
+  }
+
+  $('#new-draft').addEventListener('click', function(){
+    draftSave();
+    $('#new-err').textContent = '';
+    $('#dr-bar').innerHTML = '<span><b>下書きを保存しました。</b>この端末にだけ残ります。' +
+      'つぎに「新規」をひらいたとき、読みこめます。</span>';
+    $('#dr-bar').classList.remove('hide');
   });
 
   /* ---- つくる ---- */
@@ -906,8 +1147,15 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
       sendMail: !!sendMail
     };
     if(planData) body.plan = { data:planData, name:'madori.jpg' };
-    if(!body.bldg || !body.room || !body.name || !body.mail){
-      $('#new-err').textContent = '物件名・号室・お名前・メールは必ず入れてください。'; return;
+
+    /* 「必須」の欄を、1つずつ見ます。だめなところは、その場に赤字で出します */
+    var first = null, allOk = true;
+    NEED.forEach(function(el){ if(!feOk(el)){ allOk = false; if(!first) first = el; } });
+    if(!allOk){
+      $('#new-err').textContent = '赤いところを、ご確認ください。';
+      first.focus();
+      try{ first.scrollIntoView({ behavior:'smooth', block:'center' }); }catch(e){}
+      return;
     }
     $('#new-err').textContent = '';
     veil(true);
@@ -919,7 +1167,9 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
       ['#f-bldg','#f-room','#f-name','#f-mail','#f-memo','#f-extra'].forEach(function(s){ $(s).value=''; });
       resetClauses();
       bpClear();
-      planData = null; $('#plan-th').classList.add('hide'); $('#f-plan').value='';
+      feAllClear();
+      draftDrop();
+      planReset();
       $('#made').classList.add('hide'); $('#made').innerHTML = '';
 
       /* つくったら、そのまま一覧へ戻ります。
