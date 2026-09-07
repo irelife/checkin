@@ -187,6 +187,15 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
 .i-rm.plan b{color:var(--ng);font-size:14.5px;}
 .i-rm.plan span{color:#8C5147;}
 
+/* ---- 物件ごとに1つえらぶもの（プルダウン） ---- */
+.pk{display:flex;align-items:center;gap:12px;margin-bottom:9px;}
+.pk-l{flex:0 0 190px;font-size:14px;color:var(--ink2);}
+.pk select{flex:1;min-width:0;}
+@media(max-width:620px){
+  .pk{display:block;margin-bottom:14px;}
+  .pk-l{display:block;margin-bottom:6px;}
+}
+
 /* ---- 特約のえらび ---- */
 .scroll{max-height:360px;overflow-y:auto;border:0;border-radius:16px;padding:8px;background:var(--fill);}
 .cl{display:block;border:0;border-radius:13px;padding:12px 14px;margin-bottom:6px;
@@ -397,6 +406,9 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
       <label class="f">間取り図（写真でも可）</label>
       <input type="file" id="f-plan" accept="image/*">
       <img id="plan-th" class="thumb hide" alt="">
+      <label class="f">この物件のえらび（あてはまるものを1つずつ。なければ、そのままで結構です）</label>
+      <div id="pick-list"></div>
+
       <label class="f">この契約に該当する特約（チェックしたものだけ入居者に出ます／<b>タイトルを押すと文面が開きます</b>）</label>
       <div class="row" style="margin-bottom:8px;">
         <button type="button" class="btn ghost sm" id="cl-all">全選択</button>
@@ -495,7 +507,7 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
 
 <div id="veil">読み込んでいます…</div>
 
-<script src="clauses.js?v=4"></script>
+<script src="clauses.js?v=5"></script>
 <script src="config.js?v=3"></script>
 <script>
 (function(){
@@ -642,8 +654,49 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
      増やす／減らすときは、clauses.js の d:true を足す／消すだけです。 */
   function isDefault(c){ return c && c.d === true; }
 
+  /* ---- 物件ごとに1つえらぶもの（プルダウン）----
+       clauses.js で sel を付けた特約が、ここに集まります。
+       えらんだものは、チェックした特約とまったく同じように扱われます。 */
+  function isPick(c){ return !!(c && c.sel); }
+  function picksOf(key){
+    return (window.CLAUSES||[]).filter(function(c){ return c.sel === key; });
+  }
+  function drawPicks(){
+    $('#pick-list').innerHTML = (window.PICKS||[]).map(function(g){
+      var opt = '<option value="">' + esc(g.none || 'えらばない') + '</option>' +
+        picksOf(g.key).map(function(c){
+          return '<option value="' + esc(c.t) + '">' + esc(c.pl || c.t) + '</option>';
+        }).join('');
+      return '<div class="pk"><span class="pk-l">' + esc(g.label) + '</span>' +
+             '<select data-k="' + esc(g.key) + '">' + opt + '</select></div>';
+    }).join('');
+  }
+  drawPicks();
+
+  /* エリアをえらんだら、分かるものだけ、あらかじめえらんでおきます。
+     すでに手でえらんでいるものには、さわりません。 */
+  function picksByArea(){
+    var area = $('#f-area').value;
+    (window.PICKS||[]).forEach(function(g){
+      if(!g.byArea) return;
+      var sl = $('#pick-list select[data-k="' + g.key + '"]');
+      if(!sl || sl.value) return;
+      var want = g.byArea[area]; if(!want) return;
+      var hit = picksOf(g.key).filter(function(c){ return (c.pl||'') === want; })[0];
+      if(hit) sl.value = hit.t;
+    });
+  }
+  $('#f-area').addEventListener('change', picksByArea);
+
+  function resetPicks(){ $$('#pick-list select').forEach(function(sl){ sl.value = ''; }); }
+  function pickedClauses(){
+    return $$('#pick-list select').map(function(sl){ return sl.value; })
+             .filter(function(v){ return v; });
+  }
+
   function drawClauses(){
-    $('#cl-list').innerHTML = (window.CLAUSES||[]).map(function(c){
+    /* プルダウンで出すものは、チェックの一覧には出しません */
+    $('#cl-list').innerHTML = (window.CLAUSES||[]).filter(function(c){ return !isPick(c); }).map(function(c){
       var on = isDefault(c);
       var gr = (c && c.g === true);      /* 物件ごとに1つ選ぶもの＝緑 */
       return '<div class="cl' + (gr ? ' g' : '') + (on ? ' on' : '') + '" data-t="' + esc(c.t) + '">' +
@@ -672,6 +725,7 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
 
   /* 特約の印を、はじめの状態（clauses.js の d:true）に戻します */
   function resetClauses(){
+    resetPicks();
     var map = {};
     (window.CLAUSES||[]).forEach(function(c){ map[c.t] = isDefault(c); });
     $$('#cl-list .cl').forEach(function(e){
@@ -721,6 +775,7 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
       agentMail:$('#f-agml').value.trim(),
       clauses:$$('#cl-list .cl').filter(function(e){ return e.querySelector('input').checked; })
                 .map(function(e){ return e.getAttribute('data-t'); })
+                .concat(pickedClauses())
                 .concat(($('#f-extra').value || '').split(/\r?\n/)
                   .map(function(x){ return x.trim(); })
                   .filter(function(x){ return x; })),
