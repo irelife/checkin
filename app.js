@@ -13,6 +13,19 @@
   var ID  = (location.search.match(/[?&]id=([^&]+)/) || [])[1] || '';
   var PASS = '';
   var DATA = null;               // サーバーから受け取ったご案内
+
+  /* 暮らしのルールの文。ゴミの回収の回数だけ、エリアによって差し替えます。
+     エリアが分からないとき・回数が決まっていないときは、
+     回数を書かずに「市区町村のきまりによります」と出します。 */
+  function manners(){
+    var area = String((DATA || {}).area || '');
+    var n    = String((window.TRASH || {})[area] || '');
+    var t    = n ? ('回収は' + n + 'です')
+                 : '回収の曜日と回数は、お住まいの市区町村のきまりによります';
+    return (window.MANNERS || []).map(function(m){
+      return String(m).split('{ゴミ回収}').join(t);
+    });
+  }
   var step = 1;
   var rooms = {};                // { 場所: {ng:bool, comment:'', photos:[dataURL]} }
   var whys  = {};                // { 特約のタイトル: {why:'…', note:'…'} } 印を付けなかった理由
@@ -185,7 +198,7 @@
       (extra.length ? '<p class="note" style="margin:2px 0 6px">この物件・お部屋について</p>' + extra.map(clHtml).join('') : '') +
       (mine.filter(function(c){ return !c.money; }).map(clHtml).join('')
         || (extra.length ? '' : '<p class="note">該当なし</p>'));
-    $('#manners').innerHTML = (window.MANNERS||[]).map(function(m){
+    $('#manners').innerHTML = manners().map(function(m){
       return '<label class="chk mn' + (checks[m] ? ' on' : '') + '" data-t="' + esc(m) + '">' +
         '<input type="checkbox"' + (checks[m]?' checked':'') + '>' +
         '<div class="chk-h"><i class="box"></i><div class="chk-t">' + esc(m) + '</div></div></label>';
@@ -358,7 +371,7 @@
     var okAll = (doneP === total);
 
     /* 暮らしのルールは、全部に印が付くまで先へ進めません。 */
-    var mn = window.MANNERS || [];
+    var mn = manners();
     var mnLeft = mn.filter(function(m){ return !checks[m]; }).length;
 
     $('#next').disabled = (step === 1 && !okAll) || (step === 2 && mnLeft > 0);
@@ -385,7 +398,7 @@
   function drawSum(){
     var places = window.PLACES || [];
     var ng = places.filter(function(p){ return rooms[p] && rooms[p].ng; });
-    var all = (window.CLAUSES||[]).concat((window.MANNERS||[]).map(function(m){ return {t:m}; }));
+    var all = (window.CLAUSES||[]).concat(manners().map(function(m){ return {t:m}; }));
     var mine = all.filter(function(c){ return checks.hasOwnProperty(c.t) || true; });
     var shown = $$('.chk').map(function(e){ return e.getAttribute('data-t'); });
     var noChk = shown.filter(function(t){ return !checks[t]; });
