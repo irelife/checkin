@@ -187,20 +187,54 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
 .i-rm.plan b{color:var(--ng);font-size:14.5px;}
 .i-rm.plan span{color:#8C5147;}
 
+/* ---- 新規作成の書式 ------------------------------------------------
+   見出しは黒の太字。「必須」は黒い札。入力欄は下線だけで、塗りません。
+   （一覧・詳細・ログインは、これまでどおりの塗りのままです）
+   -------------------------------------------------------------------- */
+#s-new h2{letter-spacing:.06em;margin-bottom:30px;}
+#s-new .card{padding:34px 32px 30px;}
+#s-new label.f{font-size:14.5px;font-weight:600;color:var(--ink);margin:28px 0 4px;}
+#s-new #pick-list{margin-top:14px;}
+#s-new label.f .req{display:inline-block;margin-left:8px;padding:2px 9px;border-radius:6px;
+  background:var(--ink);color:#fff;font-size:11px;font-weight:600;letter-spacing:.04em;
+  vertical-align:2px;}
+#s-new label.f .hint{display:block;margin-top:3px;
+  font-size:12.5px;font-weight:400;color:var(--ink3);line-height:1.6;}
+#s-new label.f .hint b{font-weight:600;color:var(--ink2);}
+#s-new input[type=text],#s-new input[type=password],#s-new input[type=email],
+#s-new input[type=date],#s-new textarea,#s-new select{
+  background:transparent;border-radius:0;padding:11px 2px;
+  border-bottom:1px solid #D9D9DF;}
+#s-new input:hover,#s-new textarea:hover,#s-new select:hover{background:transparent;
+  border-bottom-color:#B8B8C0;}
+#s-new input:focus,#s-new textarea:focus,#s-new select:focus{
+  background:transparent;box-shadow:none;border-bottom-color:var(--ink);}
+#s-new select{background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5l5-5' fill='none' stroke='%2386868B' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 4px center;background-size:12px 8px;
+  padding-right:26px;}
+#s-new .row{gap:22px;}
+/* 特約の一覧は、下地を敷かずに置きます（緑の行は、緑のままです） */
+#s-new .scroll{background:transparent;padding:0;max-height:340px;}
+#s-new .btn{margin-top:34px;}
+#s-new .btn.ghost.sm{margin-top:0;}
+
+/* ---- 前のご案内から引き継いだ、というお知らせ ---- */
+.bp{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  background:var(--fill);border-radius:12px;padding:10px 14px;margin-bottom:12px;
+  font-size:13.5px;color:var(--ink2);line-height:1.7;}
+.bp b{font-weight:600;color:var(--ink);}
+.bp button{margin-left:auto;}
+
 /* ---- 物件ごとに1つえらぶもの（プルダウン） ---- */
-.pk{display:flex;align-items:center;gap:12px;margin-bottom:9px;}
-.pk-l{flex:0 0 190px;font-size:14px;color:var(--ink2);}
-.pk select{flex:1;min-width:0;}
-@media(max-width:620px){
-  .pk{display:block;margin-bottom:14px;}
-  .pk-l{display:block;margin-bottom:6px;}
-}
+.pk{margin-bottom:20px;}
+.pk-l{display:block;font-size:14.5px;font-weight:600;color:var(--ink);margin-bottom:4px;}
+.pk select{width:100%;}
 
 /* ---- 特約のえらび ---- */
 .scroll{max-height:360px;overflow-y:auto;border:0;border-radius:16px;padding:8px;background:var(--fill);}
 .cl{display:block;border:0;border-radius:13px;padding:12px 14px;margin-bottom:6px;
-  cursor:pointer;background:#fff;transition:background .15s;}
-.cl:hover{background:#FAFAFA;}
+  cursor:pointer;background:var(--fill);transition:background .15s;}
+.cl:hover{background:var(--fill2);}
 .cl input{width:20px;height:20px;margin-right:11px;vertical-align:-4px;accent-color:var(--ink);}
 .cl b{font-size:15px;font-weight:500;color:var(--ink3);transition:color .15s;}
 .cl.on b{color:var(--ink);font-weight:600;}
@@ -386,39 +420,40 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
     <div class="card">
       <h2>新しいチェック依頼をつくる</h2>
       <div class="row">
-        <div><label class="f">物件名 *</label><input type="text" id="f-bldg" placeholder="例: テタンジェ"></div>
-        <div style="max-width:120px;"><label class="f">号室 *</label><input type="text" id="f-room" placeholder="例: 203"></div>
+        <div><label class="f">物件名<span class="req">必須</span></label><input type="text" id="f-bldg" placeholder="例: テタンジェ"></div>
+        <div style="max-width:120px;"><label class="f">号室<span class="req">必須</span></label><input type="text" id="f-room" placeholder="例: 203"></div>
       </div>
-      <label class="f">契約者名 *</label>
+      <label class="f">契約者名<span class="req">必須</span></label>
       <input type="text" id="f-name" placeholder="例: 山田 太郎">
-      <label class="f">メールアドレス *</label>
+      <label class="f">メールアドレス<span class="req">必須</span></label>
       <input type="email" id="f-mail" inputmode="email" placeholder="例: taro@example.com">
-      <label class="f">契約開始日（この日から7日で、ご返信の期限になります）</label>
+      <label class="f">契約開始日<span class="hint">（この日から7日で、ご返信の期限になります）</span></label>
       <input type="date" id="f-move">
-      <label class="f">エリア（担当者が分かれます。返信の通知は、このエリアの担当者へ届きます）</label>
+      <label class="f">エリア<span class="hint">（担当者が分かれます。返信の通知は、このエリアの担当者へ届きます）</span></label>
       <select id="f-area"></select>
-      <label class="f">仲介業者（「説明を受けていない」と回答があったとき、ここへ連絡できます）</label>
+      <label class="f">仲介業者<span class="hint">（「説明を受けていない」と回答があったとき、ここへ連絡できます）</span></label>
       <div class="row">
         <div><input type="text" id="f-agco" placeholder="会社名　例: ○○不動産"></div>
         <div style="max-width:150px;"><input type="text" id="f-agnm" placeholder="担当者　例: 山田"></div>
       </div>
       <input type="email" id="f-agml" inputmode="email" placeholder="仲介業者のメールアドレス">
-      <label class="f">間取り図（写真でも可）</label>
+      <label class="f">間取り図<span class="hint">（写真でも可）</span></label>
       <input type="file" id="f-plan" accept="image/*">
       <img id="plan-th" class="thumb hide" alt="">
-      <label class="f">この物件のえらび（あてはまるものを1つずつ。なければ、そのままで結構です）</label>
+      <label class="f">この物件のえらび<span class="hint">（あてはまるものを1つずつ。なければ、そのままで結構です）</span></label>
+      <div id="bp-note" class="bp hide"></div>
       <div id="pick-list"></div>
 
-      <label class="f">この契約に該当する特約（チェックしたものだけ入居者に出ます／<b>タイトルを押すと文面が開きます</b>）</label>
+      <label class="f">この契約に該当する特約<span class="hint">（チェックしたものだけ入居者に出ます／<b>タイトルを押すと文面が開きます</b>）</span></label>
       <div class="row" style="margin-bottom:8px;">
         <button type="button" class="btn ghost sm" id="cl-all">全選択</button>
         <button type="button" class="btn ghost sm" id="cl-none">全解除</button>
       </div>
       <div class="scroll" id="cl-list"></div>
-      <label class="f">個別に伝えたいこと（1行に1件。入居者側でも印を付けていただきます）</label>
+      <label class="f">個別に伝えたいこと<span class="hint">（1行に1件。入居者側でも印を付けていただきます）</span></label>
       <textarea id="f-extra" rows="3"
         placeholder="例）バルコニーの物干し竿は、前の入居者のものです。ご自由にお使いください。"></textarea>
-      <label class="f">社内メモ（入居者には出ません）</label>
+      <label class="f">社内メモ<span class="hint">（入居者には出ません）</span></label>
       <input type="text" id="f-memo" placeholder="任意">
       <div class="err" id="new-err"></div>
       <button class="btn" id="new-go">送信する</button>
@@ -689,6 +724,95 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
   $('#f-area').addEventListener('change', picksByArea);
 
   function resetPicks(){ $$('#pick-list select').forEach(function(sl){ sl.value = ''; }); }
+
+  /* ---- 同じ物件の、前のご案内から引き継ぎます ---------------------------
+       ・物件名（と号室）を入れると、前に作ったご案内をさがします。
+       ・見つかったら、えらび（プルダウン）とエリア・仲介を入れておきます。
+       ・号室まで同じときは、特約の印も、そのまま引き継ぎます。
+       ・手で入れたところには、さわりません。引き継ぎで入れたところだけ、
+         あとから物件名・号室を直すと、入れ直します。
+       ・「引き継ぎをやめる」で、はじめの状態に戻ります。
+     ---------------------------------------------------------------------- */
+  var _bpId   = '';     /* いま引き継いだ元のご案内の ID */
+  var _bpSeq  = 0;      /* 続けて入力したとき、古い返事で上書きしないための番号 */
+  var _bpAuto = {};     /* 引き継ぎで入れたところ（手入力と区別します） */
+
+  function bpHide(){ $('#bp-note').classList.add('hide'); $('#bp-note').innerHTML = ''; }
+  function bpClear(){ _bpId = ''; _bpAuto = {}; bpHide(); }
+
+  /* 手で入れていないところにだけ入れて、入れたことを覚えておきます */
+  function bpSet(id, v){
+    var el = $(id);
+    if(!el) return;
+    if(el.value && !_bpAuto[id]) return;      /* 手で入れたもの → さわりません */
+    el.value = v || '';
+    if(v) _bpAuto[id] = 1; else delete _bpAuto[id];
+  }
+
+  function bpFill(){
+    var bl = $('#f-bldg').value.trim();
+    var rm = $('#f-room').value.trim();
+    if(!bl){ bpClear(); return; }
+
+    var mine = ROWS.filter(function(r){ return String(r.bldg||'').trim() === bl; });
+    if(!mine.length){ bpClear(); return; }
+
+    /* ROWS は新しい順です。号室まで同じものがあれば、そちらを使います */
+    var same = rm ? mine.filter(function(r){ return String(r.room||'').trim() === rm; }) : [];
+    var use  = same[0] || mine[0];
+    if(use.id === _bpId) return;              /* もう同じものを引き継いでいます */
+
+    var seq = ++_bpSeq;
+    post({ action:'detail', key:KEY, id:use.id }).then(function(d){
+      if(seq !== _bpSeq) return;              /* もっと新しい入力があった → 捨てます */
+      if(!d || !d.ok) return;
+      _bpId = use.id;
+
+      var have = {}; (d.clauses||[]).forEach(function(t){ have[t] = 1; });
+
+      bpSet('#f-area', use.area);
+      bpSet('#f-agco', use.agentCo);
+      bpSet('#f-agnm', use.agentName);
+      bpSet('#f-agml', use.agentMail);
+
+      var got = 0;
+      $$('#pick-list select').forEach(function(sl){
+        var k   = sl.getAttribute('data-k');
+        var key = 'pk:' + k;
+        var hit = picksOf(k).filter(function(c){ return have[c.t]; })[0];
+        if(sl.value && !_bpAuto[key]) return;               /* 手でえらんだもの → そのまま */
+        sl.value = hit ? hit.t : '';
+        if(hit){ _bpAuto[key] = 1; got++; } else { delete _bpAuto[key]; }
+      });
+
+      /* 号室まで同じときだけ、特約の印も引き継ぎます（間取りが同じなので） */
+      var alsoCl = same.length > 0;
+      if(alsoCl){
+        $$('#cl-list .cl').forEach(function(e){
+          var on = !!have[e.getAttribute('data-t')];
+          e.querySelector('input').checked = on;
+          e.classList.toggle('on', on);
+        });
+      }
+
+      if(!got && !alsoCl){ bpHide(); return; }
+      $('#bp-note').innerHTML =
+        '<span><b>' + esc(use.bldg) + ' ' + esc(use.room) + '</b>（' +
+          esc(String(use.created).slice(0,10)) + '）のご案内から、' +
+          (got ? ('えらび ' + got + ' 件') : '') +
+          (got && alsoCl ? ' と ' : '') +
+          (alsoCl ? '特約の印' : '') +
+          ' を引き継ぎました。ちがうときは、下で直してください。</span>' +
+        '<button type="button" class="btn ghost sm" id="bp-off">引き継ぎをやめる</button>';
+      $('#bp-note').classList.remove('hide');
+      $('#bp-off').addEventListener('click', function(){
+        resetClauses();          /* えらびも、特約の印も、はじめの状態に戻ります */
+        bpClear();
+      });
+    }).catch(function(){ bpHide(); });
+  }
+  $('#f-bldg').addEventListener('change', bpFill);
+  $('#f-room').addEventListener('change', bpFill);
   function pickedClauses(){
     return $$('#pick-list select').map(function(sl){ return sl.value; })
              .filter(function(v){ return v; });
@@ -794,6 +918,7 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
          特約の印は、はじめの状態にそろえ直します。 */
       ['#f-bldg','#f-room','#f-name','#f-mail','#f-memo','#f-extra'].forEach(function(s){ $(s).value=''; });
       resetClauses();
+      bpClear();
       planData = null; $('#plan-th').classList.add('hide'); $('#f-plan').value='';
       $('#made').classList.add('hide'); $('#made').innerHTML = '';
 
