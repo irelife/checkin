@@ -207,6 +207,20 @@
     $$('#manners .chk').forEach(bindChk);   /* 暮らしのルール（理由なし） */
   }
 
+  /* 文面の中の URL と電話番号を、押せるようにします。
+     （文字そのものは esc で無害にしてから、リンクだけ組み立てます） */
+  function linky(t){
+    var h = esc(String(t == null ? '' : t));
+    h = h.replace(/https?:\/\/[^\s<>"']+/g, function(u){
+      var href = u.split('&amp;').join('&');
+      return '<a href="' + href + '" target="_blank" rel="noopener">' + u + '</a>';
+    });
+    h = h.replace(/0\d{1,4}-\d{1,4}-\d{3,4}/g, function(n){
+      return '<a href="tel:' + n.split('-').join('') + '">' + n + '</a>';
+    });
+    return h.split('\n').join('<br>');
+  }
+
   var _clSeq = 0;
   function clHtml(c){
     var nm = 'w' + (++_clSeq);
@@ -217,7 +231,7 @@
         '<input type="checkbox"' + (on?' checked':'') + '>' +
         '<div class="chk-h"><i class="box"></i><div class="chk-t">' + esc(c.t) +
           (c.money ? '<span class="tag money">お金</span>' : '') + '</div></div>' +
-        (c.b ? ('<div class="chk-b">' + esc(c.b) + '</div>') : '') +
+        (c.b ? ('<div class="chk-b">' + linky(c.b) + '</div>') : '') +
       '</label>' +
       '<div class="why' + (on ? ' hide' : '') + '">' +
         '<div class="why-q">印を付けなかった理由を、教えてください</div>' +
