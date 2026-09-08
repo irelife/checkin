@@ -274,9 +274,10 @@ var ps = parkList(d.parking);
 if(ps.length){
 h.push('<div class="iv"><h3>駐車場</h3><div class="row2">' +
 ps.map(function(x, i){
-return '<div><div class="big">' + esc(x.no) +
+return '<div>' +
+(ps.length > 1 ? ('<p class="pkn">' + (i+1) + '台目</p>') : '') +
+'<div class="big">' + esc(x.no) +
 '<span class="u">番' + (x.kind ? ('・' + esc(x.kind)) : '') + '</span></div>' +
-(ps.length > 1 ? ('<p style="margin-top:2px;">' + (i+1) + '台目</p>') : '') +
 '</div>';
 }).join('') + '</div>' +
 '<p>ご契約の区画以外には、駐車なさらないようお願いいたします。</p></div>');
