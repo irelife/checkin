@@ -212,6 +212,12 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
 #s-new .dial select{width:74px;padding:9px 20px 9px 6px;
   background-position:right 2px center;}
 #s-new .dial select.dir{width:66px;}
+/* 駐車場（1台目・2台目。番号のとなりに、区画の種類） */
+#s-new #f-park,#s-new #f-park2{width:104px;padding:9px 20px 9px 6px;
+  background-position:right 2px center;}
+#s-new #f-parkt,#s-new #f-park2t{width:96px;padding:9px 20px 9px 6px;
+  background-position:right 2px center;}
+#s-new .dstep select[disabled]{opacity:.4;}
 #s-new .fr2 > div{margin-bottom:0;}
 #s-new p.hint{font-size:12.5px;color:var(--ink3);margin:0 0 4px;line-height:1.6;}
 #s-new p.hint b{font-weight:600;color:var(--ink2);}
@@ -517,8 +523,17 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
 
           <div class="fr">
             <label class="f" for="f-park">駐車場の区画No.<span class="req">必須</span></label>
-            <p class="hint">お使いにならない物件は「なし」</p>
-            <select id="f-park" data-need></select>
+            <p class="hint">お使いにならない物件は「なし」。2台お借りの場合は、2台目もえらんでください</p>
+            <div class="dstep">
+              <span>1台目</span>
+              <select id="f-park" data-need aria-label="1台目の区画No."></select>
+              <select id="f-parkt" aria-label="1台目の区画の種類"></select>
+            </div>
+            <div class="dstep">
+              <span>2台目</span>
+              <select id="f-park2" aria-label="2台目の区画No."></select>
+              <select id="f-park2t" aria-label="2台目の区画の種類"></select>
+            </div>
             <p class="fe"></p>
           </div>
 
@@ -710,7 +725,7 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
 
 <div id="veil">読み込んでいます…</div>
 
-<script src="clauses.js?v=5"></script>
+<script src="clauses.js?v=6"></script>
 <script src="config.js?v=3"></script>
 <script>
 (function(){
@@ -865,13 +880,80 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
   function picksOf(key){
     return (window.CLAUSES||[]).filter(function(c){ return c.sel === key; });
   }
-  /* 駐車場の区画No.（なし／1〜70）。ふやすときは、この 70 を変えるだけです。 */
-  var PARK_MAX = 70;
+  /* ---- 駐車場（1台目・2台目。番号のとなりに、区画の種類）--------------
+       1台目 … 番号は必須。「なし」も、はっきりえらんでいただきます
+       2台目 … 任意。2台お借りのときだけ。1台目が「なし」なら、えらべません
+       種類 … 番号をえらんだら、その種類もえらんでいただきます
+       表には「12（普通）」「12（普通）、37（軽）」「なし」のように入ります。
+       区画をふやすときは PARK_MAX、種類をふやすときは PARK_KIND を直してください。
+     ---------------------------------------------------------------------- */
+  var PARK_MAX  = 70;
+  var PARK_KIND = ['普通', '軽', '縦列', '機械式'];
   (function(){
-    var h = '<option value="">選んでください</option><option value="なし">なし</option>';
-    for(var i = 1; i <= PARK_MAX; i++){ h += '<option value="' + i + '">' + i + '</option>'; }
-    $('#f-park').innerHTML = h;
+    var num = '';
+    for(var i = 1; i <= PARK_MAX; i++){ num += '<option value="' + i + '">' + i + '</option>'; }
+    var kind = '<option value="">種類</option>';
+    for(var k = 0; k < PARK_KIND.length; k++){
+      kind += '<option value="' + PARK_KIND[k] + '">' + PARK_KIND[k] + '</option>';
+    }
+    $('#f-park').innerHTML   = '<option value="">選んでください</option>' +
+                               '<option value="なし">なし</option>' + num;
+    $('#f-park2').innerHTML  = '<option value="">－</option>' + num;
+    $('#f-parkt').innerHTML  = kind;
+    $('#f-park2t').innerHTML = kind;
   })();
+
+  /* えらべる／えらべないを、そろえます
+       1台目が「なし」か未選択 … 種類も、2台目も、えらべません
+       2台目が「－」          … 2台目の種類は、えらべません          */
+  function park2Able(){
+    var a = $('#f-park').value;
+    var noCar = (a === '' || a === 'なし');
+    $('#f-parkt').disabled = noCar;
+    $('#f-park2').disabled = noCar;
+    if(noCar){ $('#f-parkt').value = ''; $('#f-park2').value = ''; }
+    var b = $('#f-park2').value;
+    $('#f-park2t').disabled = (noCar || !b);
+    if($('#f-park2t').disabled) $('#f-park2t').value = '';
+  }
+  ['#f-park','#f-park2','#f-parkt','#f-park2t'].forEach(function(k){
+    $(k).addEventListener('change', function(){ park2Able(); feClear($('#f-park')); });
+  });
+  park2Able();
+
+  /* 「12（普通）」の形にします */
+  function parkOne_(no, kind){ return kind ? (no + '（' + kind + '）') : no; }
+  function parkText(){
+    var a = $('#f-park').value, b = $('#f-park2').value;
+    if(!a) return '';
+    if(a === 'なし') return 'なし';
+    var t = parkOne_(a, $('#f-parkt').value);
+    if(b) t += '、' + parkOne_(b, $('#f-park2t').value);
+    return t;
+  }
+  /* 表の文を、えらびへ戻します */
+  function parkPut(t){
+    var v = String(t || '').split('、');
+    function put(seg, noEl, kdEl){
+      var m = /^\s*([^（(]+?)\s*(?:[（(]\s*([^）)]+?)\s*[）)])?\s*$/.exec(String(seg || ''));
+      if(!m){ return; }
+      var no = m[1], kd = m[2] || '';
+      $(noEl).value = no;
+      if($(noEl).value !== no) $(noEl).value = '';
+      park2Able();
+      if(!$(kdEl).disabled && kd){
+        $(kdEl).value = kd;
+        if($(kdEl).value !== kd) $(kdEl).value = '';
+      }
+    }
+    put(v[0], '#f-park', '#f-parkt');
+    if(v[1]) put(v[1], '#f-park2', '#f-park2t');
+    park2Able();
+  }
+  function parkClear(){
+    ['#f-park','#f-park2','#f-parkt','#f-park2t'].forEach(function(k){ $(k).value = ''; });
+    park2Able();
+  }
 
   function drawPicks(){
     $('#pick-list').innerHTML = (window.PICKS||[]).map(function(g){
@@ -970,7 +1052,7 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
       if(alsoCl){
         /* 駐車場の区画とポストのダイヤルは、お部屋についているものです。
            号室まで同じときだけ引き継ぎます。 */
-        if(typeof d.parking === 'string') bpSet('#f-park', d.parking);
+        if(typeof d.parking === 'string' && !$('#f-park').value) parkPut(d.parking);
         /* ダイヤルは、まだ手で入れていないときだけ入れ直します */
         if(dialVals().join('') === '') dialPut(d.postDial);
       }
@@ -1178,7 +1260,8 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
   /* ---- 下書き（この端末にだけ残します。サーバーへは送りません）--------- */
   var DKEY = 'ire_check_draft';
   var DFLD = ['#f-bldg','#f-room','#f-name','#f-mail','#f-move','#f-area',
-              '#f-park','#f-dir1','#f-post-r','#f-dir2','#f-post-l',
+              '#f-park','#f-parkt','#f-park2','#f-park2t',
+              '#f-dir1','#f-post-r','#f-dir2','#f-post-l',
               '#f-agco','#f-agnm','#f-agml','#f-extra','#f-memo'];
 
   function draftSave(){
@@ -1197,6 +1280,10 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
   function draftPut(d){
     if(!d) return;
     DFLD.forEach(function(k){ if(typeof d.v[k] === 'string') $(k).value = d.v[k]; });
+    park2Able();
+    ['#f-parkt','#f-park2','#f-park2t'].forEach(function(k){
+      if(typeof d.v[k] === 'string' && !$(k).disabled){ $(k).value = d.v[k]; park2Able(); }
+    });
     var sl = $$('#pick-list select');
     (d.picks || []).forEach(function(v, i){ if(sl[i]) sl[i].value = v || ''; });
     if(d.cl){
@@ -1249,7 +1336,7 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
       name:$('#f-name').value.trim(), mail:$('#f-mail').value.trim(),
       moveIn:$('#f-move').value, memo:$('#f-memo').value.trim(),
       area:$('#f-area').value,
-      parking:$('#f-park').value, postDial:dialText(),
+      parking:parkText(), postDial:dialText(),
       agentCo:$('#f-agco').value.trim(), agentName:$('#f-agnm').value.trim(),
       agentMail:$('#f-agml').value.trim(),
       clauses:$$('#cl-list .cl').filter(function(e){ return e.querySelector('input').checked; })
@@ -1265,6 +1352,30 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
     /* 「必須」の欄を、1つずつ見ます。だめなところは、その場に赤字で出します */
     var first = null, allOk = true;
     NEED.forEach(function(el){ if(!feOk(el)){ allOk = false; if(!first) first = el; } });
+
+    /* 番号をえらんだのに、区画の種類が空のまま */
+    var kindMiss = null;
+    if($('#f-park').value && $('#f-park').value !== 'なし' && !$('#f-parkt').value){
+      kindMiss = $('#f-parkt');
+    }else if($('#f-park2').value && !$('#f-park2t').value){
+      kindMiss = $('#f-park2t');
+    }
+    $('#f-parkt').classList.remove('bad'); $('#f-park2t').classList.remove('bad');
+    if(kindMiss){
+      feSet($('#f-park'), '区画の種類（普通・軽・縦列・機械式）もえらんでください');
+      $('#f-park').classList.remove('bad');
+      kindMiss.classList.add('bad');
+      allOk = false; if(!first) first = kindMiss;
+    }
+
+    /* 1台目と2台目に、同じ区画をえらんでいないか */
+    if($('#f-park').value && $('#f-park').value === $('#f-park2').value){
+      feSet($('#f-park'), '1台目と2台目に、同じ区画がえらばれています');
+      $('#f-park2').classList.add('bad');
+      allOk = false; if(!first) first = $('#f-park2');
+    }else{
+      $('#f-park2').classList.remove('bad');
+    }
 
     /* ダイヤルは任意ですが、入れるなら3つそろえていただきます */
     var dv = dialVals(), dn = dv.filter(function(x){ return x; }).length;
@@ -1290,8 +1401,9 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
       if(!res.ok){ $('#new-err').textContent = res.err || 'つくれませんでした。'; return; }
       /* 書きかけを消します（エリアと仲介は、続けて作れるよう残します）。
          特約の印は、はじめの状態にそろえ直します。 */
-      ['#f-bldg','#f-room','#f-name','#f-mail','#f-memo','#f-extra',
-       '#f-park'].forEach(function(s){ $(s).value=''; });
+      ['#f-bldg','#f-room','#f-name','#f-mail','#f-memo','#f-extra']
+        .forEach(function(s){ $(s).value=''; });
+      parkClear();
       dialClear();
       resetClauses();
       bpClear();
