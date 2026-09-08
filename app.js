@@ -19,12 +19,12 @@ var DATA = null; // サーバーから受け取ったご案内
 
 /* 暮らしのルールの文。ゴミの回収の回数だけ、エリアによって差し替えます。
 エリアが分からないとき・回数が決まっていないときは、
-回数を書かずに「市区町村のきまりによります」と出します。 */
+回数を書かずに「市区町村の決まりによります」と出します。 */
 function manners(){
 var area = String((DATA || {}).area || '');
 var n = String((window.TRASH || {})[area] || '');
 var t = n ? ('回収は' + n + 'です')
-: '回収の曜日と回数は、お住まいの市区町村のきまりによります';
+: '回収の曜日と回数は、お住まいの市区町村の規定によります';
 return (window.MANNERS || []).map(function(m){
 return String(m).split('{ゴミ回収}').join(t);
 });
@@ -52,14 +52,14 @@ var MAXPHOTO = 10; /* 1か所あたりの写真の上限 */
 こちらのやることが変わるためです。 */
 var WHYS = [
 '説明を受けていない',
-'説明は受けたが、意味が分からなかった',
+'説明は受けたが、内容が理解できなかった',
 '内容に納得できない'
 ];
 
 /* ご質問のあて先のご案内。
 このページは「お部屋の確認」と「ご説明の確認」だけを受け取る場所です。
 それ以外のご質問をここに書かれても、こちらでは受けられないため、
-はじめに、はっきりお伝えしておきます。 */
+最初に、はっきりお伝えしておきます。 */
 function askHtml(){
 var hp = '';
 try{ hp = String((window.APP_CONFIG||{}).HP_URL || '').trim(); }catch(e){}
@@ -71,8 +71,8 @@ return '<b>ご質問・ご要望について</b>' +
 'くれぐれもよろしくお願いいたします。</p>' +
 (hp ? ('<a class="hp" href="' + esc(hp) + '" target="_blank" rel="noopener">' +
 (/contact|inquiry|toiawase|form/i.test(hp)
-? 'お問い合わせページをひらく'
-: '弊社ホームページをひらく') + '</a>') : '');
+? 'お問い合わせページを開く'
+: '弊社ホームページを開く') + '</a>') : '');
 }
 
 function $(s){ return document.querySelector(s); }
@@ -108,7 +108,7 @@ if(!Object.prototype.hasOwnProperty.call(rooms, k)) continue;
 slim.rooms[k] = { ng:rooms[k].ng, comment:rooms[k].comment || '', photos:[] };
 }
 localStorage.setItem(KEY, JSON.stringify(slim));
-try{ console.warn('[checkin] 端末がいっぱいのため、写真ぬきで控えました'); }catch(x){}
+try{ console.warn('[checkin] 端末の空き容量が不足のため、写真を除いて保存しました'); }catch(x){}
 }catch(e){
 try{ localStorage.removeItem(KEY); }catch(x){}
 }
@@ -127,7 +127,7 @@ var p = auto ? String(auto).toUpperCase().trim()
 : String($('#pw').value || '').toUpperCase().trim();
 if(p.length < 4){ $('#pw-err').textContent = 'パスワードを入れてください。'; return; }
 $('#pw-err').textContent = '';
-veil(auto ? 'ひらいています…' : '確認しています…');
+veil(auto ? '開いています…' : '確認しています…');
 post({ action:'open', id:ID, pass:p }).then(function(res){
 veil(false);
 if(!res.ok){
@@ -138,13 +138,13 @@ return;
 PASS = p; DATA = res;
 passSave(p); /* 次から、入れずに開けます */
 $('#btn-info').classList.remove('hide'); /* いつでも見返せるように */
-if(res.done){ showDone('すでにご返信いただいています。ありがとうございました。'); return; }
+if(res.done){ showDone('すでにご返信をいただいております。ありがとうございました。'); return; }
 load();
 build();
 go(1);
 }).catch(function(){
 veil(false);
-$('#pw-err').textContent = '通信できませんでした。電波の良いところでもう一度お試しください。';
+$('#pw-err').textContent = '通信できませんでした。電波状況の良い場所で、もう一度お試しください。';
 });
 }
 
@@ -176,7 +176,7 @@ pim.addEventListener('click', function(){ zoom(big); });
 pim.addEventListener('error', function(){
 $('#plan').innerHTML =
 '<a class="plan-link" href="' + esc(DATA.plan) + '" target="_blank" rel="noopener">' +
-'間取り図をひらく</a>';
+'間取り図を開く</a>';
 });
 }
 
@@ -191,7 +191,7 @@ return '<div class="place' + (cur.ng ? ' is-ng' : '') + '" data-p="' + esc(p) + 
 '<label class="ng"><input type="radio" name="r' + i + '" value="ng"' + (cur.ng===true?' checked':'') + '><span>気になる</span></label>' +
 '</div>' +
 '<div class="detail' + (cur.ng ? '' : ' hide') + '">' +
-'<textarea placeholder="どこが、どんな状態か教えてください（例：北側の壁に10cmほどのキズ）">' + esc(cur.comment||'') + '</textarea>' +
+'<textarea placeholder="箇所と状態をご記入ください（例：北側の壁に10cm程度のキズ）">' + esc(cur.comment||'') + '</textarea>' +
 '<div class="shots"></div>' +
 '</div>' +
 '</div>';
@@ -203,7 +203,7 @@ var all = window.CLAUSES || [];
 var mine = (DATA.clauses && DATA.clauses.length)
 ? all.filter(function(c){ return DATA.clauses.indexOf(c.t) >= 0; })
 : [];
-if(!mine.length) mine = all; // 指定が無いときは、ぜんぶ出します
+if(!mine.length) mine = all; // 指定が無いときは、すべて表示します
 
 /* 特約の一覧に無いものは「この物件について」として、そのまま出します。
 管理画面で「個別に伝えたいこと」に書いた文が、ここに来ます。 */
@@ -244,7 +244,7 @@ return h.split('\n').join('<br>');
 /* ===== お部屋のご案内 ================================================
 駐車場・集合ポストのダイヤル・水道・ゴミ・保険を、1枚にまとめます。
 ・ご返信の前でも、送ったあとでも、いつでも見られます
-・該当するものだけを出します（無いものは、はじめから出しません）
+・該当するものだけを出します（無いものは、最初から出しません）
 ===================================================================== */
 
 /* 「12（普通）、37（軽）」を、1台ずつに分けます */
@@ -257,7 +257,7 @@ return m ? { no:m[1], kind:m[2] || '' } : null;
 }).filter(Boolean);
 }
 
-/* この方の該当特約から、えらばれているものを1つ取り出します */
+/* この方の該当特約から、選ばれているものを1つ取り出します */
 function pickedOf(key){
 var have = {};
 ((DATA || {}).clauses || []).forEach(function(t){ have[t] = 1; });
@@ -286,7 +286,7 @@ return '<div><div class="big">' + esc(x.no) +
 if(String(d.postDial || '').trim()){
 h.push('<div class="iv"><h3>集合ポストのダイヤル</h3>' +
 '<div class="big">' + esc(d.postDial) + '</div>' +
-'<p>開かないときは、ゆっくり、一度ぴったり止めてからお回しください。</p></div>');
+'<p>開かない場合は、数字にきちんと合わせてから、ゆっくりお回しください。</p></div>');
 }
 
 /* --- 水道料金 --- */
@@ -301,7 +301,7 @@ var g = '<div class="iv"><h3>ゴミの出し方</h3>';
 if(tr) g += '<div class="big">回収は ' + esc(tr) + '</div>';
 if(gm) g += '<p>' + linky(gm.b) + '</p>';
 if(gg) g += '<p>' + linky(gg.b) + '</p>';
-g += '<p>ゴミ置き場には24時間いつでも出せますが、' +
+g += '<p>ゴミ置き場は24時間ご利用いただけますが、' +
 '分別されていないゴミは回収されません。</p></div>';
 h.push(g);
 }
@@ -312,24 +312,24 @@ if(hk) h.push('<div class="iv"><h3>お部屋を壊してしまったとき</h3><
 linky(hk.b) + '</p></div>');
 
 if(!h.length){
-h.push('<div class="iv"><p>このお部屋のご案内は、いまのところありません。</p></div>');
+h.push('<div class="iv"><p>このお部屋のご案内は、現在ございません。</p></div>');
 }
 return h.join('');
 }
 
-/* このページを、あとから開きやすくするための案内 */
+/* このページを、後から開きやすくするための案内 */
 function keepHtml(){
 var ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
-return '<div class="iv keep"><h3>あとから見返すには</h3>' +
-'<p>このページは、<b>いつでもこの画面から見返せます。</b><br>' +
-'このスマホでは、<b>次からパスワードを入れずに開けます。</b></p>' +
-'<p><b>ホーム画面に置いておくと、すぐ開けます。</b><br>' +
+return '<div class="iv keep"><h3>後日、ご確認いただくには</h3>' +
+'<p>このページは、<b>いつでもこの画面からご確認いただけます。</b><br>' +
+'このスマートフォンでは、<b>次回以降、パスワードの入力なしで開けます。</b></p>' +
+'<p><b>ホーム画面に追加しておくと、すぐに開けます。</b><br>' +
 (ios
 ? '下の <b>共有ボタン（□に↑）</b> を押して、<b>「ホーム画面に追加」</b>を選んでください。'
 : '右上の <b>⋮</b> を押して、<b>「ホーム画面に追加」</b>を選んでください。') +
 '</p>' +
 '<button type="button" class="btn ghost sm" id="pass-drop" ' +
-'style="margin-top:12px;">このスマホから、パスワードの記憶を消す</button></div>';
+'style="margin-top:12px;">このスマートフォンから、パスワードの記憶を削除する</button></div>';
 }
 
 /* メールに入れる、文字だけのご案内。
@@ -350,7 +350,7 @@ t.push('');
 if(String(d.postDial || '').trim()){
 t.push('■ 集合ポストのダイヤル');
 t.push('　' + d.postDial);
-t.push('　開かないときは、ゆっくり、一度ぴったり止めてからお回しください。');
+t.push('　開かない場合は、数字にきちんと合わせてから、ゆっくりお回しください。');
 t.push('');
 }
 var w = pickedOf('水道');
@@ -363,7 +363,7 @@ t.push('■ ゴミの出し方');
 if(tr) t.push('　回収は ' + tr + ' です。');
 if(gm) t.push('　' + gm.b.split('\n').join('\n　'));
 if(gg) t.push('　' + gg.b.split('\n').join('\n　'));
-t.push('　ゴミ置き場には24時間いつでも出せますが、');
+t.push('　ゴミ置き場は24時間ご利用いただけますが、');
 t.push('　分別されていないゴミは回収されません。');
 t.push('');
 }
@@ -396,7 +396,7 @@ $('#s-info').classList.remove('hide');
 window.scrollTo(0,0);
 }
 
-var _infoBack = 'done'; /* もどる先。'done' か 'step' */
+var _infoBack = 'done'; /* 戻る先。'done' か 'step' */
 $('#btn-info').addEventListener('click', function(){
 _infoBack = $('#s-done').classList.contains('hide') ? 'step' : 'done';
 showInfo();
@@ -407,7 +407,7 @@ document.addEventListener('click', function(e){
 var b = e.target && e.target.closest ? e.target.closest('#pass-drop') : null;
 if(!b) return;
 passDrop();
-b.textContent = '消しました。次からはパスワードが要ります';
+b.textContent = '削除しました。次回からはパスワードの入力が必要です';
 b.disabled = true;
 });
 
@@ -431,14 +431,14 @@ return '<div class="clwrap" data-t="' + esc(c.t) + '">' +
 (c.b ? ('<div class="chk-b">' + linky(c.b) + '</div>') : '') +
 '</label>' +
 '<div class="why' + (on ? ' hide' : '') + '">' +
-'<div class="why-q">印を付けなかった理由を、教えてください</div>' +
+'<div class="why-q">印を付けなかった理由をお選びください</div>' +
 WHYS.map(function(t){
 var sel = (w.why === t);
 return '<label class="whyr' + (sel ? ' on' : '') + '">' +
 '<input type="radio" name="' + nm + '" value="' + esc(t) + '"' + (sel?' checked':'') + '>' +
 '<span>' + esc(t) + '</span></label>';
 }).join('') +
-'<textarea class="why-n" placeholder="ひとこと（任意）">' + esc(w.note || '') + '</textarea>' +
+'<textarea class="why-n" placeholder="補足（任意）">' + esc(w.note || '') + '</textarea>' +
 '</div>' +
 '</div>';
 }
@@ -587,9 +587,9 @@ var mnLeft = mn.filter(function(m){ return !checks[m]; }).length;
 
 $('#next').disabled = (step === 1 && !okAll) || (step === 2 && mnLeft > 0);
 $('#next').textContent = (step === 1)
-? (okAll ? 'つぎへ（ご説明の確認）' : '残り ' + (total - doneP) + 'か所')
+? (okAll ? '次へ（ご説明の確認）' : '残り ' + (total - doneP) + 'か所')
 : (step === 2
-? (mnLeft > 0 ? '暮らしのルール が残り ' + mnLeft + ' 件' : '確認')
+? (mnLeft > 0 ? '暮らしのルールが残り ' + mnLeft + ' 件' : '確認')
 : '送信する');
 }
 
@@ -618,7 +618,7 @@ var photos = 0;
 places.forEach(function(p){ if(rooms[p]) photos += (rooms[p].photos||[]).length; });
 
 var h = '';
-h += row('見ていただいた場所', places.length + ' か所');
+h += row('ご確認いただいた箇所', places.length + ' か所');
 h += row('気になるところ', ng.length ? ('<b class="sum-ng">' + ng.length + ' か所</b>') : '<b>なし</b>');
 if(ng.length) h += row('　場所', esc(ng.join('、')));
 h += row('写真', photos + ' 枚');
@@ -647,19 +647,19 @@ note: checks[t] ? '' : (w.note || '') };
 })
 };
 keepAwake(true);
-veilCount('送信しています… 画面をそのままにしてお待ちください');
+veilCount('送信しています。画面をそのままにしてお待ちください');
 post(payload).then(function(res){
 keepAwake(false);
 veil(false);
 if(!res.ok){ alert(res.err || '送信できませんでした。もう一度お試しください。'); return; }
 clear();
 showDone(res.ng > 0
-? 'ありがとうございました。気になるところについて、担当者からご連絡します。'
-: 'ありがとうございました。問題なしとして承りました。');
+? 'ありがとうございました。いただきました室内チェックのご内容は、ご退去時まで記録として保管させていただきます。'
+: 'ありがとうございました。問題なしとして承りました。いただきました室内チェックのご内容は、ご退去時まで記録として保管させていただきます。');
 }).catch(function(){
 keepAwake(false);
 veil(false);
-alert('通信できませんでした。電波の良いところで、もう一度お試しください。書いた内容は残っています。');
+alert('通信できませんでした。電波状況の良い場所で、もう一度お試しください。入力内容は保存されています。');
 });
 }
 
@@ -742,16 +742,16 @@ if(step < 3) go(step + 1); else submit();
 $('#back').addEventListener('click', function(){ if(step > 1) go(step - 1); });
 /* 「すべてに印を付ける」は外しました。
 一括で付けられると、文面を読まずに送れてしまうためです。 */
-/* 「すべてに印を付ける」「ぜんぶ外す」は、どちらも外しました。
+/* 「すべてに印を付ける」「すべて外す」は、どちらも外しました。
 まとめて操作できると、文面を読まずに送れてしまうためです。 */
 
 if(!ID){
 $('#pw-box').innerHTML =
 '<div class="card"><h2>ご案内のリンクから開いてください</h2>' +
-'<p class="lead">メールに書いてあるアドレスをタップすると開きます。</p></div>';
+'<p class="lead">メールに記載のアドレスをタップすると開きます。</p></div>';
 }else{
 /* リンクにパスワードが入っていれば、それで開きます。
-無ければ、この端末で一度ひらいたときのものを使います。 */
+無ければ、この端末で一度開いたときのものを使います。 */
 var auto = LNK || passLoad();
 if(auto) openIt(decodeURIComponent(auto));
 }
