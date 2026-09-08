@@ -205,6 +205,13 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
 #s-new .fr{margin-bottom:20px;}
 #s-new .fr:last-child{margin-bottom:0;}
 #s-new .fr2{display:grid;grid-template-columns:2fr 1fr;gap:18px;}
+#s-new .fr2e{grid-template-columns:1fr 1fr;}
+/* ダイヤルの3つ（右に◯回まわして◯◯、左に◯◯） */
+#s-new .dial{font-size:14px;color:var(--ink2);}
+#s-new .dstep{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:6px;}
+#s-new .dial select{width:74px;padding:9px 20px 9px 6px;
+  background-position:right 2px center;}
+#s-new .dial select.dir{width:66px;}
 #s-new .fr2 > div{margin-bottom:0;}
 #s-new p.hint{font-size:12.5px;color:var(--ink3);margin:0 0 4px;line-height:1.6;}
 #s-new p.hint b{font-weight:600;color:var(--ink2);}
@@ -505,6 +512,32 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
             <label class="f" for="f-move">契約開始日<span class="req">必須</span></label>
             <p class="hint">この日から7日で、ご返信の期限になります</p>
             <input type="date" id="f-move" data-need>
+            <p class="fe"></p>
+          </div>
+
+          <div class="fr">
+            <label class="f" for="f-park">駐車場の区画No.<span class="req">必須</span></label>
+            <p class="hint">お使いにならない物件は「なし」</p>
+            <select id="f-park" data-need></select>
+            <p class="fe"></p>
+          </div>
+
+          <div class="fr">
+            <label class="f" for="f-post-r">集合ポストのダイヤル</label>
+            <p class="hint">はじめは必ず2回です。向きはえらべます。無い物件は、字を「－」のままに</p>
+            <div class="dial">
+              <div class="dstep">
+                <select id="f-dir1" aria-label="はじめにまわす向き"></select>
+                <span>に</span>
+                <span>2回まわして</span>
+                <select id="f-post-r" aria-label="はじめに合わせる字"></select>
+              </div>
+              <div class="dstep">
+                <select id="f-dir2" aria-label="つぎにまわす向き"></select>
+                <span>に</span>
+                <select id="f-post-l" aria-label="つぎに合わせる字"></select>
+              </div>
+            </div>
             <p class="fe"></p>
           </div>
         </div>
@@ -832,6 +865,14 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
   function picksOf(key){
     return (window.CLAUSES||[]).filter(function(c){ return c.sel === key; });
   }
+  /* 駐車場の区画No.（なし／1〜70）。ふやすときは、この 70 を変えるだけです。 */
+  var PARK_MAX = 70;
+  (function(){
+    var h = '<option value="">選んでください</option><option value="なし">なし</option>';
+    for(var i = 1; i <= PARK_MAX; i++){ h += '<option value="' + i + '">' + i + '</option>'; }
+    $('#f-park').innerHTML = h;
+  })();
+
   function drawPicks(){
     $('#pick-list').innerHTML = (window.PICKS||[]).map(function(g){
       var opt = '<option value="">' + esc(g.none || 'えらばない') + '</option>' +
@@ -870,7 +911,7 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
          あとから物件名・号室を直すと、入れ直します。
        ・「引き継ぎをやめる」で、はじめの状態に戻ります。
      ---------------------------------------------------------------------- */
-  var _bpId   = '';     /* いま引き継いだ元のご案内の ID */
+  var _bpId   = '';     /* いま引き継いだ元（ご案内のID＋号室まで一致したか）*/
   var _bpSeq  = 0;      /* 続けて入力したとき、古い返事で上書きしないための番号 */
   var _bpAuto = {};     /* 引き継ぎで入れたところ（手入力と区別します） */
 
@@ -897,13 +938,16 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
     /* ROWS は新しい順です。号室まで同じものがあれば、そちらを使います */
     var same = rm ? mine.filter(function(r){ return String(r.room||'').trim() === rm; }) : [];
     var use  = same[0] || mine[0];
-    if(use.id === _bpId) return;              /* もう同じものを引き継いでいます */
+    /* 同じご案内でも、「号室まで同じ」になったときは、もう一度読み直します
+       （駐車場の区画・ポストのダイヤル・特約の印が、そこで増えるため） */
+    var key = use.id + (same.length ? '/room' : '/bldg');
+    if(key === _bpId) return;
 
     var seq = ++_bpSeq;
     post({ action:'detail', key:KEY, id:use.id }).then(function(d){
       if(seq !== _bpSeq) return;              /* もっと新しい入力があった → 捨てます */
       if(!d || !d.ok) return;
-      _bpId = use.id;
+      _bpId = key;
 
       var have = {}; (d.clauses||[]).forEach(function(t){ have[t] = 1; });
 
@@ -923,6 +967,13 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
 
       /* 号室まで同じときだけ、特約の印も引き継ぎます（間取りが同じなので） */
       var alsoCl = same.length > 0;
+      if(alsoCl){
+        /* 駐車場の区画とポストのダイヤルは、お部屋についているものです。
+           号室まで同じときだけ引き継ぎます。 */
+        if(typeof d.parking === 'string') bpSet('#f-park', d.parking);
+        /* ダイヤルは、まだ手で入れていないときだけ入れ直します */
+        if(dialVals().join('') === '') dialPut(d.postDial);
+      }
       if(alsoCl){
         $$('#cl-list .cl').forEach(function(e){
           var on = !!have[e.getAttribute('data-t')];
@@ -1034,6 +1085,67 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
     fr.readAsDataURL(f);
   });
 
+  /* ---- 集合ポストのダイヤル ------------------------------------------
+       「右に2回まわして4、左に7」のように、5つのえらびで組み立てます。
+         ・まわす向き … 右／左（はじめが左の物件もあるので、えらべます）
+         ・まわす回数 … 1〜5回
+         ・合わせる字 … 0〜9 と A〜F（A や B の目盛りがある錠のため）
+       ふやす／へらすときは、下の DIAL_CHARS と DIAL_TURNS を直すだけです。
+       表には「右に2回まわして4、左に7」の1行の文のまま入れます。
+     ---------------------------------------------------------------------- */
+  var DIAL_CHARS = '0123456789ABCDEF';   /* 合わせる字。要らない字は消してください */
+  var DIAL_TURNS = 2;                    /* はじめにまわす回数。いつも2回なので固定です */
+  var DIAL = ['#f-post-r','#f-post-l'];  /* そろえていただく2つ（合わせる字） */
+
+  (function(){
+    function opts(list, blank){
+      var h = '<option value="">' + blank + '</option>';
+      for(var i = 0; i < list.length; i++){
+        h += '<option value="' + list[i] + '">' + list[i] + '</option>';
+      }
+      return h;
+    }
+    var chars = DIAL_CHARS.split('');
+
+    /* 向きは、よくある「右→左」を、はじめから入れておきます（変えられます） */
+    $('#f-dir1').innerHTML = '<option value="右">右</option><option value="左">左</option>';
+    $('#f-dir2').innerHTML = '<option value="左">左</option><option value="右">右</option>';
+    $('#f-dir1').classList.add('dir'); $('#f-dir2').classList.add('dir');
+
+    $('#f-post-r').innerHTML = opts(chars, '－');
+    $('#f-post-l').innerHTML = opts(chars, '－');
+  })();
+
+  DIAL.forEach(function(k){
+    $(k).addEventListener('change', function(){ feClear($('#f-post-r')); });
+  });
+
+  function dialVals(){ return DIAL.map(function(k){ return $(k).value; }); }
+  function dialText(){
+    var v = dialVals();
+    if(v.join('') === '') return '';
+    return $('#f-dir1').value + 'に' + DIAL_TURNS + '回まわして' + v[0] +
+           '、' + $('#f-dir2').value + 'に' + v[1];
+  }
+  /* 表の文を、えらびへ戻します（読めない書き方なら、何もしません） */
+  function dialPut(t){
+    /* 表を手で直された場合にそなえて、空白や小文字も読めるようにしています */
+    var m = /^\s*(右|左)\s*に\s*(\d+)\s*回\s*まわして\s*([0-9A-Za-z])\s*、\s*(右|左)\s*に\s*([0-9A-Za-z])\s*$/
+              .exec(String(t || ''));
+    if(!m) return false;
+    $('#f-dir1').value = m[1];
+    $('#f-post-r').value = m[3].toUpperCase();
+    $('#f-dir2').value = m[4]; $('#f-post-l').value = m[5].toUpperCase();
+    /* えらびに無い字だったときは、入れずにおきます */
+    if($('#f-post-r').value !== m[3].toUpperCase() ||
+       $('#f-post-l').value !== m[5].toUpperCase()){ dialClear(); return false; }
+    return true;
+  }
+  function dialClear(){
+    DIAL.forEach(function(k){ $(k).value = ''; });
+    $('#f-dir1').value = '右'; $('#f-dir2').value = '左';
+  }
+
   /* ---- 入力のチェック（欄ごとに、その場で赤く出します）---------------- */
   function feBox(el){
     var r = el.closest('.fr2 > div') || el.closest('.fr');
@@ -1066,6 +1178,7 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
   /* ---- 下書き（この端末にだけ残します。サーバーへは送りません）--------- */
   var DKEY = 'ire_check_draft';
   var DFLD = ['#f-bldg','#f-room','#f-name','#f-mail','#f-move','#f-area',
+              '#f-park','#f-dir1','#f-post-r','#f-dir2','#f-post-l',
               '#f-agco','#f-agnm','#f-agml','#f-extra','#f-memo'];
 
   function draftSave(){
@@ -1136,6 +1249,7 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
       name:$('#f-name').value.trim(), mail:$('#f-mail').value.trim(),
       moveIn:$('#f-move').value, memo:$('#f-memo').value.trim(),
       area:$('#f-area').value,
+      parking:$('#f-park').value, postDial:dialText(),
       agentCo:$('#f-agco').value.trim(), agentName:$('#f-agnm').value.trim(),
       agentMail:$('#f-agml').value.trim(),
       clauses:$$('#cl-list .cl').filter(function(e){ return e.querySelector('input').checked; })
@@ -1151,6 +1265,18 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
     /* 「必須」の欄を、1つずつ見ます。だめなところは、その場に赤字で出します */
     var first = null, allOk = true;
     NEED.forEach(function(el){ if(!feOk(el)){ allOk = false; if(!first) first = el; } });
+
+    /* ダイヤルは任意ですが、入れるなら3つそろえていただきます */
+    var dv = dialVals(), dn = dv.filter(function(x){ return x; }).length;
+    if(dn > 0 && dn < DIAL.length){
+      var miss = $(DIAL[dv.indexOf('')]);
+      feSet($('#f-post-r'), 'ダイヤルは、字を2つともえらぶか、2つとも「－」にしてください');
+      $('#f-post-r').classList.remove('bad'); miss.classList.add('bad');
+      allOk = false; if(!first) first = miss;
+    }else{
+      feClear($('#f-post-r'));
+      DIAL.forEach(function(k){ $(k).classList.remove('bad'); });
+    }
     if(!allOk){
       $('#new-err').textContent = '赤いところを、ご確認ください。';
       first.focus();
@@ -1164,7 +1290,9 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
       if(!res.ok){ $('#new-err').textContent = res.err || 'つくれませんでした。'; return; }
       /* 書きかけを消します（エリアと仲介は、続けて作れるよう残します）。
          特約の印は、はじめの状態にそろえ直します。 */
-      ['#f-bldg','#f-room','#f-name','#f-mail','#f-memo','#f-extra'].forEach(function(s){ $(s).value=''; });
+      ['#f-bldg','#f-room','#f-name','#f-mail','#f-memo','#f-extra',
+       '#f-park'].forEach(function(s){ $(s).value=''; });
+      dialClear();
       resetClauses();
       bpClear();
       feAllClear();
@@ -1671,6 +1799,8 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
       h.push('<div class="i-h"><b>' + esc(d.name) + ' 様</b></div>');
       h.push('<div class="i-b">' + esc(d.mail) + '<br>' +
         (d.area ? ('エリア ' + esc(d.area) + '<br>') : '') +
+        (d.parking  ? ('駐車場の区画 ' + esc(d.parking) + '<br>') : '') +
+        (d.postDial ? ('集合ポストのダイヤル ' + esc(d.postDial) + '<br>') : '') +
         ((d.agentCo || d.agentName || d.agentMail)
           ? ('仲介 ' + esc(d.agentCo||'') + ' ' + esc(d.agentName||'') + ' ' + esc(d.agentMail||'') + '<br>') : '') +
         '作成 ' + esc(String(d.created).slice(0,10)) + ' ／ 状態 ' + esc(d.status) +
