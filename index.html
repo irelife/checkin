@@ -7,10 +7,10 @@
 <title>check｜お部屋の確認</title>
 <style>
 /* =====================================================================
-見た目のきまり（管理画面と同じ考え方）
-・枠線はつかいません。うすい塗りと、余白で分けます。
+見た目の決まり（管理画面と同じ考え方）
+・枠線はつかいません。薄い塗りと、余白で分けます。
 ・角はやわらかく、文字は太くしすぎません。
-・気にかけてほしいところだけ、うすい赤にします。
+・気にかけてほしいところだけ、薄い赤にします。
 ===================================================================== */
 :root{
 --ink:#1D1D1F; --ink2:#424245; --ink3:#86868B; --ink4:#B0B0B5;
@@ -88,7 +88,7 @@ transition:background .2s;}
 .pick{display:flex;gap:5px;background:#fff;padding:5px;border-radius:15px;}
 .pick label{flex:1;position:relative;}
 .pick input{position:absolute;opacity:0;pointer-events:none;}
-/* えらんでいないほうも、押せる場所だと分かるように、うすい塗りにします */
+/* 選んでいないほうも、押せる場所だと分かるように、薄い塗りにします */
 .pick span{display:block;text-align:center;padding:11px 6px;border-radius:11px;
 border:0;background:var(--fill);font-size:16px;font-weight:500;color:var(--ink2);
 transition:background .18s,color .18s;}
@@ -219,7 +219,7 @@ align-items:center;justify-content:center;padding:16px;}
 <div class="h-logo"><svg class="ic" viewBox="0 0 100 100" fill="currentColor" aria-hidden="true"><circle cx="34" cy="30" r="16"/><path d="M34 51C18 51 8 66 6 88h40c0-4 .6-8 1.8-11.5l9.4 4.4c1.6.8 3.5 0 4.2-1.6.8-1.6 0-3.5-1.6-4.2l-9.6-4.5C54 60 45 51 34 51Z"/><path d="M58.5 63.5 85 53.5 94 76 67.5 86Z" fill="none" stroke="currentColor" stroke-width="6.5" stroke-linejoin="round"/><path fill-rule="evenodd" d="M79 6a21 21 0 1 0 0 42 21 21 0 0 0 0-42ZM76.2 36.4 66 26.2l4.6-4.6 5.6 5.6 12-12 4.6 4.6Z"/></svg><span>check</span></div>
 <div class="h-bldg" id="h-bldg">入居時のお部屋チェック</div>
 <div class="h-sub" id="h-sub">お部屋の確認と、ご説明内容の確認</div>
-<button type="button" id="btn-info" class="h-info hide">お部屋のご案内をみる</button>
+<button type="button" id="btn-info" class="h-info hide">お部屋のご案内を見る</button>
 <div class="bar"><i id="bar" style="width:0"></i></div>
 <div class="steps" id="steps">
 <span data-s="1">① お部屋</span><span data-s="2">② ご説明</span><span data-s="3">③ 送信</span>
@@ -233,18 +233,18 @@ align-items:center;justify-content:center;padding:16px;}
 <div id="pw-box">
 <div class="card">
 <h2>パスワードを入れてください</h2>
-<p class="lead">ご案内のメールに書いてある 6文字です。</p>
+<p class="lead">ご案内のメールに記載の6文字です。</p>
 <input id="pw" type="text" inputmode="latin" autocapitalize="characters"
 autocomplete="one-time-code" autocorrect="off" spellcheck="false"
 maxlength="6" placeholder="ここに貼り付け">
 <p class="note" style="margin:8px 2px 0;">
-メールのパスワードを長押しでコピーして、上の欄を長押し →「ペースト」で貼り付けられます。
+メール内のパスワードを長押しでコピーし、上の欄を長押し →「ペースト」で貼り付けられます。
 </p>
 <div class="err" id="pw-err"></div>
-<button class="btn" id="pw-go" style="margin-top:6px;">はじめる</button>
+<button class="btn" id="pw-go" style="margin-top:6px;">確認をはじめる</button>
 </div>
 <p class="note" style="text-align:center;">
-うまく開けないときは、管理会社までご連絡ください。
+開けない場合は、管理会社までご連絡ください。
 </p>
 </div>
 </section>
@@ -258,17 +258,17 @@ maxlength="6" placeholder="ここに貼り付け">
 この確認は、入居されたときのお部屋の状態を、記録として残すためのものです。<br>
 <b style="display:inline;font-size:14.5px;">期限までにご返信がないと</b>、入居前からあったキズや汚れであっても、
 ご退去のときにご負担をお願いすることがあります。<br>
-期限を過ぎてもご返信がないときは、こちらからご連絡いたします。
+期限を過ぎてもご返信がない場合は、管理会社よりご連絡いたします。
 </p>
 </div>
 
 <div class="card">
-<h2>お部屋の中を見てください</h2>
+<h2>お部屋の状態をご確認ください</h2>
 <p class="lead">
-入居前からあるキズ・汚れ・不具合が無いか、場所ごとに教えてください。<br>
+入居前からあるキズ・汚れ・不具合の有無を、場所ごとにご確認ください。<br>
 気になるところがあれば、<b>写真</b>を撮って送ってください。<br>
-あとから「入居前からあった」と分かるようにするための確認です。<br>
-<b>お部屋にその場所や設備が無いときは、「問題なし」を選んでください。</b>
+後日「入居前からあったもの」と確認できるようにするためのものです。<br>
+<b>お部屋に該当の場所や設備が無い場合は、「問題なし」をお選びください。</b>
 </p>
 <div id="places"></div>
 </div>
@@ -279,14 +279,14 @@ maxlength="6" placeholder="ここに貼り付け">
 <div class="card">
 <h2>ご契約時のご説明について</h2>
 <p class="lead">
-不動産会社から説明を受け、内容が分かったものに印を付けてください。<br>
-分からないものは、印を付けずに送ってください。こちらからご連絡します。<br>
+不動産会社から説明を受け、内容をご理解いただいたものに印を付けてください。<br>
+ご不明な点は、印を付けずに送信してください。管理会社よりご連絡いたします。<br>
 <b>ご質問は、この画面ではお受けできません。</b>下の「ひとこと」欄には、
-印を付けなかった理由だけをお書きください。
+印を付けなかった理由のみをご記入ください。
 </p>
 <div class="sec-h">お金に関すること</div>
 <div id="cl-money"></div>
-<div class="sec-h">そのほか</div>
+<div class="sec-h">その他</div>
 <div id="cl-other"></div>
 <div class="sec-h">暮らしのルール（すべてに印が必要です）</div>
 <div id="manners"></div>
@@ -297,11 +297,11 @@ maxlength="6" placeholder="ここに貼り付け">
 <section id="s3" class="hide">
 <div class="card">
 <h2>この内容で送ります</h2>
-<p class="lead">まちがいが無ければ、いちばん下の「送信する」を押してください。</p>
+<p class="lead">お間違いがなければ、最下部の「送信する」を押してください。</p>
 <div class="sum" id="sum"></div>
 <p class="note">
-送ったあとの控えは、管理会社で保管します。<br>
-修正が必要なときは、管理会社までご連絡ください。<br>
+送信後の控えは、管理会社にて保管いたします。<br>
+修正が必要な場合は、管理会社までご連絡ください。<br>
 <b>期限までにご返信がないと</b>、入居前からあったキズや汚れであっても、
 ご退去のときにご負担をお願いすることがあります。
 </p>
@@ -313,12 +313,12 @@ maxlength="6" placeholder="ここに貼り付け">
 <section id="s-info" class="hide">
 <div class="card">
 <h2 id="info-ttl">お部屋のご案内</h2>
-<p class="lead">お引っ越し後に必要になることを、まとめています。<br>
-<b>このページは、いつでも見返せます。</b>ご案内のメールを消さずに残しておいてください。</p>
+<p class="lead">ご入居後に必要となる事項を、まとめております。<br>
+<b>このページは、いつでもご確認いただけます。</b>ご案内のメールは削除せず、保管してください。</p>
 </div>
 <div id="info-body"></div>
 <div class="askbox" id="ask5"></div>
-<button class="btn ghost" id="info-back" style="margin:18px 0 40px;">もどる</button>
+<button class="btn ghost" id="info-back" style="margin:18px 0 40px;">戻る</button>
 </section>
 
 <!-- ===== 完了 ===== -->
@@ -328,9 +328,9 @@ maxlength="6" placeholder="ここに貼り付け">
 <h2>送信しました</h2>
 <p class="lead" id="done-msg">ご協力ありがとうございました。</p>
 <button class="btn" id="done-info" style="max-width:420px;margin:26px auto 0;">
-お部屋のご案内をみる</button>
+お部屋のご案内を見る</button>
 <p class="note" style="margin-top:12px;">
-駐車場の区画・集合ポストのダイヤル・ゴミの出し方などを、まとめています。</p>
+駐車場の区画・集合ポストのダイヤル・ゴミの出し方などを、まとめております。</p>
 </div>
 <div class="askbox" id="ask4"></div>
 </section>
@@ -339,7 +339,7 @@ maxlength="6" placeholder="ここに貼り付け">
 
 <footer id="foot" class="hide">
 <div class="inner">
-<button class="btn ghost hide" id="back">もどる</button>
+<button class="btn ghost hide" id="back">戻る</button>
 <button class="btn" id="next">つぎへ</button>
 </div>
 </footer>
@@ -347,9 +347,9 @@ maxlength="6" placeholder="ここに貼り付け">
 <div id="veil"><div class="in"><div class="spin"></div><span id="veil-msg">送信しています…</span></div></div>
 <div id="zoom"><img alt=""></div>
 
-<script src="clauses.js?v=6"></script>
+<script src="clauses.js?v=7"></script>
 <script src="config.js?v=3"></script>
-<script src="app.js?v=10"></script>
+<script src="app.js?v=11"></script>
 </body>
 </html>
 
