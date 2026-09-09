@@ -154,6 +154,13 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
 .pill.ok{background:var(--ink);color:#fff;}
 .pill.ng,.pill.exp{background:var(--ng);color:#fff;}
 .pill.rm{background:#8A5A2B;color:#fff;}
+/* 仲介からの回答。赤や黒のカードでは、白地に色文字にします（読めるように） */
+.pill.ag{background:#2D4A7A;color:#fff;}
+.pill.ag.no{background:var(--ng);color:#fff;}
+.pill.ag.hold{background:var(--fill2);color:var(--ink2);}
+.item.red .pill.ag,.item.dark .pill.ag{background:#fff;color:#2D4A7A;}
+.item.red .pill.ag.no,.item.dark .pill.ag.no{background:#fff;color:var(--ng);}
+.item.red .pill.ag.hold,.item.dark .pill.ag.hold{background:#fff;color:var(--ink2);}
 .i-b{font-size:14.5px;color:var(--ink3);margin-top:10px;line-height:1.8;}
 .i-a{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;}
 
@@ -348,9 +355,11 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
   background:var(--fill);font-size:14.5px;font-weight:500;color:var(--ink);}
 
 /* ---- タブ（Apple の切りかえボタンのような形） ---- */
-.tabs3{display:grid;grid-template-columns:repeat(4,1fr);gap:3px;margin-bottom:14px;
+.tabs3{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;margin-bottom:14px;
   max-width:900px;background:var(--fill);padding:3px;border-radius:14px;}
 @media (max-width:640px){ .tabs3{grid-template-columns:repeat(2,1fr);} }
+.tabs3 button[data-t=agdone]{color:var(--ng);}
+.tabs3 button[data-t=agdone].on{color:var(--ng);}
 .tabs3 button{padding:11px 4px;border-radius:11px;border:0;background:transparent;
   font:inherit;font-size:14px;font-weight:500;color:var(--ink3);cursor:pointer;
   min-width:0;white-space:nowrap;transition:background .18s,color .18s,box-shadow .18s;}
@@ -666,6 +675,8 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
     </div>
     <div class="tabs3" id="tabs3">
       <button type="button" data-t="agent">仲介へ確認 <i>0</i></button>
+      <button type="button" data-t="agwait">仲介の返事待ち <i>0</i></button>
+      <button type="button" data-t="agdone">仲介から返事 <i>0</i></button>
       <button type="button" data-t="todo" class="on">要対応 <i>0</i></button>
       <button type="button" data-t="waiting">未返信 <i>0</i></button>
       <button type="button" data-t="done">完了 <i>0</i></button>
@@ -1509,12 +1520,17 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
 
   function drawTabs(){
     var rows = ROWS.filter(inPeriod);
-    var n = { agent:0, todo:0, waiting:0, done:0 };
+    var n = { agent:0, agwait:0, agdone:0, todo:0, waiting:0, done:0 };
     rows.forEach(function(r){
       var st = String(r.status||'');
       if(st === '取消') return;
       if(st === '完了') n.done++;
-      else if(st === '返信済'){ if(needAgent(r)) n.agent++; else n.todo++; }
+      else if(st === '返信済'){
+        if(needAgent(r))      n.agent++;
+        else if(agDone(r))    n.agdone++;
+        else if(agWait(r))    n.agwait++;
+        else                  n.todo++;
+      }
       else n.waiting++;
     });
     $$('#tabs3 button').forEach(function(b){
@@ -1575,6 +1591,15 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
     return String(r.status||'') === '返信済' && Number(r.noCheck||0) > 0 && !r.agentAt;
   }
 
+  /* 仲介へ連絡ずみで、まだ回答が来ていないもの */
+  function agWait(r){
+    return String(r.status||'') === '返信済' && !!r.agentAt && !r.agentRe;
+  }
+  /* 仲介から回答が来たもの */
+  function agDone(r){
+    return String(r.status||'') === '返信済' && !!r.agentRe;
+  }
+
   /* いま選んでいるタブに入るかどうか。
      1件がどれか1つのタブにだけ入るようにしています（数が重ならないように）。
        未返信 → 仲介へ確認 → 要対応 → 完了  の順に流れます。 */
@@ -1584,7 +1609,9 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
     if(TAB === 'done')    return st === '完了';
     if(TAB === 'waiting') return st !== '完了' && st !== '返信済';
     if(TAB === 'agent')   return needAgent(r);
-    return st === '返信済' && !needAgent(r);     /* 要対応 */
+    if(TAB === 'agwait')  return agWait(r);
+    if(TAB === 'agdone')  return agDone(r);
+    return st === '返信済' && !needAgent(r) && !agWait(r) && !agDone(r);   /* 要対応 */
   }
 
   function matchFilt(r){
@@ -1599,7 +1626,12 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
 
   /* このタブは何を集めた場所なのか、1行で説明します */
   var TABNOTE = {
-    agent  : '特約に印が付いていない件です。<b>仲介業者へ連絡すると「要対応」へ移ります。</b>',
+    agent  : '特約に印が付いていない件です。<b>仲介業者へ連絡すると「仲介の返事待ち」へ移ります。</b>',
+    agwait : '仲介業者へ連絡ずみで、まだご回答がない件です。'
+           + '<b>連絡から7日を過ぎると、自動で一度だけ確認のメールを送ります。</b>'
+           + '先方が回答されると「仲介から返事」へ移ります。',
+    agdone : '仲介業者から、ご対応の可否の回答が届いた件です。'
+           + '<b>内容をご確認のうえ、完了しましたら「完了にする」を押してください。</b>',
     todo   : '内容をご確認のうえ、完了しましたら<b>「完了にする」</b>を押してください。',
     waiting: 'まだ入居者からの返信がありません。<b>契約開始日から7日</b>を過ぎると、'
            + '自動で督促メールを送信し、そのまま「完了」へ移します。',
@@ -1674,6 +1706,30 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
   /* 督促の状況。
      ・まだ返信が無いもの … いつ自動で督促を送るか（赤字）＋送ったあとどうなるか
      ・返信ずみ・完了のもの … 送った記録だけ */
+  /* 仲介からの回答を、カードの中に出します。
+     ・回答が来ていれば、可否と備考
+     ・まだなら、いつ連絡したか。督促を出していれば、その日も出します */
+  function agentBox(r){
+    if(r.agentRe){
+      var memo = String(r.agentMemo||'').trim();
+      return '<div class="i-rm"><b>仲介より ' + esc(String(r.agentAns||'回答あり')) + '</b>' +
+             '<span>' + esc(mdStr(String(r.agentRe).slice(0,10))) + '</span>' +
+             (memo ? ('<span style="display:block;margin-top:5px;">' + esc(memo) + '</span>') : '') +
+             '</div>';
+    }
+    if(r.agentAt){
+      return '<div class="i-rm' + (r.agentRm ? ' hot' : '') + '">' +
+             '<b>仲介の回答待ち</b>' +
+             '<span>連絡 ' + esc(mdStr(String(r.agentAt).slice(0,10))) +
+             (r.agentN > 1 ? ('（' + r.agentN + '回）') : '') + '</span>' +
+             (r.agentRm
+               ? ('<span>／ 確認のメールを送信しました ' + esc(mdStr(String(r.agentRm).slice(0,10))) + '</span>')
+               : '<span>／ 連絡から7日で、自動で一度だけ確認のメールを送ります</span>') +
+             '</div>';
+    }
+    return '';
+  }
+
   function remindBox(r, done){
     var n = Number(r.remind||0);
     if(done){
@@ -1762,6 +1818,11 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
                (!chk && !(r.ng > 0) ? '<span class="pill ok">問題なし</span>' : ''))
             : (r.over ? '<span class="pill ng">期限すぎ</span>' : '<span class="pill">未返信</span>'));
       if(!done && r.remind > 0) pill += '<span class="pill rm">督促 ' + r.remind + '回</span>';
+      if(r.agentRe){
+        var ans = String(r.agentAns||'');
+        var cls = (ans.indexOf('しません') >= 0) ? ' no' : (ans.indexOf('確認中') >= 0 ? ' hold' : '');
+        pill += '<span class="pill ag' + cls + '">仲介：' + esc(ans || '回答あり') + '</span>';
+      }
       var sub = [];
       if(r.area) sub.push(esc(r.area));
       if(r.agentCo || r.agentName) sub.push('仲介：' + esc(r.agentCo||'') + ' ' + esc(r.agentName||''));
@@ -1812,6 +1873,7 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
                        (r.agentN > 1 ? '（' + r.agentN + '回）' : '') : '') +
           (r.doneAt ? ' ／ 完了 ' + esc(String(r.doneAt).slice(0,10)) : '') +
           '</div>' +
+        agentBox(r) +
         remindBox(r, done) +
         (acts.length ? ('<div class="i-a">' + acts.join('') + '</div>') : '') +
       '</div>';
@@ -1990,6 +2052,20 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
         (d.replied ? ' ／ 返信 ' + esc(String(d.replied).slice(0,10)) : '') +
         '<br>パスワード ' + esc(d.pass) +
         (d.memo ? '<br>社内メモ ' + esc(d.memo) : '') + '</div>');
+      if(d.agentAt || d.agentRe){
+        h.push('<div class="i-rm" style="margin-top:12px;">');
+        if(d.agentRe){
+          h.push('<b>仲介より ' + esc(d.agentAns || '回答あり') + '</b>' +
+                 '<span>' + esc(String(d.agentRe).slice(0,16)) + '</span>');
+          if(String(d.agentMemo||'').trim()){
+            h.push('<span style="display:block;margin-top:6px;">' + esc(d.agentMemo) + '</span>');
+          }
+        }else{
+          h.push('<b>仲介の回答待ち</b><span>連絡 ' + esc(String(d.agentAt).slice(0,10)) + '</span>');
+          if(d.agentRm) h.push('<span>／ 確認のメール ' + esc(String(d.agentRm).slice(0,10)) + '</span>');
+        }
+        h.push('</div>');
+      }
       if(d.plan){
         h.push('<div class="ph" style="margin-top:12px;"><a href="' + esc(d.plan) +
                '" target="_blank" rel="noopener"><img src="' + esc(driveThumb(d.plan)) +
