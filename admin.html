@@ -543,11 +543,13 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
           </div>
 
           <div class="fr">
-            <label class="f" for="f-park">駐車場の区画No.<span class="req">必須</span></label>
-            <p class="hint">お使いにならない物件は「なし」。2台お借りの場合は、2台目も選択してください</p>
+            <label class="f" for="f-park">駐車場の区画No.</label>
+            <p class="hint">駐車場をお借りにならない場合は、そのままで構いません。
+              「なし」を選ぶと、お借りにならないことを記録として残せます。
+              2台お借りの場合は、2台目も選択してください</p>
             <div class="dstep">
               <span>1台目</span>
-              <select id="f-park" data-need aria-label="1台目の区画No."></select>
+              <select id="f-park" aria-label="1台目の区画No."></select>
               <select id="f-parkt" aria-label="1台目の区画の種類"></select>
             </div>
             <div class="dstep">
@@ -945,7 +947,7 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
     for(var k = 0; k < PARK_KIND.length; k++){
       kind += '<option value="' + PARK_KIND[k] + '">' + PARK_KIND[k] + '</option>';
     }
-    $('#f-park').innerHTML   = '<option value="">選んでください</option>' +
+    $('#f-park').innerHTML   = '<option value="">選択しない</option>' +
                                '<option value="なし">なし</option>' + num;
     $('#f-park2').innerHTML  = '<option value="">－</option>' + num;
     $('#f-parkt').innerHTML  = kind;
@@ -1630,7 +1632,7 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
     agwait : '仲介業者へ連絡ずみで、まだご回答がない件です。'
            + '<b>連絡から7日を過ぎると、自動で一度だけ確認のメールを送ります。</b>'
            + '先方が回答されると「仲介から返事」へ移ります。',
-    agdone : '仲介業者から、ご対応の可否の回答が届いた件です。'
+    agdone : '仲介業者から、ご対応の結果が届いた件です。'
            + '<b>内容をご確認のうえ、完了しましたら「完了にする」を押してください。</b>',
     todo   : '内容をご確認のうえ、完了しましたら<b>「完了にする」</b>を押してください。',
     waiting: 'まだ入居者からの返信がありません。<b>契約開始日から7日</b>を過ぎると、'
@@ -1820,7 +1822,7 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
       if(!done && r.remind > 0) pill += '<span class="pill rm">督促 ' + r.remind + '回</span>';
       if(r.agentRe){
         var ans = String(r.agentAns||'');
-        var cls = (ans.indexOf('しません') >= 0) ? ' no' : (ans.indexOf('確認中') >= 0 ? ' hold' : '');
+        var cls = (ans.indexOf('キャンセル') >= 0) ? ' no' : (ans.indexOf('確認中') >= 0 ? ' hold' : '');
         pill += '<span class="pill ag' + cls + '">仲介：' + esc(ans || '回答あり') + '</span>';
       }
       var sub = [];
