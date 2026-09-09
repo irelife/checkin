@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="format-detection" content="telephone=no">
 <meta name="robots" content="noindex,nofollow">
-<title>ご対応の可否のご回答｜check</title>
+<title>ご対応の結果のご連絡｜check</title>
 <style>
 /* =====================================================================
    仲介業者さまが開くページ。
@@ -100,7 +100,7 @@ textarea:focus{outline:none;background:#fff;box-shadow:0 0 0 4px rgba(29,29,31,.
 
 <header>
   <div class="h-logo"><svg class="ic" viewBox="0 0 100 100" fill="currentColor" aria-hidden="true"><circle cx="34" cy="30" r="16"/><path d="M34 51C18 51 8 66 6 88h40c0-4 .6-8 1.8-11.5l9.4 4.4c1.6.8 3.5 0 4.2-1.6.8-1.6 0-3.5-1.6-4.2l-9.6-4.5C54 60 45 51 34 51Z"/><path d="M58.5 63.5 85 53.5 94 76 67.5 86Z" fill="none" stroke="currentColor" stroke-width="6.5" stroke-linejoin="round"/><path fill-rule="evenodd" d="M79 6a21 21 0 1 0 0 42 21 21 0 0 0 0-42ZM76.2 36.4 66 26.2l4.6-4.6 5.6 5.6 12-12 4.6 4.6Z"/></svg><span>check</span></div>
-  <div class="h-bldg" id="h-bldg">ご対応の可否のご回答</div>
+  <div class="h-bldg" id="h-bldg">ご対応の結果のご連絡</div>
   <div class="h-sub"  id="h-sub">重要事項説明書の記載項目について</div>
 </header>
 
@@ -121,9 +121,9 @@ textarea:focus{outline:none;background:#fff;box-shadow:0 0 0 4px rgba(29,29,31,.
   <!-- ===== 入力 ===== -->
   <section id="s-form" class="hide">
     <div class="warn hide" id="again">
-      <b>すでにご回答をいただいています。</b><span id="again-at"></span><br>
+      <b>すでにご連絡をいただいています。</b><span id="again-at"></span><br>
       内容を変更される場合は、選び直して、もう一度送信してください。
-      あとから送っていただいたものが、最新のご回答となります。
+      あとから送っていただいたものが、最新のご連絡となります。
     </div>
 
     <div class="card">
@@ -131,7 +131,9 @@ textarea:focus{outline:none;background:#fff;box-shadow:0 0 0 4px rgba(29,29,31,.
       <p class="lead">
         入居者様より、重要事項説明書に記載のある項目について、
         「説明を受けていない」「内容が分からない」といったご回答が届いております。<br>
-        お手数ですが、ご対応の可否をお知らせください。
+        入居者様へ改めてご説明いただき、ご納得いただけましたら
+        <b>「対応完了」</b>を押してください。<br>
+        ご説明の結果、ご契約に至らなかった場合は<b>「契約キャンセル」</b>をお選びください。
       </p>
       <div id="kv"></div>
     </div>
@@ -142,11 +144,11 @@ textarea:focus{outline:none;background:#fff;box-shadow:0 0 0 4px rgba(29,29,31,.
     </div>
 
     <div class="card">
-      <h3>ご対応の可否</h3>
+      <h3>ご対応の結果</h3>
       <div class="pick" id="pick"></div>
 
       <h3 style="margin-top:24px;">備考（任意）</h3>
-      <textarea id="memo" placeholder="ご対応の予定日、入居者様へのご説明の内容など、ご自由にご記入ください。"></textarea>
+      <textarea id="memo" placeholder="入居者様へのご説明の内容、ご対応の日付など、ご自由にご記入ください。"></textarea>
 
       <div class="err" id="err"></div>
       <button class="btn" id="send">この内容で送信する</button>
@@ -161,7 +163,7 @@ textarea:focus{outline:none;background:#fff;box-shadow:0 0 0 4px rgba(29,29,31,.
     <div class="done">
       <div class="mk">✓</div>
       <h2>送信しました</h2>
-      <p class="lead" id="done-msg">ご回答ありがとうございました。</p>
+      <p class="lead" id="done-msg">ご連絡ありがとうございました。</p>
       <button class="btn" id="again-btn" style="max-width:420px;margin:26px auto 0;background:var(--fill);color:var(--ink);">
         内容を変更する</button>
     </div>
@@ -240,9 +242,9 @@ textarea:focus{outline:none;background:#fff;box-shadow:0 0 0 4px rgba(29,29,31,.
         }).join('')
       : '<div class="it none">ご回答のあった項目はございませんでした</div>';
 
-    var ch = d.choices || ['対応します','対応しません','社内で確認中'];
+    var ch = d.choices || ['対応完了','契約キャンセル'];
     $('#pick').innerHTML = ch.map(function(c, i){
-      var no = (c.indexOf('しません') >= 0) ? ' class="no"' : '';
+      var no = (c.indexOf('キャンセル') >= 0) ? ' class="no"' : '';
       return '<label' + no + '><input type="radio" name="ans" value="' + esc(c) + '"' +
              (d.ans === c ? ' checked' : '') + '><span>' + esc(c) + '</span></label>';
     }).join('');
@@ -261,7 +263,7 @@ textarea:focus{outline:none;background:#fff;box-shadow:0 0 0 4px rgba(29,29,31,.
   $('#send').addEventListener('click', function(){
     var el = document.querySelector('input[name=ans]:checked');
     if(!el){
-      $('#err').textContent = 'ご対応の可否をお選びください。';
+      $('#err').textContent = 'ご対応の結果をお選びください。';
       $('#pick').scrollIntoView({ behavior:'smooth', block:'center' });
       return;
     }
@@ -277,7 +279,7 @@ textarea:focus{outline:none;background:#fff;box-shadow:0 0 0 4px rgba(29,29,31,.
         DATA.ans      = res.ans;
         DATA.memo     = res.memo;
         $('#done-msg').innerHTML =
-          'ご回答ありがとうございました。<br><b>' + esc(res.ans) + '</b> として承りました。<br>' +
+          'ご連絡ありがとうございました。<br><b>' + esc(res.ans) + '</b> として承りました。<br>' +
           '弊社の担当者に届いております。';
         show('#s-done');
       })
