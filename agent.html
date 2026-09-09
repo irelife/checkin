@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="format-detection" content="telephone=no">
+<meta name="robots" content="noindex,nofollow">
+<title>ご対応の可否のご回答｜check</title>
+<style>
+/* =====================================================================
+   仲介業者さまが開くページ。
+     ・入居者の画面と同じ見た目にそろえています。
+     ・パスワードはありません。メールのリンクに入っている鍵で確かめます。
+     ・選んで押すだけで終わるように、ボタンは大きくしています。
+   ===================================================================== */
+:root{
+  --ink:#1D1D1F; --ink2:#424245; --ink3:#86868B;
+  --bg:#F5F5F7; --card:#fff; --fill:#F0F0F2; --fill2:#E8E8ED;
+  --ng:#C7362A; --ngbg:#FCF0EE; --ok:#2D7A4A; --okbg:#F2F6F3;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+  font-size:18px;line-height:1.8;-webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased;}
+body{padding-bottom:calc(60px + env(safe-area-inset-bottom));}
+button,input,textarea{font-family:inherit;font-size:18px;}
+/* 文の折り返しは、文節の切れめで。最後の行に一文字だけ残さない */
+p,li{word-break:auto-phrase;line-break:strict;text-wrap:pretty;}
+
+header{position:sticky;top:0;z-index:20;background:rgba(29,29,31,.88);color:#fff;
+  -webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);
+  padding:calc(12px + env(safe-area-inset-top)) 18px 12px;}
+header .h-logo{display:flex;align-items:center;gap:6px;margin-bottom:6px;color:rgba(255,255,255,.55);}
+header .h-logo .ic{width:16px;height:16px;flex:0 0 auto;}
+header .h-logo span{font-size:13px;font-weight:600;letter-spacing:.04em;}
+header .h-bldg{font-size:20px;font-weight:600;letter-spacing:-.01em;}
+header .h-sub{font-size:13px;color:rgba(255,255,255,.62);margin-top:3px;}
+
+main{padding:20px 16px 0;max-width:640px;margin:0 auto;}
+.card{background:var(--card);border:0;border-radius:20px;padding:24px 20px;margin-bottom:16px;}
+h2{font-size:21px;font-weight:600;letter-spacing:-.01em;margin:0 0 8px;}
+h3{font-size:13px;font-weight:600;color:var(--ink3);margin:0 0 12px;letter-spacing:.04em;}
+.lead{font-size:14.5px;color:var(--ink3);margin:0 0 18px;line-height:1.8;}
+.note{font-size:13.5px;color:var(--ink3);line-height:1.85;}
+
+/* 物件のこと */
+.kv{display:flex;gap:12px;font-size:15.5px;padding:9px 0;}
+.kv + .kv{box-shadow:inset 0 1px 0 rgba(0,0,0,.05);}
+.kv b{flex:0 0 92px;font-weight:500;color:var(--ink3);}
+.kv span{flex:1;font-weight:600;}
+
+/* 入居者様のご回答 */
+.it{border:0;border-radius:16px;background:var(--fill);padding:14px 16px;margin-bottom:8px;}
+.it .t{font-size:16px;font-weight:600;line-height:1.6;}
+.it .c{font-size:14px;color:var(--ng);margin-top:7px;line-height:1.7;}
+.it.none{background:var(--okbg);color:var(--ok);font-weight:600;text-align:center;}
+
+/* 可否のえらび方 */
+.pick label{display:block;position:relative;margin-bottom:9px;cursor:pointer;}
+.pick input{position:absolute;opacity:0;pointer-events:none;}
+.pick span{display:flex;align-items:center;gap:12px;padding:16px 18px;border-radius:16px;
+  background:var(--fill);font-size:17px;font-weight:600;color:var(--ink2);
+  transition:background .18s,color .18s;}
+.pick span::before{content:"";flex:0 0 22px;width:22px;height:22px;border-radius:50%;
+  background:#fff;box-shadow:inset 0 0 0 2px var(--fill2);transition:box-shadow .18s;}
+.pick input:checked + span{background:var(--ink);color:#fff;}
+.pick input:checked + span::before{box-shadow:inset 0 0 0 7px var(--ink);background:#fff;}
+.pick .no input:checked + span{background:var(--ng);}
+.pick .no input:checked + span::before{box-shadow:inset 0 0 0 7px var(--ng);}
+
+textarea{width:100%;min-height:110px;padding:14px 15px;border:0;border-radius:16px;
+  background:var(--fill);resize:vertical;line-height:1.75;font-size:16.5px;
+  transition:box-shadow .15s,background .15s;}
+textarea:focus{outline:none;background:#fff;box-shadow:0 0 0 4px rgba(29,29,31,.10);}
+
+.btn{display:block;width:100%;border:0;border-radius:100px;padding:17px;
+  font-size:17px;font-weight:600;background:var(--ink);color:#fff;cursor:pointer;
+  transition:opacity .15s;margin-top:20px;}
+.btn:active{opacity:.7;}
+.btn[disabled]{opacity:.35;cursor:default;}
+
+.err{color:var(--ng);font-size:14.5px;font-weight:500;margin-top:12px;min-height:1.2em;}
+.warn{background:var(--ngbg);border-radius:16px;padding:16px 18px;margin-bottom:16px;
+  font-size:14.5px;color:var(--ink2);line-height:1.8;}
+.warn b{color:var(--ng);}
+.done{text-align:center;padding:56px 20px;}
+.done .mk{width:66px;height:66px;border-radius:50%;background:var(--ink);color:#fff;
+  font-size:30px;line-height:66px;margin:0 auto 20px;}
+.hide{display:none !important;}
+#veil{position:fixed;inset:0;z-index:60;background:rgba(245,245,247,.85);
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+  display:none;align-items:center;justify-content:center;text-align:center;padding:30px;}
+#veil.on{display:flex;}
+.spin{width:30px;height:30px;border:3px solid var(--fill2);border-top-color:var(--ink);
+  border-radius:50%;margin:0 auto 16px;animation:sp .8s linear infinite;}
+@keyframes sp{to{transform:rotate(360deg);}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="h-logo"><svg class="ic" viewBox="0 0 100 100" fill="currentColor" aria-hidden="true"><circle cx="34" cy="30" r="16"/><path d="M34 51C18 51 8 66 6 88h40c0-4 .6-8 1.8-11.5l9.4 4.4c1.6.8 3.5 0 4.2-1.6.8-1.6 0-3.5-1.6-4.2l-9.6-4.5C54 60 45 51 34 51Z"/><path d="M58.5 63.5 85 53.5 94 76 67.5 86Z" fill="none" stroke="currentColor" stroke-width="6.5" stroke-linejoin="round"/><path fill-rule="evenodd" d="M79 6a21 21 0 1 0 0 42 21 21 0 0 0 0-42ZM76.2 36.4 66 26.2l4.6-4.6 5.6 5.6 12-12 4.6 4.6Z"/></svg><span>check</span></div>
+  <div class="h-bldg" id="h-bldg">ご対応の可否のご回答</div>
+  <div class="h-sub"  id="h-sub">重要事項説明書の記載項目について</div>
+</header>
+
+<main>
+
+  <!-- ===== 開けなかったとき ===== -->
+  <section id="s-ng" class="hide">
+    <div class="card">
+      <h2>このページは開けませんでした</h2>
+      <p class="lead" id="ng-msg"></p>
+      <p class="note">
+        お手数ですが、弊社からお送りしたメールに記載のリンクから、もう一度お開きください。<br>
+        それでも開けない場合は、弊社までご連絡ください。
+      </p>
+    </div>
+  </section>
+
+  <!-- ===== 入力 ===== -->
+  <section id="s-form" class="hide">
+    <div class="warn hide" id="again">
+      <b>すでにご回答をいただいています。</b><span id="again-at"></span><br>
+      内容を変更される場合は、選び直して、もう一度送信してください。
+      あとから送っていただいたものが、最新のご回答となります。
+    </div>
+
+    <div class="card">
+      <h2 id="ttl">お部屋</h2>
+      <p class="lead">
+        入居者様より、重要事項説明書に記載のある項目について、
+        「説明を受けていない」「内容が分からない」といったご回答が届いております。<br>
+        お手数ですが、ご対応の可否をお知らせください。
+      </p>
+      <div id="kv"></div>
+    </div>
+
+    <div class="card">
+      <h3>入居者様よりご回答のあった項目</h3>
+      <div id="items"></div>
+    </div>
+
+    <div class="card">
+      <h3>ご対応の可否</h3>
+      <div class="pick" id="pick"></div>
+
+      <h3 style="margin-top:24px;">備考（任意）</h3>
+      <textarea id="memo" placeholder="ご対応の予定日、入居者様へのご説明の内容など、ご自由にご記入ください。"></textarea>
+
+      <div class="err" id="err"></div>
+      <button class="btn" id="send">この内容で送信する</button>
+      <p class="note" style="margin-top:12px;text-align:center;">
+        送信された内容は、弊社の担当者に届きます。
+      </p>
+    </div>
+  </section>
+
+  <!-- ===== 送信できた ===== -->
+  <section id="s-done" class="hide">
+    <div class="done">
+      <div class="mk">✓</div>
+      <h2>送信しました</h2>
+      <p class="lead" id="done-msg">ご回答ありがとうございました。</p>
+      <button class="btn" id="again-btn" style="max-width:420px;margin:26px auto 0;background:var(--fill);color:var(--ink);">
+        内容を変更する</button>
+    </div>
+  </section>
+
+</main>
+
+<div id="veil"><div class="in"><div class="spin"></div><span id="veil-msg">読み込んでいます…</span></div></div>
+
+<script src="config.js?v=3"></script>
+<script>
+(function(){
+  var CFG = window.APP_CONFIG || {};
+  function $(s){ return document.querySelector(s); }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function veil(on, msg){ if(msg) $('#veil-msg').textContent = msg;
+    $('#veil').classList.toggle('on', !!on); }
+  function show(which){
+    ['#s-ng','#s-form','#s-done'].forEach(function(x){ $(x).classList.add('hide'); });
+    $(which).classList.remove('hide');
+    window.scrollTo(0,0);
+  }
+  function post(b){
+    return fetch(CFG.GAS_URL, { method:'POST',
+      headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(b) })
+      .then(function(r){ return r.json(); });
+  }
+
+  /* リンクから、依頼の番号と鍵を取り出します */
+  var q  = location.search || '';
+  var ID = (q.match(/[?&]id=([^&]+)/) || [])[1] || '';
+  var K  = (q.match(/[?&]k=([^&]+)/)  || [])[1] || '';
+  var DATA = null;
+
+  function ng(msg){
+    $('#ng-msg').textContent = msg || 'リンクが正しくありません。';
+    show('#s-ng');
+  }
+
+  /* ---- 開く ---- */
+  function open_(){
+    if(!ID || !K){ ng('リンクが正しくありません。'); return; }
+    veil(true, '読み込んでいます…');
+    post({ action:'agentOpen', id:decodeURIComponent(ID), k:decodeURIComponent(K) })
+      .then(function(d){
+        veil(false);
+        if(!d || !d.ok){ ng((d && d.err) || '開けませんでした。'); return; }
+        DATA = d;
+        draw();
+        show('#s-form');
+      })
+      .catch(function(){ veil(false); ng('通信できませんでした。時間をおいて、もう一度お試しください。'); });
+  }
+
+  function draw(){
+    var d = DATA;
+    $('#h-bldg').textContent = (d.bldg || '') + ' ' + (d.room || '');
+    $('#ttl').textContent    = (d.bldg || '') + ' ' + (d.room || '');
+
+    var kv = [];
+    kv.push(['物件', (d.bldg || '') + ' ' + (d.room || '')]);
+    if(d.name)    kv.push(['入居者様', d.name + ' 様']);
+    if(d.replied) kv.push(['ご回答日', String(d.replied).slice(0,10)]);
+    var ag = [d.co || '', d.person || ''].filter(String).join(' ');
+    if(ag) kv.push(['貴社ご担当', ag]);
+    $('#kv').innerHTML = kv.map(function(x){
+      return '<div class="kv"><b>' + esc(x[0]) + '</b><span>' + esc(x[1]) + '</span></div>';
+    }).join('');
+
+    var it = d.items || [];
+    $('#items').innerHTML = it.length
+      ? it.map(function(x){
+          return '<div class="it"><div class="t">' + esc(x.t) + '</div>' +
+                 (x.c ? ('<div class="c">入居者様のご回答：' + esc(x.c) + '</div>') : '') + '</div>';
+        }).join('')
+      : '<div class="it none">ご回答のあった項目はございませんでした</div>';
+
+    var ch = d.choices || ['対応します','対応しません','社内で確認中'];
+    $('#pick').innerHTML = ch.map(function(c, i){
+      var no = (c.indexOf('しません') >= 0) ? ' class="no"' : '';
+      return '<label' + no + '><input type="radio" name="ans" value="' + esc(c) + '"' +
+             (d.ans === c ? ' checked' : '') + '><span>' + esc(c) + '</span></label>';
+    }).join('');
+
+    $('#memo').value = d.memo || '';
+
+    if(d.answered){
+      $('#again').classList.remove('hide');
+      $('#again-at').textContent = '（' + String(d.answered) + '）';
+    }else{
+      $('#again').classList.add('hide');
+    }
+  }
+
+  /* ---- 送る ---- */
+  $('#send').addEventListener('click', function(){
+    var el = document.querySelector('input[name=ans]:checked');
+    if(!el){
+      $('#err').textContent = 'ご対応の可否をお選びください。';
+      $('#pick').scrollIntoView({ behavior:'smooth', block:'center' });
+      return;
+    }
+    $('#err').textContent = '';
+    $('#send').disabled = true;
+    veil(true, '送信しています…');
+    post({ action:'agentReply', id:decodeURIComponent(ID), k:decodeURIComponent(K),
+           ans:el.value, memo:$('#memo').value })
+      .then(function(res){
+        veil(false); $('#send').disabled = false;
+        if(!res || !res.ok){ $('#err').textContent = (res && res.err) || '送信できませんでした。'; return; }
+        DATA.answered = res.at;
+        DATA.ans      = res.ans;
+        DATA.memo     = res.memo;
+        $('#done-msg').innerHTML =
+          'ご回答ありがとうございました。<br><b>' + esc(res.ans) + '</b> として承りました。<br>' +
+          '弊社の担当者に届いております。';
+        show('#s-done');
+      })
+      .catch(function(){
+        veil(false); $('#send').disabled = false;
+        $('#err').textContent = '通信できませんでした。時間をおいて、もう一度お試しください。';
+      });
+  });
+
+  $('#again-btn').addEventListener('click', function(){ draw(); show('#s-form'); });
+
+  open_();
+})();
+</script>
+</body>
+</html>
