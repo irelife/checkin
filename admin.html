@@ -788,6 +788,32 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
 
   function syncing(on){ $('#sync').classList.toggle('hide', !on); }
 
+  /* ---- 押した瞬間に画面を書き替えます ------------------------------
+     Apps Script は往復に数秒かかります。返事を待ってから画面を直すと、
+     押しても何も起きない時間が数秒つづきます。
+     そこで、押した瞬間に手元の一覧を書き替えて、送信は裏で行います。
+     失敗したときだけ、元に戻してお知らせします。                    */
+  function rowById(id){
+    for(var i=0;i<ROWS.length;i++){ if(String(ROWS[i].id) === String(id)) return ROWS[i]; }
+    return null;
+  }
+  /* いまの値を控えたうえで、渡された分だけ書き替えます。
+     戻り値を呼ぶと、元に戻ります */
+  function patchRow(id, patch){
+    var r = rowById(id);
+    if(!r) return function(){};
+    var back = {}, k;
+    for(k in patch){ if(patch.hasOwnProperty(k)) back[k] = r[k]; }
+    for(k in patch){ if(patch.hasOwnProperty(k)) r[k] = patch[k]; }
+    drawAll();
+    return function(){ for(var j in back){ if(back.hasOwnProperty(j)) r[j] = back[j]; } drawAll(); };
+  }
+  function nowJp(){
+    var d = new Date(), p = function(n){ return (n<10?'0':'') + n; };
+    return d.getFullYear() + '/' + p(d.getMonth()+1) + '/' + p(d.getDate()) +
+           ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+  }
+
   /* 受け取った一覧を、画面に反映します */
   function applyList(o, at){
     ROWS = o.rows || [];
@@ -1797,12 +1823,14 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
         var id = b.closest('.item').getAttribute('data-id');
         var undo = b.classList.contains('act-undo');
         if(!confirm(undo ? '完了を取り消しますか？' : 'この件を完了にしますか？\n（完了タブへ移ります）')) return;
-        veil(true);
+        /* 押した瞬間に動かします。送信は裏で行います */
+        var undoDraw = patchRow(id, undo ? { status:'返信済', doneAt:'' }
+                                         : { status:'完了',   doneAt:nowJp() });
+        syncing(true);
         post({ action:'done', key:KEY, id:id, undo:undo }).then(function(res){
-          veil(false);
-          if(!res.ok){ alert(res.err || '実行できませんでした'); return; }
-          reload(true);
-        }).catch(function(){ veil(false); alert('通信できませんでした。'); });
+          syncing(false);
+          if(!res.ok){ undoDraw(); alert(res.err || '実行できませんでした'); }
+        }).catch(function(){ syncing(false); undoDraw(); alert('通信できませんでした。'); });
       });
     });
 
@@ -1816,12 +1844,13 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
                     '・「完了」にはなりません。一覧から消えるだけです。\n' +
                     '・表には「取消」として残りますので、あとから確認できます。\n' +
                     '・この画面から元に戻すことはできません。')) return;
-        veil(true);
+        /* 押した瞬間に消します。送信は裏で行います */
+        var undoDraw = patchRow(id, { status:'取消' });
+        syncing(true);
         post({ action:'cancel', key:KEY, id:id }).then(function(res){
-          veil(false);
-          if(!res.ok){ alert(res.err || '消せませんでした'); return; }
-          reload(true);
-        }).catch(function(){ veil(false); alert('通信できませんでした。'); });
+          syncing(false);
+          if(!res.ok){ undoDraw(); alert(res.err || '消せませんでした'); }
+        }).catch(function(){ syncing(false); undoDraw(); alert('通信できませんでした。'); });
       });
     });
 
@@ -1837,8 +1866,11 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
         if(!confirm('督促メールを送信しますか？')) return;
         veil(true);
         post({ action:'remind', key:KEY, id:id }).then(function(res){
-          veil(false); alert(res.ok ? '送信しました。' : (res.err||'送信できませんでした'));
-          reload(true);
+          veil(false);
+          if(!res.ok){ alert(res.err || '送信できませんでした'); return; }
+          alert('送信しました。');
+          var r = rowById(id);
+          patchRow(id, { remind: Number(r && r.remind || 0) + 1, lastRemind: nowJp().slice(0,10) });
         }).catch(function(){ veil(false); alert('通信できませんでした。'); });
       });
     });
@@ -1887,7 +1919,10 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
       if(!res.ok){ alert(res.err || '送信できませんでした'); return; }
       $('#agbox').classList.remove('on');
       alert('送信しました。');
-      reload(true);
+      /* 読み直さずに、その場で書き替えます（「仲介へ確認」から外れます） */
+      var r = rowById(AG_ID);
+      patchRow(AG_ID, { agentAt: nowJp(), agentN: Number(r && r.agentN || 0) + 1,
+                        agentMail: to });
     }).catch(function(){ veil(false); alert('通信できませんでした。'); });
   });
 
