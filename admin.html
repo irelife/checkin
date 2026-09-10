@@ -1044,6 +1044,9 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
   var CKEY = 'ire_checkin_cache';
   var LAST_AT = 0;                  /* 最後にサーバーから受け取った時刻 */
   var FRESH_MS = 60000;             /* これより新しければ、読み直しません */
+  /* ★ v2.11）いま画面に出ている一覧が「いつの分か」の目印。
+       サーバー側は、書き込みがあるたびにこの数字を進めます。 */
+  var REV = '';
 
   function cacheLoad(){
     try{ var c = JSON.parse(localStorage.getItem(CKEY) || 'null');
@@ -1096,6 +1099,7 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
     if(o.remindMax !== undefined){ RM_MAX = Number(o.remindMax)||0;
                                    RM_EVERY = Number(o.remindEvery)||0; }
     if(o.doneAfterRemind !== undefined) DONE_AFTER_REMIND = (o.doneAfterRemind === true);
+    if(o.rev !== undefined) REV = String(o.rev || '');   /* ★ この一覧が、いつの分か */
     buildPeriod(); buildArea(); drawAll();
     LAST_AT = at || Date.now();
   }
@@ -1179,6 +1183,8 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
   function show(which){
     $('#s-new').classList.toggle('hide', which !== 'new');
     $('#s-list').classList.toggle('hide', which !== 'list');
+    /* ★ v2.11）一覧を見ているあいだだけ、軽く聞き続けます */
+    if(which === 'list') pingStart(); else pingStop();
     window.scrollTo(0,0);
   }
   $('#tab-new').addEventListener('click', function(){
@@ -1688,6 +1694,50 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
     }).catch(end);
   }
 
+  /* ================================================================
+     ★ v2.11）開いたままでも、ひとりでに最新になります
+
+     これまでは「更新」を押すか、ほかのタブから戻ってこないと
+     新しいご返信が出てきませんでした。
+     かといって、1分ごとに一覧をまるごと読み直すと、そのたびに数秒かかります。
+
+     そこで、まず「何か変わりましたか」とだけ聞きます。
+     これは表を読まないので、すぐ返ってきます。
+     変わっていたときだけ、一覧を読み直します。
+     ================================================================ */
+  var _ping = null;
+  var _pinging = false;
+
+  function canFresh(){
+    if(!KEY) return false;                                    /* まだログインしていません */
+    if(document.visibilityState !== 'visible') return false;  /* 見ていません */
+    if($('#s-list').classList.contains('hide')) return false; /* 一覧の画面ではありません */
+    if($('#detail').classList.contains('on')) return false;   /* 中身を開いています */
+    if($('#agbox').classList.contains('on')) return false;    /* 仲介への下書き中です */
+    if($('#zoom').classList.contains('on')) return false;     /* 写真を見ています */
+    return true;
+  }
+
+  function pingNow(){
+    if(_pinging || !canFresh()) return;
+    _pinging = true;
+    post({ action:'ping', key:KEY }).then(function(d){
+      _pinging = false;
+      if(!d || !d.ok) return;
+      var v = String(d.rev || '');
+      if(!v || !REV){ REV = v; return; }      /* はじめの1回は、ものさしを合わせるだけ */
+      if(v === REV) return;                   /* 何も変わっていません */
+      if(!canFresh()) return;                 /* 待っているあいだに、画面が変わりました */
+      reload(true);                           /* 変わったので、静かに読み直します */
+    }).catch(function(){ _pinging = false; });
+  }
+
+  function pingStart(){
+    if(_ping) return;
+    _ping = setInterval(pingNow, 45000);      /* 45秒に1回、軽く聞きます */
+  }
+  function pingStop(){ if(_ping){ clearInterval(_ping); _ping = null; } }
+
   /* エリアの選択 */
   function buildArea(){
     var sel = $('#f-far');
@@ -1723,7 +1773,9 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
     if(now - _lastAuto < 60000) return;                        /* 1分に1回まで */
     reload(true);                                              /* 幕は出さず、裏で読みます */
   }
-  document.addEventListener('visibilitychange', autoFresh);
+  document.addEventListener('visibilitychange', function(){
+    if(document.visibilityState === 'visible'){ autoFresh(); pingNow(); }
+  });
   window.addEventListener('focus', autoFresh);
   $('#q').addEventListener('input', drawList);
   $('#f-fy').addEventListener('change', function(){ reload(false); });
