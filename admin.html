@@ -411,6 +411,13 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
 .ic-b:hover{background:var(--fill2);color:var(--ink);}
 .ic-b.on{background:var(--ink);color:#fff;}
 .ic-b svg{width:20px;height:20px;display:block;}
+/* いま操作している人。上のバーのいちばん右に、小さく出します */
+.who-b{flex:0 0 auto;max-width:120px;height:46px;padding:0 15px;border:0;border-radius:14px;
+  background:var(--fill);color:var(--ink2);cursor:pointer;font-size:13.5px;font-weight:600;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:background .15s;}
+.who-b:hover{background:var(--fill2);color:var(--ink);}
+.who-b.none{color:var(--ng);background:var(--ngbg);}
+@media (max-width:560px){ .who-b{max-width:84px;padding:0 11px;font-size:12.5px;} }
 .ic-b.spin svg{animation:sp .8s linear infinite;}
 @keyframes sp{to{transform:rotate(360deg);}}
 .find{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px;max-width:900px;}
@@ -444,8 +451,12 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
 .login-sub{font-size:13px;color:var(--ink3);letter-spacing:.06em;margin-top:8px;margin-bottom:34px;}
 .login-lab{display:block;text-align:left;font-size:12px;font-weight:500;color:var(--ink3);
   letter-spacing:.14em;text-transform:uppercase;margin-bottom:7px;}
+.login-lab + input + .login-lab{margin-top:16px;}
 .login input{width:100%;padding:14px 16px;border:0;border-radius:12px;
   background:var(--fill);font-size:16px;text-align:center;letter-spacing:.14em;}
+/* お名前は、ふつうの字づめのほうが読みやすいので、そろえかたを変えます */
+.login #who{letter-spacing:normal;}
+.login-note{margin-top:10px;text-align:left;font-size:12px;line-height:1.75;color:var(--ink3);}
 .login .btn{width:100%;margin-top:14px;padding:15px;font-size:16.5px;}
 .login .err{margin-top:16px;font-size:13.5px;}
 .login-foot{margin-top:32px;font-size:11.5px;color:#B0B0B5;letter-spacing:.08em;}
@@ -538,6 +549,21 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
   text-align:center;text-decoration:none;}
 .ph img{width:100%;height:140px;object-fit:cover;display:block;background:var(--fill2);}
 .ph span{display:block;font-size:12.5px;font-weight:500;padding:10px 4px;color:var(--ink2);}
+/* ★ v2.9）写真は公開しない設定にしました。
+     会社の Google アカウントでログインしていないと出ないので、そのことを書きます */
+.ph-note{margin:9px 0 0;font-size:12px;line-height:1.7;color:var(--ink3);}
+.d-item.ng .ph-note{color:rgba(255,255,255,.72);}
+/* まだ読み込めていない写真は、うすくして「いま取りにいっています」と伝えます */
+.ph a.wait img{opacity:.25;}
+.ph a.ng-load span{color:var(--ng);}
+/* ★ 写真を大きく見るための覆い。ページの中で開くので、
+     ドライブへ行かなくても（ログインしていなくても）見られます */
+#zoom{position:fixed;inset:0;z-index:120;display:none;align-items:center;justify-content:center;
+  padding:24px;background:rgba(0,0,0,.86);cursor:zoom-out;}
+#zoom.on{display:flex;}
+#zoom img{max-width:100%;max-height:100%;border-radius:10px;display:block;}
+#zoom .z-x{position:fixed;top:14px;right:16px;width:42px;height:42px;border:0;border-radius:50%;
+  background:rgba(255,255,255,.18);color:#fff;font-size:19px;line-height:1;cursor:pointer;}
 
 /* ---- 左のカード ------------------------------------------------
      上に大きな絵、その下に 物件名・号室、お名前、ひとこと、説明。
@@ -570,6 +596,9 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
   background:var(--fill2);color:var(--ink2);}
 .i-tag.hot{background:var(--ink);color:#fff;}
 .i-tag.ng{background:var(--ngbg);color:var(--ng);}
+/* ★ v2.9）返事をいただけないまま完了になった件の札。
+     「返事をもらって完了」と見た目で分けます */
+.i-tag.wn{background:#FFF4E2;color:#9A6212;}
 .i-desc{margin:8px 0 0;font-size:13.5px;line-height:1.75;color:var(--ink2);
   word-break:auto-phrase;line-break:strict;text-wrap:pretty;}
 /* 画面が狭いときは、絵を少し小さくします（1枚が長くなりすぎないように） */
@@ -680,6 +709,11 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
         <label class="login-lab" for="key">pass</label>
         <input type="password" id="key" name="current-password"
                placeholder="管理用パスワード" autocomplete="current-password">
+        <label class="login-lab" for="who">name</label>
+        <input type="text" id="who" name="nickname" maxlength="20"
+               placeholder="お名前（例：山田）" autocomplete="nickname">
+        <div class="login-note">完了・取り消し・督促・仲介への連絡を、
+          どなたが行ったかの記録に残ります。この端末に覚えます。</div>
         <button class="btn" type="submit" id="key-go">ログイン</button>
       </form>
       <div class="err" id="key-err"></div>
@@ -875,6 +909,8 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 4.2V10h-5.8"/></svg></button>
+      <!-- いま操作している人。押すと変えられます -->
+      <button type="button" class="who-b" id="who-b" title="操作する人を変える"></button>
     </div>
     <!-- 探すところ。ふだんは畳んでいます -->
     <div class="find hide" id="find">
@@ -945,6 +981,11 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
 </div>
 
 <div id="veil">読み込んでいます…</div>
+<!-- ★ 写真を大きく見るところ。どこかを押すと閉じます -->
+<div id="zoom" role="dialog" aria-label="写真">
+  <button type="button" class="z-x" id="z-x" aria-label="とじる">✕</button>
+  <img alt="">
+</div>
 
 <script src="clauses.js?v=7"></script>
 <script src="config.js?v=3"></script>
@@ -953,6 +994,11 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
   'use strict';
   var CFG = window.APP_CONFIG || {};
   var KEY = '';
+  /* ★ v2.9）いま操作している人のお名前。
+       完了・取り消し・督促・仲介への連絡のたびに、サーバーへ一緒に送り、
+       表の「操作者」「操作履歴」に残します。この端末に覚えます。 */
+  var WHO = '';
+  var WKEY = 'ire_checkin_who';
   var ROWS = [];
   var planData = null;
 
@@ -962,10 +1008,29 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
     return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
   function veil(on){ $('#veil').classList.toggle('on', !!on); }
   function post(b){
+    /* ★ v2.9）どの操作にも、お名前を添えます。
+       1か所で入れておけば、入れ忘れが起きません。 */
+    try{ if(WHO && b && !b.who) b.who = WHO; }catch(e){}
     return fetch(CFG.GAS_URL, { method:'POST',
       headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(b) })
       .then(function(r){ return r.json(); });
   }
+
+  /* 上のバーに、いまのお名前を出します */
+  function whoPaint(){
+    var el = $('#who-b');
+    if(!el) return;
+    el.textContent = WHO || 'お名前';
+    el.classList.toggle('none', !WHO);
+    el.title = WHO ? (WHO + ' として操作しています。押すと変えられます')
+                   : 'お名前が入っていません。押して入れてください';
+  }
+  function whoSet(v){
+    WHO = String(v || '').replace(/[\r\n\t]/g, ' ').trim().slice(0, 20);
+    try{ localStorage.setItem(WKEY, WHO); }catch(e){}
+    whoPaint();
+  }
+  try{ WHO = (localStorage.getItem(WKEY) || '').slice(0, 20); }catch(e){ WHO = ''; }
 
   /* ---- 前に見た一覧の控え ----------------------------------------
      Apps Script は往復に数秒かかります。そこで、前に見た一覧を
@@ -1042,6 +1107,11 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
     ev.preventDefault();
     KEY = $('#key').value.trim();
     if(!KEY){ $('#key-err').textContent = 'パスワードを入れてください。'; return; }
+    /* ★ v2.9）どなたが操作したかを残すため、お名前もいただきます */
+    var w = $('#who').value.trim();
+    if(!w){ $('#key-err').textContent = 'お名前を入れてください。操作の記録に残ります。';
+            $('#who').focus(); return; }
+    whoSet(w);
     $('#key-err').textContent = '';
 
     /* 前と同じパスワードで、控えがあるときだけ、先に出します */
@@ -1082,6 +1152,19 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
     });
   });
   try{ var k = localStorage.getItem('ire_checkin_key'); if(k) $('#key').value = k; }catch(e){}
+  if(WHO) $('#who').value = WHO;
+  whoPaint();
+
+  /* 上のバーのお名前を押すと、変えられます */
+  $('#who-b').addEventListener('click', function(){
+    var v = window.prompt('操作する人のお名前を入れてください。\n' +
+                          '完了・取り消し・督促・仲介への連絡の記録に残ります。', WHO || '');
+    if(v === null) return;
+    v = String(v).trim();
+    if(!v){ flash('お名前は空にできません。<b>記録が残らなくなるためです。</b>'); return; }
+    whoSet(v);
+    flash('これからは <b>' + esc(WHO) + '</b> として記録します。');
+  });
 
   /* 一覧のいちばん上に、しばらく出るお知らせ */
   var _flashT = null;
@@ -1805,8 +1888,12 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
     var chk = Number(r.noCheck || 0);
 
     if(st === '完了'){
-      return ['完了しています',
-              r.doneAt ? (jpDate(String(r.doneAt).slice(0,10)) + ' に完了') : ''];
+      var day = r.doneAt ? (jpDate(String(r.doneAt).slice(0,10)) + ' に完了') : '';
+      var why = whyText(r);
+      /* 「返事をもらって完了」と「返事が無いまま完了」を、ここでも書き分けます */
+      return [String(r.doneWhy||'') === '自動：督促のみ・返事なし'
+                ? 'ご返信のないまま完了しています' : '完了しています',
+              why ? (why + (day ? ('。' + day) : '')) : day];
     }
     if(st === '返信済'){
       if(r.agentRe){
@@ -1892,10 +1979,32 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
   /* ★ 状況を「絵柄」と「ひとこと」であらわします。
        左のカードは、これだけを出します（物件名・号室・絵柄・ひとこと）。
        [絵柄, 絵柄の色, ひとこと, 札の色] */
+  /* ★ v2.9）なぜ完了になったのか。
+       ・手で押した … 担当者が中身を見て終わらせた
+       ・自動：問題の報告なし … 気になるところが1つも無かった
+       ・自動：督促のみ・返事なし … ご返信をいただけないまま終わった
+       この3つを、言葉と札の色で分けます。
+       いちばん見分けたいのは、いちばん下（返事をもらえていない件）です。 */
+  var WHY_TAG = {
+    '手で完了'               : ['完了',   ''],
+    '自動：問題の報告なし'   : ['問題なし', ''],
+    '自動：督促のみ・返事なし': ['返事なし', 'wn']
+  };
+  var WHY_TEXT = {
+    '手で完了'               : '担当者が内容を確認して完了にしました',
+    '自動：問題の報告なし'   : '気になるところのご報告が無かったため、自動で完了になりました',
+    '自動：督促のみ・返事なし': 'ご返信をいただけないまま、督促メールを送って自動で完了になりました'
+  };
+  function whyTag(r){ return WHY_TAG[String(r.doneWhy||'')] || ['完了', '']; }
+  function whyText(r){ return WHY_TEXT[String(r.doneWhy||'')] || ''; }
+
   function stTag(r){
     var st  = String(r.status || '');
     var chk = Number(r.noCheck || 0);
-    if(st === '完了')   return ['check', 'ok', '完了', ''];
+    if(st === '完了'){
+      var w = whyTag(r);
+      return ['check', 'ok', w[0], w[1]];
+    }
     if(st === '返信済'){
       if(r.agentRe)     return ['chat', 'ng', '仲介から返事', 'hot'];
       if(agWait(r))     return [r.agentRm ? 'clock' : 'chat', '', '仲介の返事待ち', ''];
@@ -1927,7 +2036,27 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
        右がわ（黒）… こちらが行ったこと
        左がわ（白）… 入居者・仲介業者から届いたこと
        点線 … これから機械が自動で行う予定           */
-  function histHtml(r){
+  /* ★ v2.9）サーバーから届いた「操作履歴」を、読める形にほどきます。
+       1行は「2026/09/10 14:22 ｜ 完了にした ｜ 山田」の形です。 */
+  function actList(d){
+    return ((d && d.acts) || []).map(function(x){
+      var p = String(x).split('｜');
+      return { t:(p[0]||'').trim(), what:(p[1]||'').trim(), who:(p[2]||'').trim() };
+    });
+  }
+  /* その操作を、最後に行った人のお名前（見つからなければ空） */
+  function actWho(d, re){
+    var a = actList(d), w = '';
+    for(var i=0;i<a.length;i++){ if(re.test(a[i].what) && a[i].who) w = a[i].who; }
+    return w;
+  }
+  /* 吹き出しの本文に「◯◯が行いました」を足します */
+  function byLine(body, who){
+    if(!who) return body || '';
+    return (body ? (body + '\n') : '') + '担当： ' + who;
+  }
+
+  function histHtml(r, d){
     var ev = [];
     var add = function(when, side, title, body){
       var t = stamp(when);
@@ -1936,11 +2065,13 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
     };
 
     add(r.created, 'us', 'ご案内のメールをお送りしました',
-        r.due ? ('ご返信の期限は ' + jpDate(r.due) + ' です') : '');
+        byLine(r.due ? ('ご返信の期限は ' + jpDate(r.due) + ' です') : '',
+               actWho(d, /依頼をつくった/)));
 
     if(Number(r.remind || 0) > 0){
       add(r.lastRemind || r.created, 'us', '督促のメールをお送りしました',
-          'これまで ' + Number(r.remind) + ' 回 お送りしました');
+          byLine('これまで ' + Number(r.remind) + ' 回 お送りしました',
+                 actWho(d, /^督促メールを送った$/)));
     }
 
     if(r.replied){
@@ -1955,8 +2086,9 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
 
     if(r.agentAt){
       add(r.agentAt, 'us', '仲介業者へご連絡しました',
-          (String(r.agentCo || '') + ' ' + String(r.agentName || '')).trim() +
-          (Number(r.agentN || 0) > 1 ? ('（' + Number(r.agentN) + ' 回目）') : ''));
+          byLine((String(r.agentCo || '') + ' ' + String(r.agentName || '')).trim() +
+                 (Number(r.agentN || 0) > 1 ? ('（' + Number(r.agentN) + ' 回目）') : ''),
+                 actWho(d, /仲介へ連絡した/)));
     }
     if(r.agentRm){
       add(r.agentRm, 'us', '仲介業者へ、確認のメールをお送りしました',
@@ -1966,7 +2098,11 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
       add(r.agentRe, 'them', '仲介業者から回答が届きました（' + String(r.agentAns || '回答あり') + '）',
           String(r.agentMemo || '').trim());
     }
-    if(r.doneAt) add(r.doneAt, 'us', 'この件を完了にしました', '');
+    if(r.doneAt){
+      /* ★ v2.9）なぜ完了になったのかと、だれが押したのかを書きます */
+      add(r.doneAt, 'us', 'この件を完了にしました',
+          byLine(whyText(r), actWho(d, /^完了にした$/)));
+    }
 
     /* これから起きること */
     if(String(r.status || '') !== '完了' && String(r.status || '') !== '取消'){
@@ -1978,6 +2114,15 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
         add(agNext(r), 'plan', jpDate(agNext(r)) + ' に、仲介業者へ自動で確認のメールをお送りします',
             'お送りするのは、一度だけです');
       }
+    }
+
+    /* まだ完了していない件で、前に完了を取り消していれば、それも出します */
+    var al = actList(d);
+    for(var ai = 0; ai < al.length; ai++){
+      if(!/完了をとりけした|取り消した/.test(al[ai].what)) continue;
+      add(al[ai].t, 'us', /取り消した$/.test(al[ai].what) && !/完了/.test(al[ai].what)
+                            ? 'この件を取り消しました' : '完了を取り消しました',
+          byLine('', al[ai].who));
     }
 
     ev.sort(function(a, b){ return a.t === b.t ? (a.i - b.i) : (a.t < b.t ? -1 : 1); });
@@ -2090,6 +2235,92 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
     return m ? 'https://drive.google.com/thumbnail?id=' + m[0] + '&sz=w800' : '';
   }
 
+  /* ================================================================
+     ★ v2.10）写真は、まずドライブから読みます。
+       会社の Google アカウントで開いていれば、それがいちばん速いためです。
+       読めなかったときだけ、このアプリに取りにいきます。
+       写真は公開していないので、アプリが中身をそのまま渡してくれます。
+
+       一度もらった写真は覚えておき、二度目からは取りにいきません。
+     ================================================================ */
+  var PIC = {};                 /* もらった写真（もとのアドレス → 中身） */
+  var PICNG = {};               /* もらえなかったもの */
+
+  function askPic(url, done){
+    if(PIC[url]){ done(PIC[url]); return; }
+    if(PICNG[url]){ done(''); return; }
+    post({ action:'photo', key:KEY, url:url }).then(function(d){
+      if(d && d.ok && d.data){ PIC[url] = d.data; done(d.data); }
+      else { PICNG[url] = 1; done(''); }
+    }).catch(function(){ PICNG[url] = 1; done(''); });
+  }
+
+  /* 画像が読めなかったら、ここで受けとめます。
+     error は上へ伝わらないので、いちばん外側で「降りてくる途中」に捕まえます。 */
+  document.addEventListener('error', function(ev){
+    var el = ev.target;
+    if(!el || el.tagName !== 'IMG') return;
+    var u = el.getAttribute('data-dv');
+    if(!u) return;
+    el.removeAttribute('data-dv');            /* 取りにいくのは一度だけです */
+    var a0 = el.closest ? el.closest('a') : null;
+    picWord(a0, '読み込んでいます…');
+    askPic(u, function(src){
+      if(src){ el.src = src; picState(a0, ''); }
+      else{ el.style.display = 'none'; picState(a0, 'ng'); }
+    });
+  }, true);
+
+  /* 写真を押したら、ページの中で大きく出します。
+     ドライブへ行かないので、ログインしていなくても見られます。 */
+  function zoom(src){
+    if(!src) return;
+    $('#zoom img').src = src;
+    $('#zoom').classList.add('on');
+  }
+  function zoomOff(){ $('#zoom').classList.remove('on'); $('#zoom img').removeAttribute('src'); }
+  $('#zoom').addEventListener('click', zoomOff);
+  document.addEventListener('keydown', function(ev){
+    if(ev.key === 'Escape' && $('#zoom').classList.contains('on')){ ev.stopPropagation(); zoomOff(); }
+  }, true);
+
+  /* 写真の下の言葉を、いまの様子に合わせて書き替えます */
+  function picWord(a, t){ if(a && a.querySelector('span')) a.querySelector('span').textContent = t; }
+  function picState(a, st){
+    if(!a) return;
+    a.classList.remove('wait', 'ng-load');
+    if(st === 'wait'){ a.classList.add('wait'); picWord(a, '読み込んでいます…'); }
+    else if(st === 'ng'){ a.classList.add('ng-load'); picWord(a, 'この画面では読み込めませんでした'); }
+    else { picWord(a, '大きく見る'); }
+  }
+
+  /* 写真を押したとき。ページの中で、もとの大きさで開きます */
+  document.addEventListener('click', function(ev){
+    var a = ev.target && ev.target.closest ? ev.target.closest('[data-pic]') : null;
+    if(!a) return;
+    ev.preventDefault();
+    ev.stopPropagation();
+    var u = a.getAttribute('data-pic');
+    if(PIC[u]){ zoom(PIC[u]); return; }
+    picState(a, 'wait');
+    askPic(u, function(src){
+      if(src){ picState(a, ''); zoom(src); }
+      else{
+        picState(a, 'ng');
+        /* どうしても読めないときだけ、ドライブを開きます（ログインが要ります） */
+        window.open(u, '_blank', 'noopener');
+      }
+    });
+  }, true);
+
+  /* 写真の枠を1つぶん組み立てます */
+  function picHtml(u){
+    return '<a href="' + esc(u) + '" class="wait" data-pic="' + esc(u) + '">' +
+           '<img src="' + esc(driveThumb(u)) + '" alt="" data-dv="' + esc(u) + '" ' +
+           'onload="this.closest(\'a\').classList.remove(\'wait\')">' +
+           '<span>大きく見る</span></a>';
+  }
+
 
   /* ================================================================
      えらんだ1件の中身は、画面の中央に浮かび上がる箱に出します。
@@ -2180,7 +2411,7 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
 
     /* ---- 対応履歴（チャット形式）---- */
     h.push('<div class="d-k">対応履歴</div>');
-    h.push(histHtml(r));
+    h.push(histHtml(r, d));
 
     /* ---- お客さまと、お手続きの情報 ---- */
     h.push('<div class="d-k">この件の情報</div>');
@@ -2202,13 +2433,26 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
     }
     if(d && d.pass) b.push('パスワード ' + esc(d.pass));
     if(d && d.memo) b.push('社内メモ ' + esc(d.memo));
+    /* ★ v2.9）ご返信の受付を閉じた件は、そのことを書きます。
+         入居者様には、ご案内（ゴミの出し方など）は、そのまま見えています。 */
+    if(d && d.closed){
+      b.push('ご返信の受付は終了しています（お部屋のご案内は、いまもご覧いただけます）');
+    }
     h.push('<div class="d-item"><p>' + b.join('<br>') + '</p></div>');
 
+    /* ★ v2.9）だれが、いつ、何をしたか。
+         対応履歴（チャット）には出しきれない分も、ここにそのまま並べます。 */
+    if(d && (d.acts || []).length){
+      h.push('<div class="d-k">操作の記録</div>');
+      h.push('<div class="d-item"><p>' +
+             actList(d).map(function(x){
+               return esc(jpTime(x.t) || x.t) + '　' + esc(x.what) +
+                      (x.who ? ('　<b style="font-weight:600;">' + esc(x.who) + '</b>') : '');
+             }).join('<br>') + '</p></div>');
+    }
+
     if(d && d.plan){
-      h.push('<div class="ph" style="margin-top:12px;"><a href="' + esc(d.plan) +
-             '" target="_blank" rel="noopener"><img src="' + esc(driveThumb(d.plan)) +
-             '" alt="" onerror="this.style.display=\'none\'">' +
-             '<span>間取り図を開く</span></a></div>');
+      h.push('<div class="ph" style="margin-top:12px;">' + picHtml(d.plan) + '</div>');
     }
 
     if(!d){
@@ -2246,12 +2490,10 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
         h.push('<b>' + esc(x.place) + '　<span class="pill ng">気になるところあり</span></b>');
         if(x.comment) h.push('<p>' + esc(x.comment) + '</p>');
         if((x.photos||[]).length){
-          h.push('<div class="ph">' + x.photos.map(function(u){
-            return '<a href="' + esc(u) + '" target="_blank" rel="noopener">' +
-                   '<img src="' + esc(driveThumb(u)) + '" alt="" ' +
-                   'onerror="this.style.display=\'none\'">' +
-                   '<span>写真を開く</span></a>';
-          }).join('') + '</div>');
+          /* ★ v2.10）写真は公開していません。
+               ドライブから読めないときは、このアプリが中身を渡します。
+               押すと、ページの中で大きく出ます（ドライブへは行きません）。 */
+          h.push('<div class="ph">' + x.photos.map(picHtml).join('') + '</div>');
         }
         h.push('</div>');
       });
