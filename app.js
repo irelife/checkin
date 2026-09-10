@@ -4,6 +4,9 @@
    ・?id=…… で、その方だけのご案内を開きます
    ・パスワード（6文字）を入れると中身が出ます
    ・書きかけは、その端末の中に自動で残ります（送信すると消えます）
+   ・「一時保存」を押すと、こちらでもお預かりします。
+     スマートフォンを買い替えても、続きから入力していただけます
+     （写真は端末の中だけです。重いため、お預かりしません）
    ・写真は送る前に小さくします（通信量と、サーバーの負担を減らすため）
    ===================================================================== */
 (function(){
@@ -16,6 +19,11 @@
   var LNK = (location.search.match(/[?&]k=([^&]+)/) || [])[1] || '';
   var PASS = '';
   var DATA = null;               // サーバーから受け取ったご案内
+  /* ★ ご返信の受付が終わっているか。
+       終わっていても「お部屋のご案内」は、これまでどおりご覧いただけます。 */
+  var CLOSED = false;
+  var CLOSED_MSG = '';
+  var HOLD_NOTE = '';            // お預かりしていたぶんから続けたときの日時
 
   /* 暮らしのルールの文。ゴミの回収の回数だけ、エリアによって差し替えます。
      エリアが分からないとき・回数が決まっていないときは、
@@ -96,13 +104,15 @@
      写真は1枚で100KB以上あるので、端末の置き場（およそ5MB）がいっぱいになることがあります。
      いっぱいのときは、写真を外して「選んだ内容と書いた文章」だけでも必ず残します。 */
   function save(){
-    var body = { rooms:rooms, checks:checks, whys:whys, step:step };
+    /* ★ いつのものかを入れておきます。
+         こちらでお預かりしたぶんと、どちらが新しいかを見るためです。 */
+    var body = { rooms:rooms, checks:checks, whys:whys, step:step, at:Date.now() };
     try{
       localStorage.setItem(KEY, JSON.stringify(body));
       return;
     }catch(e){}
     try{
-      var slim = { rooms:{}, checks:checks, whys:whys, step:step, noPhoto:true }, k;
+      var slim = { rooms:{}, checks:checks, whys:whys, step:step, at:Date.now(), noPhoto:true }, k;
       for(k in rooms){
         if(!Object.prototype.hasOwnProperty.call(rooms, k)) continue;
         slim.rooms[k] = { ng:rooms[k].ng, comment:rooms[k].comment || '', photos:[] };
@@ -114,10 +124,109 @@
     }
   }
   function load(){
-    try{
-      var v = JSON.parse(localStorage.getItem(KEY) || 'null');
-      if(v){ rooms = v.rooms || {}; checks = v.checks || {}; whys = v.whys || {}; }
-    }catch(e){}
+    var v = null;
+    try{ v = JSON.parse(localStorage.getItem(KEY) || 'null'); }catch(e){ v = null; }
+    if(v){ rooms = v.rooms || {}; checks = v.checks || {}; whys = v.whys || {}; }
+    return v;
+  }
+
+  /* ================================================================
+     ★ 一時保存（こちらでお預かりします）
+
+     ・端末の中だけに残していると、スマートフォンを変えたときや、
+       ブラウザの記録を消したときに、書きかけが消えてしまいます。
+     ・そこで「一時保存」を押していただくと、こちらでもお預かりします。
+     ・写真はお預かりしません。重いためです。端末の中には残っています。
+     ・送信が終わると、お預かりしたぶんは消します。
+     ================================================================ */
+  function holdBody(){
+    var out = { rooms:{}, checks:{}, whys:{}, step:step }, k;
+    /* まだ触っていないところは、預けません。
+       場所の分だけ「まだ選んでいない」が並ぶと、中身が大きくなるだけだからです。 */
+    for(k in rooms){
+      if(!Object.prototype.hasOwnProperty.call(rooms, k)) continue;
+      var one = rooms[k] || {};
+      var ng  = (one.ng === true || one.ng === false) ? one.ng : null;
+      var cm  = String(one.comment || '');
+      if(ng === null && !cm) continue;
+      /* 写真は入れません（お預かりするのは、選んだ内容と書いた文章だけです） */
+      out.rooms[k] = { ng: ng, comment: cm };
+    }
+    for(k in checks){
+      if(!Object.prototype.hasOwnProperty.call(checks, k)) continue;
+      if(checks[k]) out.checks[k] = true;
+    }
+    for(k in whys){
+      if(!Object.prototype.hasOwnProperty.call(whys, k)) continue;
+      var w = whys[k] || {};
+      if(String(w.why||'') || String(w.note||'')) out.whys[k] = { why:w.why||'', note:w.note||'' };
+    }
+    return out;
+  }
+  function holdEmpty(b){
+    var k, n = 0, g = ['rooms','checks','whys'], i;
+    for(i = 0; i < g.length; i++){
+      for(k in (b[g[i]]||{})){ if(Object.prototype.hasOwnProperty.call(b[g[i]], k)) n++; }
+    }
+    return n === 0;
+  }
+  var _holding = false;
+  function holdNow(){
+    if(_holding) return;
+    if(!ID || !PASS){ toast('まだ開いていないため、お預かりできません。'); return; }
+    var b = holdBody();
+    if(holdEmpty(b)){ toast('まだ何も入力されていません。'); return; }
+    _holding = true;
+    var btn = $('#hold');
+    if(btn){ btn.disabled = true; btn.textContent = '保存しています…'; }
+    post({ action:'draftSave', id:ID, pass:PASS, data:b }).then(function(res){
+      if(res && res.ok){
+        toast('お預かりしました。ほかの端末からでも、続きから入力していただけます。\n' +
+              '写真は、この端末の中にだけ残ります。');
+      }else{
+        toast((res && res.err) || 'お預かりできませんでした。もう一度お試しください。');
+      }
+    }).catch(function(){
+      toast('通信できませんでした。入力内容は、この端末には残っています。');
+    }).then(function(){
+      _holding = false;
+      if(btn){ btn.disabled = false; btn.textContent = '入力を一時保存する'; }
+    });
+  }
+
+  /* お預かりしていたぶんを、画面に入れます */
+  function holdApply(d){
+    if(!d || !d.data) return;
+    rooms = {}; checks = d.data.checks || {}; whys = d.data.whys || {};
+    var src = d.data.rooms || {}, k;
+    for(k in src){
+      if(!Object.prototype.hasOwnProperty.call(src, k)) continue;
+      rooms[k] = { ng: src[k].ng, comment: src[k].comment || '', photos: [] };
+    }
+    save();
+  }
+  /* 「2026/09/10 14:22」を、時刻の数に直します（読めなければ 0） */
+  function holdMs(v){
+    var m = /^(\d{4})\/(\d{2})\/(\d{2})[ T](\d{2}):(\d{2})/.exec(String(v||''));
+    if(!m) return 0;
+    return new Date(Number(m[1]), Number(m[2])-1, Number(m[3]),
+                    Number(m[4]), Number(m[5])).getTime();
+  }
+  /* 「2026/09/10 14:22」を、読みやすい形に */
+  function holdWhen(v){
+    var m = /^(\d{4})\/(\d{2})\/(\d{2})[ T](\d{2}):(\d{2})/.exec(String(v||''));
+    return m ? (Number(m[2]) + '月' + Number(m[3]) + '日 ' + m[4] + ':' + m[5]) : '';
+  }
+
+  /* 下から出る、短いお知らせ */
+  var _toastT = null;
+  function toast(msg){
+    var el = $('#toast');
+    if(!el){ return; }
+    el.textContent = String(msg || '');
+    el.classList.add('on');
+    clearTimeout(_toastT);
+    _toastT = setTimeout(function(){ el.classList.remove('on'); }, 4200);
   }
   function clear(){ try{ localStorage.removeItem(KEY); }catch(e){} }
 
@@ -136,8 +245,21 @@
         return;
       }
       PASS = p; DATA = res;
+      CLOSED = !!res.closed;
       passSave(p);                               /* 次から、入れずに開けます */
       $('#btn-info').classList.remove('hide');   /* いつでも見返せるように */
+
+      /* ★ ご返信の受付が終わっている件。
+           入力の画面は出さず、「お部屋のご案内」だけをお見せします。
+           ゴミの出し方・駐車場の区画・ポストのダイヤルは、
+           ご案内メールで「いつでもご確認いただけます」とお伝えしているためです。 */
+      if(CLOSED){
+        CLOSED_MSG = String(res.closedMsg || '');
+        _infoBack = 'closed';
+        showInfo();
+        return;
+      }
+
       /* すでにご返信ずみでも、ここで終わりにはしません。
          「もう一度ご返信する」から、何度でもお送りいただけます。 */
       if(res.done){
@@ -145,9 +267,29 @@
                  'あとからお気づきのことがあれば、下の「もう一度ご返信する」からお送りください。');
         return;
       }
-      load();
+
+      var mine = load();                       /* この端末に残っている書きかけ */
+      /* ★ こちらでお預かりしているぶんがあれば、どちらから続けるかを決めます */
+      var kept = res.draft;
+      if(kept && kept.data){
+        var mineAt = Number((mine && mine.at) || 0);
+        var keptAt = holdMs(kept.at);
+        if(!mine){
+          holdApply(kept);                      /* 端末に何も無ければ、そのまま使います */
+          HOLD_NOTE = holdWhen(kept.at);
+        }else if(keptAt > mineAt){
+          if(confirm('ほかの端末から ' + holdWhen(kept.at) + ' に一時保存されたものがあります。\n' +
+                     'そちらの続きから入力しますか？\n\n' +
+                     '「キャンセル」を押すと、この端末に残っている分から続けます。\n' +
+                     '※ 写真は、この端末に残っている分だけです。')){
+            holdApply(kept);
+            HOLD_NOTE = holdWhen(kept.at);
+          }
+        }
+      }
       build();
       go(1);
+      if(HOLD_NOTE) toast(HOLD_NOTE + ' に一時保存されたところから続けています。');
     }).catch(function(){
       veil(false);
       $('#pw-err').textContent = '通信できませんでした。電波状況の良い場所で、もう一度お試しください。';
@@ -179,11 +321,27 @@
         '<div class="plan-cap">間取り図（タップで大きく表示）</div>';
       var pim = $('#plan img');
       pim.addEventListener('click', function(){ zoom(big); });
-      /* もし読めなかったときは、壊れた印を出さずに、開くリンクにします */
-      pim.addEventListener('error', function(){
+
+      /* ★ v2.10）間取り図は、もう公開していません。
+           ドライブから直接は読めないので、読めなかったときは
+           このアプリに中身を取りにいきます（ご自分のぶんだけです）。
+           それでも読めないときだけ、開くリンクにします。 */
+      var _tried = false;
+      function planLink(){
         $('#plan').innerHTML =
           '<a class="plan-link" href="' + esc(DATA.plan) + '" target="_blank" rel="noopener">' +
           '間取り図を開く</a>';
+      }
+      pim.addEventListener('error', function(){
+        if(_tried){ planLink(); return; }
+        _tried = true;
+        post({ action:'plan', id:ID, pass:PASS }).then(function(d){
+          if(d && d.ok && d.data){
+            var im = $('#plan img');
+            if(im){ big = d.data; im.src = d.data; return; }
+          }
+          planLink();
+        }).catch(planLink);
       });
     }
 
@@ -395,16 +553,26 @@
   function showInfo(){
     $('#info-ttl').textContent =
       String((DATA||{}).bldg || '') + ' ' + String((DATA||{}).room || '') + '　お部屋のご案内';
-    $('#info-body').innerHTML = infoHtml() + keepHtml();
+    /* ★ ご返信の受付が終わっているときは、はじめにそのことをお伝えします。
+         このご案内そのものは、これまでどおりご覧いただけます。 */
+    var note = CLOSED
+      ? ('<div class="closed-note"><b>ご返信の受付は終了しました</b>' +
+         esc(CLOSED_MSG || '') +
+         '<br>このご案内（ゴミの出し方・駐車場の区画・集合ポストのダイヤルなど）は、' +
+         'これまでどおり、いつでもご覧いただけます。</div>')
+      : '';
+    $('#info-body').innerHTML = note + infoHtml() + keepHtml();
     $('#ask5').innerHTML = askHtml();
     ['#s-pw','#s1','#s2','#s3','#s-done'].forEach(function(x){ $(x).classList.add('hide'); });
     $('#foot').classList.add('hide');
     $('#steps').classList.add('hide');       /* ①②③ は、ご案内の画面では出しません */
     $('#s-info').classList.remove('hide');
+    /* 受付が終わっている件では、戻る先がありません */
+    $('#info-back').classList.toggle('hide', _infoBack === 'closed');
     window.scrollTo(0,0);
   }
 
-  var _infoBack = 'done';     /* 戻る先。'done' か 'step' */
+  var _infoBack = 'done';     /* 戻る先。'done' か 'step' か 'closed' */
   $('#btn-info').addEventListener('click', function(){
     _infoBack = $('#s-done').classList.contains('hide') ? 'step' : 'done';
     showInfo();
@@ -435,11 +603,15 @@
   });
 
   $('#info-back').addEventListener('click', function(){
+    if(_infoBack === 'closed') return;          /* 戻る先がありません */
     $('#s-info').classList.add('hide');
     if(_infoBack === 'done'){ $('#s-done').classList.remove('hide'); }
     else { go(step); }
     window.scrollTo(0,0);
   });
+
+  /* ★「一時保存」。こちらでお預かりします */
+  $('#hold').addEventListener('click', holdNow);
 
   var _clSeq = 0;
   function clHtml(c){
@@ -674,7 +846,16 @@
     post(payload).then(function(res){
       keepAwake(false);
       veil(false);
-      if(!res.ok){ alert(res.err || '送信できませんでした。もう一度お試しください。'); return; }
+      if(!res.ok){
+        /* ★ 受付が終わっていた件は、そのことをお伝えして、ご案内へお移しします */
+        if(res.closed){
+          CLOSED = true; CLOSED_MSG = String(res.err || '');
+          alert(res.err || 'ご返信の受付は終了しました。');
+          _infoBack = 'closed'; showInfo();
+          return;
+        }
+        alert(res.err || '送信できませんでした。もう一度お試しください。'); return;
+      }
       clear();
       showDone(res.ng > 0
         ? 'ありがとうございました。いただきました室内チェックのご内容は、ご退去時まで記録として保管させていただきます。'
