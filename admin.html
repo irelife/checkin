@@ -816,7 +816,6 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
       <div class="sec">
         <p class="sec-t">この物件の設定</p>
         <p class="hint">該当するものを1つずつ選択してください。なければ、そのままで結構です</p>
-        <div id="bp-note" class="bp hide"></div>
         <div id="pick-list"></div>
       </div>
 
@@ -1233,104 +1232,13 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
 
   function resetPicks(){ $$('#pick-list select').forEach(function(sl){ sl.value = ''; }); }
 
-  /* ---- 同じ物件の、前のご案内から引き継ぎます ---------------------------
-       ・物件名（と号室）を入れると、前に作ったご案内を探します。
-       ・見つかったら、選択（プルダウン）とエリアを入れておきます。
-         仲介業者は、ご契約ごとに変わるので、引き継ぎません。
-       ・号室まで同じときは、特約の印も、そのまま引き継ぎます。
-       ・手で入れたところには、さわりません。引き継ぎで入れたところだけ、
-         後から物件名・号室を直すと、入れ直します。
-       ・「引き継ぎをやめる」で、最初の状態に戻ります。
-     ---------------------------------------------------------------------- */
-  var _bpId   = '';     /* いま引き継いだ元（ご案内のID＋号室まで一致したか）*/
-  var _bpSeq  = 0;      /* 続けて入力したとき、古い返事で上書きしないための番号 */
-  var _bpAuto = {};     /* 引き継ぎで入れたところ（手入力と区別します） */
+  /* ★ 前のご案内からの「引き継ぎ」は、やめました。
+       ・区画No.・ポストのダイヤルは、はじめから空欄です
+       ・特約の印は、はじめから決まっているものだけが付きます
+       ・「◯◯から引き継ぎました」のお知らせも出しません
+       同じ物件でも、お部屋ごと・ご契約ごとに中身が変わるためです。
+       前のご案内の内容は、一覧からその1件を開けば見られます。 */
 
-  function bpHide(){ $('#bp-note').classList.add('hide'); $('#bp-note').innerHTML = ''; }
-  function bpClear(){ _bpId = ''; _bpAuto = {}; bpHide(); }
-
-  /* 手で入れていないところにだけ入れて、入れたことを覚えておきます */
-  function bpSet(id, v){
-    var el = $(id);
-    if(!el) return;
-    if(el.value && !_bpAuto[id]) return;      /* 手で入れたもの → さわりません */
-    el.value = v || '';
-    if(v) _bpAuto[id] = 1; else delete _bpAuto[id];
-  }
-
-  function bpFill(){
-    var bl = $('#f-bldg').value.trim();
-    var rm = $('#f-room').value.trim();
-    if(!bl){ bpClear(); return; }
-
-    var mine = ROWS.filter(function(r){ return String(r.bldg||'').trim() === bl; });
-    if(!mine.length){ bpClear(); return; }
-
-    /* ROWS は新しい順です。号室まで同じものがあれば、そちらを使います */
-    var same = rm ? mine.filter(function(r){ return String(r.room||'').trim() === rm; }) : [];
-    var use  = same[0] || mine[0];
-    /* 同じご案内でも、「号室まで同じ」になったときは、もう一度読み直します
-       （駐車場の区画・ポストのダイヤル・特約の印が、そこで増えるため） */
-    var key = use.id + (same.length ? '/room' : '/bldg');
-    if(key === _bpId) return;
-
-    var seq = ++_bpSeq;
-    post({ action:'detail', key:KEY, id:use.id }).then(function(d){
-      if(seq !== _bpSeq) return;              /* もっと新しい入力があった → 捨てます */
-      if(!d || !d.ok) return;
-      _bpId = key;
-
-      var have = {}; (d.clauses||[]).forEach(function(t){ have[t] = 1; });
-
-      /* エリアは物件のものなので引き継ぎます。
-         仲介業者は、同じ物件でもご契約ごとに変わるため、引き継ぎません。 */
-      bpSet('#f-area', use.area);
-
-      var got = 0;
-      $$('#pick-list select').forEach(function(sl){
-        var k   = sl.getAttribute('data-k');
-        var key = 'pk:' + k;
-        var hit = picksOf(k).filter(function(c){ return have[c.t]; })[0];
-        if(sl.value && !_bpAuto[key]) return;               /* 手で選んだもの → そのまま */
-        sl.value = hit ? hit.t : '';
-        if(hit){ _bpAuto[key] = 1; got++; } else { delete _bpAuto[key]; }
-      });
-
-      /* 号室まで同じときだけ、特約の印も引き継ぎます（間取りが同じなので） */
-      var alsoCl = same.length > 0;
-      if(alsoCl){
-        /* 駐車場の区画とポストのダイヤルは、お部屋についているものです。
-           号室まで同じときだけ引き継ぎます。 */
-        if(typeof d.parking === 'string' && !$('#f-park').value) parkPut(d.parking);
-        /* ダイヤルは、まだ手で入れていないときだけ入れ直します */
-        if(dialVals().join('') === '') dialPut(d.postDial);
-      }
-      if(alsoCl){
-        $$('#cl-list .cl').forEach(function(e){
-          var on = !!have[e.getAttribute('data-t')];
-          e.querySelector('input').checked = on;
-          e.classList.toggle('on', on);
-        });
-      }
-
-      if(!got && !alsoCl){ bpHide(); return; }
-      $('#bp-note').innerHTML =
-        '<span><b>' + esc(use.bldg) + ' ' + esc(use.room) + '</b>（' +
-          esc(String(use.created).slice(0,10)) + '）のご案内から、' +
-          (got ? ('設定 ' + got + ' 件') : '') +
-          (got && alsoCl ? ' と ' : '') +
-          (alsoCl ? '特約の印' : '') +
-          ' を引き継ぎました。異なる場合は、下記で修正してください。</span>' +
-        '<button type="button" class="btn ghost sm" id="bp-off">引き継ぎを取り消す</button>';
-      $('#bp-note').classList.remove('hide');
-      $('#bp-off').addEventListener('click', function(){
-        resetClauses();          /* 選択も、特約の印も、最初の状態に戻ります */
-        bpClear();
-      });
-    }).catch(function(){ bpHide(); });
-  }
-  $('#f-bldg').addEventListener('change', bpFill);
-  $('#f-room').addEventListener('change', bpFill);
   function pickedClauses(){
     return $$('#pick-list select').map(function(sl){ return sl.value; })
              .filter(function(v){ return v; });
@@ -1655,7 +1563,6 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
       parkClear();
       dialClear();
       resetClauses();
-      bpClear();
       feAllClear();
       draftDrop();
       planReset();
