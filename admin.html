@@ -1026,6 +1026,7 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
 
   /* 受け取った一覧を、画面に反映します */
   function applyList(o, at){
+    _lastAuto = Date.now();     /* 読んだばかりなので、自動の読み直しは1分あけます */
     ROWS = o.rows || [];
     if(o.areas && o.areas.length) AREAS = o.areas;
     if(o.remindMax !== undefined){ RM_MAX = Number(o.remindMax)||0;
@@ -1688,6 +1689,7 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
     /* 年度はサーバー側でしぼります。件数が増えても重くなりません。
        0 を渡すと全部returnされます */
     var fy = $('#f-fy').value;
+    _lastAuto = Date.now();          /* 自動の読み直しは、ここから1分あけます */
     var end = function(){ veil(false); syncing(false); $('#reload').classList.remove('spin'); };
     post({ action:'list', key:KEY, fy:(fy === '' ? 0 : Number(fy)) }).then(function(res){
       end();
@@ -1713,6 +1715,26 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
     }
   }
   $('#reload').addEventListener('click', function(){ reload(true); });
+
+  /* ★ 別のタブや別のアプリから戻ってきたときに、裏で静かに最新を読み直します。
+       ・丸い矢印を押さなくても、対応が必要へ移ったものが出てきます
+       ・1分に1回までにしています（Google 側の使用量を増やさないため）
+       ・開きっぱなしで放っておくあいだは、何もしません
+       ・次の3つのときは読み直しません。読んでいる途中で中身が入れ替わると困るためです
+           中身の箱を開いているとき／仲介への下書きを書いているとき／新規作成の画面 */
+  var _lastAuto = 0;
+  function autoFresh(){
+    if(!KEY) return;                                          /* まだログインしていません */
+    if(document.visibilityState !== 'visible') return;
+    if($('#s-list').classList.contains('hide')) return;        /* 一覧の画面ではありません */
+    if($('#detail').classList.contains('on')) return;          /* 中身を開いています */
+    if($('#agbox').classList.contains('on')) return;           /* 仲介への下書き中です */
+    var now = Date.now();
+    if(now - _lastAuto < 60000) return;                        /* 1分に1回まで */
+    reload(true);                                              /* 幕は出さず、裏で読みます */
+  }
+  document.addEventListener('visibilitychange', autoFresh);
+  window.addEventListener('focus', autoFresh);
   $('#q').addEventListener('input', drawList);
   $('#f-fy').addEventListener('change', function(){ reload(false); });
   $('#f-mo').addEventListener('change', drawAll);
