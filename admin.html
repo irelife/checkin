@@ -556,6 +556,57 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
 /* まだ読み込めていない写真は、うすくして「いま取りにいっています」と伝えます */
 .ph a.wait img{opacity:.25;}
 .ph a.ng-load span{color:var(--ng);}
+/* ---- ★ v2.12）物件のまとめ ---------------------------------------
+     完了タブで、同じ物件が2件以上あるときの1枚。
+     絵は入れものにして、右下に件数を出します。
+     -------------------------------------------------------------------- */
+.i-ic.big.fd{background:#fff;}
+/* 中身の画面の見出しでは、白い下地だと消えてしまうので、うすい灰色にします */
+.sd-hd .i-ic.big.fd{background:var(--fill);}
+.i-ic.big.fd svg{width:54px;height:54px;}
+.i-n{position:absolute;right:-6px;bottom:-6px;min-width:28px;height:28px;padding:0 8px;
+  border-radius:100px;background:var(--ink);color:#fff;font-size:13px;font-weight:700;
+  font-style:normal;line-height:28px;text-align:center;
+  box-shadow:0 2px 6px rgba(0,0,0,.18);}
+.item.fold .i-ic.big{position:relative;overflow:visible;}
+.i-desc{white-space:pre-line;}
+
+/* まとめの中の、お部屋ごとの1行 */
+.d-k-n{font-size:12.5px;font-weight:600;color:var(--ink3);}
+.fd-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  padding:14px 16px;margin-top:8px;border-radius:14px;background:var(--fill);cursor:pointer;}
+.fd-row:hover{background:var(--fill2);}
+.fd-row.old{background:#FFF4E2;}
+.fd-row.old:hover{background:#FFEBCC;}
+.fd-tx{flex:1 1 180px;min-width:0;}
+.fd-tx b{display:block;font-size:15.5px;font-weight:600;}
+.fd-tx span{display:block;margin-top:3px;font-size:12.5px;color:var(--ink2);}
+.fd-a{flex:0 0 auto;display:flex;gap:8px;flex-wrap:wrap;}
+.fd-a .btn.sm{margin:0;}
+.fd-note{margin:8px 2px 0;font-size:12px;line-height:1.7;color:var(--ink3);}
+.fd-back{margin:0 0 14px;}
+.btn.sm.ng{background:var(--ng);color:#fff;}
+
+/* 前の方の記録を消すときの、おたずね */
+#drop{position:fixed;inset:0;z-index:130;display:none;align-items:center;justify-content:center;
+  padding:20px;background:rgba(29,29,31,.34);
+  -webkit-backdrop-filter:saturate(150%) blur(14px);backdrop-filter:saturate(150%) blur(14px);}
+#drop.on{display:flex;}
+.dp-card{width:min(520px,100%);max-height:min(84vh,100%);overflow:auto;
+  padding:26px;border-radius:22px;background:#fff;
+  box-shadow:0 24px 60px rgba(0,0,0,.24);}
+.dp-card h3{margin:0;font-size:19px;font-weight:600;}
+.dp-lead{margin:10px 0 0;font-size:14.5px;line-height:1.8;color:var(--ink2);}
+.dp-lead b{color:var(--ng);}
+.dp-list{margin-top:16px;}
+.dp-row{padding:12px 14px;margin-top:8px;border-radius:12px;background:#FFF4E2;}
+.dp-row b{display:block;font-size:15px;font-weight:600;}
+.dp-row span{display:block;margin-top:2px;font-size:12.5px;color:var(--ink2);}
+.dp-note{margin:16px 0 0;font-size:12.5px;line-height:1.85;color:var(--ink3);}
+.dp-a{display:flex;gap:10px;margin-top:22px;}
+.dp-a .btn{flex:1 1 0;margin:0;}
+@media (max-width:560px){ .dp-card{padding:22px 18px;} }
+
 /* ★ 写真を大きく見るための覆い。ページの中で開くので、
      ドライブへ行かなくても（ログインしていなくても）見られます */
 #zoom{position:fixed;inset:0;z-index:120;display:none;align-items:center;justify-content:center;
@@ -981,6 +1032,8 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
 </div>
 
 <div id="veil">読み込んでいます…</div>
+<!-- ★ v2.12）前の方の記録を消すときの、おたずね -->
+<div id="drop" role="dialog" aria-label="前の方の記録を消します"></div>
 <!-- ★ 写真を大きく見るところ。どこかを押すと閉じます -->
 <div id="zoom" role="dialog" aria-label="写真">
   <button type="button" class="z-x" id="z-x" aria-label="とじる">✕</button>
@@ -1715,6 +1768,7 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
     if($('#detail').classList.contains('on')) return false;   /* 中身を開いています */
     if($('#agbox').classList.contains('on')) return false;    /* 仲介への下書き中です */
     if($('#zoom').classList.contains('on')) return false;     /* 写真を見ています */
+    if($('#drop').classList.contains('on')) return false;     /* 消すかどうかを、おうかがい中です */
     return true;
   }
 
@@ -1769,6 +1823,7 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
     if($('#s-list').classList.contains('hide')) return;        /* 一覧の画面ではありません */
     if($('#detail').classList.contains('on')) return;          /* 中身を開いています */
     if($('#agbox').classList.contains('on')) return;           /* 仲介への下書き中です */
+    if($('#drop').classList.contains('on')) return;            /* 消すかどうかを、おうかがい中です */
     var now = Date.now();
     if(now - _lastAuto < 60000) return;                        /* 1分に1回まで */
     reload(true);                                              /* 幕は出さず、裏で読みます */
@@ -1823,9 +1878,12 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
     b.addEventListener('click', function(){
       TAB = b.getAttribute('data-t');
       FILT = '';                    /* タブを変えたら、数字の絞り込みは外します */
+      FOLD = '';                    /* まとめも閉じます */
       /* 完了は、過去の件を「探して見つける」ところなので、探す欄も一緒に開きます */
       if(TAB === 'done' && !findIsOpen()) findOpen(true);
       drawAll();
+      /* ★ v2.12）重なっているお部屋があれば、ここでおうかがいします */
+      if(TAB === 'done') setTimeout(dropCheck, 250);
     });
   });
   $('#f-far').addEventListener('change', drawAll);
@@ -2001,7 +2059,10 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
     clock: '<circle cx="12" cy="12" r="9"/><path d="M12 6.8V12l3.6 2.2"/>',
     check: '<circle cx="12" cy="12" r="9"/><path d="m7.8 12.2 2.9 2.9 5.5-6"/>',
     chat : '<path d="M4.2 4.6h15.6a1.2 1.2 0 0 1 1.2 1.2v8.8a1.2 1.2 0 0 1-1.2 1.2h-8.3L7.4 19.4v-3.6H4.2'
-         + 'A1.2 1.2 0 0 1 3 14.6V5.8a1.2 1.2 0 0 1 1.2-1.2Z"/><path d="M7.4 8.6h9.2M7.4 11.9h6"/>'
+         + 'A1.2 1.2 0 0 1 3 14.6V5.8a1.2 1.2 0 0 1 1.2-1.2Z"/><path d="M7.4 8.6h9.2M7.4 11.9h6"/>',
+    /* ★ v2.12）同じ物件をまとめた、ひとまとめの入れもの */
+    fold : '<path d="M3 7.4a1.4 1.4 0 0 1 1.4-1.4h4.3l2 2.4h7.9A1.4 1.4 0 0 1 20 9.8v8.2'
+         + 'a1.4 1.4 0 0 1-1.4 1.4H4.4A1.4 1.4 0 0 1 3 18V7.4Z"/>'
   };
   function svg(name, cls){
     return '<svg class="' + (cls||'') + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
@@ -2025,6 +2086,8 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
 
   /* いま画面でえらんでいる1件と、読み込んだ中身の控え */
   var SEL  = '';
+  /* ★ v2.12）いま開いている「物件のまとめ」の名前。空なら開いていません */
+  var FOLD = '';
   var DC   = {};
   var DERR = {};   /* 読み込めなかったとき、その理由 */
 
@@ -2049,6 +2112,61 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
   };
   function whyTag(r){ return WHY_TAG[String(r.doneWhy||'')] || ['完了', '']; }
   function whyText(r){ return WHY_TEXT[String(r.doneWhy||'')] || ''; }
+
+  /* ================================================================
+     ★ v2.12）完了タブは、物件ごとにまとめます
+
+     同じ物件名の件が2件以上あれば、1枚の入れものにします。
+     1件だけの物件は、これまでどおり1枚のカードのままです。
+     探しているとき（探す言葉や、数字での絞り込みがあるとき）は、
+     まとめずに1件ずつ出します。そのほうが見つけやすいためです。
+     ================================================================ */
+  function bKey(r){ return String(r.bldg || '').trim(); }
+  function rKey(r){ return bKey(r) + '｜' + String(r.room || '').trim(); }
+
+  /* 新しい順にそろえるための、日付。完了日がなければ作成日で見ます */
+  function newKey(r){ return stamp(r.doneAt) || stamp(r.replied) || stamp(r.created) || ''; }
+
+  /* 物件ごとにまとめます。[{name, rows:[…]}] を、物件名の順で返します */
+  function foldRows(rows){
+    var map = {}, order = [];
+    rows.forEach(function(r){
+      var k = bKey(r);
+      if(!map[k]){ map[k] = []; order.push(k); }
+      map[k].push(r);
+    });
+    order.sort(function(a, b){ return a < b ? -1 : (a > b ? 1 : 0); });
+    return order.map(function(k){
+      var list = map[k].slice().sort(function(a, b){
+        var x = newKey(a), y = newKey(b);
+        return x === y ? 0 : (x > y ? -1 : 1);        /* 新しいものが上 */
+      });
+      return { name: k, rows: list };
+    });
+  }
+
+  /* 同じお部屋で重なっている分。[{room, keep, olds:[…]}] を返します。
+     keep … いちばん新しい1件（残すもの）
+     olds … それより前の分（消してよいかを、おうかがいするもの） */
+  function dupsIn(rows){
+    var map = {}, order = [];
+    rows.forEach(function(r){
+      var k = rKey(r);
+      if(!map[k]){ map[k] = []; order.push(k); }
+      map[k].push(r);
+    });
+    var out = [];
+    order.forEach(function(k){
+      if(map[k].length < 2) return;
+      var list = map[k].slice().sort(function(a, b){
+        var x = newKey(a), y = newKey(b);
+        return x === y ? 0 : (x > y ? -1 : 1);
+      });
+      out.push({ room: String(list[0].room || ''), bldg: String(list[0].bldg || ''),
+                 keep: list[0], olds: list.slice(1) });
+    });
+    return out;
+  }
 
   function stTag(r){
     var st  = String(r.status || '');
@@ -2211,8 +2329,22 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
     if(!rows.length){
       $('#list').innerHTML = blankHtml(!!q || FILT !== '');
       if(SEL){ SEL = ''; detailOpen(false); }
+      if(FOLD){ FOLD = ''; detailOpen(false); }
       return;
     }
+
+    /* ★ v2.12）完了タブは、同じ物件をひとまとめにします。
+         探しているときは、まとめずに1件ずつ出します。 */
+    if(TAB === 'done' && !q && FILT === ''){
+      $('#list').innerHTML = foldRows(rows).map(cardOf).join('');
+      var still = FOLD && rows.some(function(x){ return bKey(x) === FOLD; });
+      if(FOLD && !still){ FOLD = ''; SEL = ''; detailOpen(false); }
+      markSel();
+      if(FOLD || SEL) paint();
+      return;
+    }
+    if(FOLD){ FOLD = ''; }
+
     $('#list').innerHTML = rows.map(function(r){
       var t   = stTag(r);
       var stl = stLine(r);
@@ -2244,6 +2376,60 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
     if(!here && SEL){ SEL = ''; detailOpen(false); }
     markSel();
     if(SEL) paint();
+  }
+
+  /* まとめの1枚。1件だけの物件は、これまでどおりのカードにします */
+  function cardOf(g){
+    if(g.rows.length < 2) return itemHtml(g.rows[0]);
+
+    var dup = dupsIn(g.rows);
+    var rooms = g.rows.map(function(r){ return String(r.room || ''); });
+    var seen = {}, uniq = [];
+    rooms.forEach(function(x){ if(!seen[x]){ seen[x] = 1; uniq.push(x); } });
+    var head = uniq.slice(0, 6).join('、') + (uniq.length > 6 ? ' ほか' : '');
+
+    return '<div class="item fold' + (FOLD === g.name ? ' on' : '') +
+      '" data-fold="' + esc(g.name) + '" data-nm="' + esc(g.name) + '">' +
+      '<div class="i-tile">' +
+        '<span class="i-ic big fd">' + svg('fold') +
+          '<i class="i-n">' + g.rows.length + '</i></span>' +
+      '</div>' +
+      '<div class="i-tx"><b>' + esc(g.name) + '</b>' +
+        '<span class="i-sub">' + g.rows.length + ' 件　／　' + uniq.length + ' 部屋</span>' +
+        (dup.length
+          ? '<span class="i-tag wn">前の方の記録あり</span>'
+          : '<span class="i-tag">完了</span>') +
+        '<p class="i-desc">' + esc(head) +
+          (dup.length ? ('\n' + dup.length + ' 部屋に、前の方の記録が残っています') : '') +
+        '</p>' +
+      '</div>' +
+    '</div>';
+  }
+
+  /* 1件ぶんのカード（まとめないとき・まとめの中の1件だけのとき） */
+  function itemHtml(r){
+    var t   = stTag(r);
+    var stl = stLine(r);
+    var nm  = String(r.bldg||'') + ' ' + String(r.room||'') +
+              (r.name ? ('（' + r.name + ' 様）') : '');
+    var sub = [];
+    if(r.name)  sub.push(String(r.name) + ' 様');
+    if(r.area)  sub.push(String(r.area));
+    var hi = (String(r.status||'') === '返信済' && !!r.agentRe);
+    return '<div class="item' + (needAct(r) ? '' : ' gray') +
+      (hi ? ' hi' : '') + (r.id === SEL ? ' on' : '') +
+      '" data-id="' + esc(r.id) + '" data-nm="' + esc(nm) + '">' +
+      '<div class="i-tile">' +
+        '<button class="i-x act-del" title="この件を一覧から消す" ' +
+                'aria-label="この件を一覧から消す">✕</button>' +
+        '<span class="i-ic big ' + t[1] + '">' + svg(t[0]) + '</span>' +
+      '</div>' +
+      '<div class="i-tx"><b>' + esc(r.bldg) + '　' + esc(r.room) + '</b>' +
+        '<span class="i-sub">' + esc(sub.join(' ／ ')) + '</span>' +
+        '<span class="i-tag ' + t[3] + '">' + esc(t[2]) + '</span>' +
+        (stl[1] ? ('<p class="i-desc">' + esc(stl[1]) + '</p>') : '') +
+      '</div>' +
+    '</div>';
   }
 
   /* ---- 仲介業者へ連絡する ---- */
@@ -2385,12 +2571,13 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
     /* 開いているあいだは、うしろの一覧は動かしません */
     document.body.style.overflow = on ? 'hidden' : '';
     if(on) $('#detail .inner').scrollTop = 0;
-    else { SEL = ''; markSel(); }
+    else { SEL = ''; FOLD = ''; markSel(); }
   }
 
   function markSel(){
     $$('#list .item').forEach(function(el){
-      el.classList.toggle('on', el.getAttribute('data-id') === SEL);
+      var f = el.getAttribute('data-fold');
+      el.classList.toggle('on', f ? (f === FOLD) : (el.getAttribute('data-id') === SEL));
     });
   }
 
@@ -2414,7 +2601,8 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
   }
 
   /* 1件をえらぶと、画面の中央に浮かび上がります */
-  function selectRow(id){
+  function selectRow(id, inFold){
+    if(!inFold) FOLD = '';          /* まとめの外から開いたときは、まとめは閉じます */
     SEL = id;
     markSel();
     var r = rowById(id);
@@ -2422,6 +2610,16 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
     paint();
     detailOpen(true);
     fetchDetail(id);
+  }
+
+  /* ★ v2.12）まとめを開きます */
+  function selectFold(name){
+    FOLD = name;
+    SEL = '';
+    markSel();
+    $('#d-title').textContent = name;
+    paint();
+    detailOpen(true);
   }
 
   /* えらんだ1件の中身をつくります。
@@ -2439,6 +2637,10 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
 
     /* ---- 見出しと、いまの状況と、押せるボタン ---- */
     h.push('<div class="card" data-id="' + esc(r.id) + '" data-nm="' + esc(nm) + '">');
+    /* ★ v2.12）まとめの中から開いたときは、戻れるようにします */
+    if(FOLD){
+      h.push('<button class="btn sm ghost act-back fd-back">← ' + esc(FOLD) + ' にもどる</button>');
+    }
     h.push('<div class="sd-hd"><span class="i-ic big ' + t[1] + '">' + svg(t[0]) + '</span>' +
            '<div style="min-width:0;"><h3>' + esc(r.bldg) + '　' + esc(r.room) +
            '<span class="who">' + esc(r.name) + ' 様</span></h3></div></div>');
@@ -2575,6 +2777,15 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
   function paint(){
     var el = paneTarget();
     if(!el) return;
+    /* ★ v2.12）まとめを開いているときは、中の一覧を出します */
+    if(FOLD && !SEL){
+      var g = ROWS.filter(function(x){
+        return String(x.status||'') === '完了' && inPeriod(x) && bKey(x) === FOLD; });
+      if(!g.length){ FOLD = ''; el.innerHTML = ''; detailOpen(false); return; }
+      el.innerHTML = foldHtml(FOLD, g);
+      $('#d-title').textContent = FOLD;
+      return;
+    }
     var r = SEL ? rowById(SEL) : null;
     if(!r){
       /* えらんでいた1件が、いまのタブから外れた（完了にした・消した）とき */
@@ -2586,6 +2797,70 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
     $('#d-title').textContent = String(r.bldg||'') + ' ' + String(r.room||'');
   }
 
+  /* ================================================================
+     ★ v2.12）まとめの中身。お部屋ごとに並べます。
+
+     同じお部屋に2件以上あるときは、いちばん新しい方をいまの入居者とみなし、
+     それより前の方の記録には「消す」を付けます。
+     ================================================================ */
+  function foldHtml(name, rows){
+    var h = [];
+    var dup = dupsIn(rows);
+
+    h.push('<div class="card">');
+    h.push('<div class="sd-hd"><span class="i-ic big fd">' + svg('fold') + '</span>' +
+           '<div style="min-width:0;"><h3>' + esc(name) +
+           '<span class="who">' + rows.length + ' 件</span></h3></div></div>');
+    if(dup.length){
+      h.push('<div class="sd-st">前の方の記録が残っています' +
+             '<span>' + dup.length + ' 部屋です。新しい方に入れ替えるときは、' +
+             '各お部屋の「前の方の記録を消す」を押してください。</span></div>');
+      h.push('<div class="i-a">' +
+             '<button class="btn sm act-dropall" data-fold="' + esc(name) + '">' +
+             '前の方の記録を、まとめて消す</button></div>');
+    }
+    h.push('</div>');
+
+    /* お部屋ごとに、まとめます */
+    var map = {}, order = [];
+    rows.forEach(function(r){
+      var k = String(r.room || '');
+      if(!map[k]){ map[k] = []; order.push(k); }
+      map[k].push(r);
+    });
+    order.sort(function(a, b){ return a < b ? -1 : (a > b ? 1 : 0); });
+
+    order.forEach(function(k){
+      var list = map[k].slice().sort(function(a, b){
+        var x = newKey(a), y = newKey(b);
+        return x === y ? 0 : (x > y ? -1 : 1);
+      });
+      h.push('<div class="d-k">' + esc(k || '（号室なし）') +
+             (list.length > 1 ? ('　<span class="d-k-n">' + list.length + ' 件</span>') : '') +
+             '</div>');
+      list.forEach(function(r, i){
+        var old = (i > 0);
+        h.push('<div class="fd-row' + (old ? ' old' : '') + '" data-id="' + esc(r.id) + '">');
+        h.push('<div class="fd-tx"><b>' + esc(r.name || '') + ' 様</b>' +
+               '<span>' + esc(whyTag(r)[0]) +
+               (r.doneAt ? ('　' + jpDate(String(r.doneAt).slice(0,10)) + ' に完了') : '') +
+               '</span></div>');
+        h.push('<div class="fd-a">');
+        h.push('<button class="btn sm ghost act-open" data-id="' + esc(r.id) + '">中身を見る</button>');
+        if(old){
+          h.push('<button class="btn sm ng act-drop" data-id="' + esc(r.id) + '">' +
+                 '前の方の記録を消す</button>');
+        }
+        h.push('</div></div>');
+      });
+      if(list.length > 1){
+        h.push('<p class="fd-note">いちばん上が、いまの入居者様です。' +
+               'その下は、前の方の記録です。</p>');
+      }
+    });
+    return h.join('');
+  }
+
   $('#d-close').addEventListener('click', function(){ detailOpen(false); });
   /* うしろ（ぼかしたところ）を押しても閉じます */
   $('#detail').addEventListener('click', function(ev){
@@ -2594,6 +2869,10 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
   /* Esc でも閉じます */
   document.addEventListener('keydown', function(ev){
     if(ev.key !== 'Escape') return;
+    /* まとめの中の1件を見ているときは、まずまとめに戻します */
+    if(FOLD && SEL && $('#detail').classList.contains('on')){
+      SEL = ''; markSel(); paint(); return;
+    }
     if($('#detail').classList.contains('on')) detailOpen(false);
   });
 
@@ -2642,11 +2921,122 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
       .then(function(){ btn.textContent = 'コピーしました'; });
   }
 
+  /* ================================================================
+     ★ v2.12）前の方の記録を消します
+
+     消すのは、同じお部屋に新しい方の記録が入ったときだけです。
+     いちばん新しい1件は、けっして消しません。
+     押していただく前に、何を消すのかを一覧にしてお見せします。
+     ================================================================ */
+  var _dropped = {};        /* このページを開いているあいだに「あとで」と言われた物件 */
+
+  function dropTargets(fold, ids){
+    if(ids && ids.length){
+      return ids.map(rowById).filter(Boolean);
+    }
+    var g = ROWS.filter(function(x){
+      return String(x.status||'') === '完了' && inPeriod(x) && bKey(x) === fold; });
+    var out = [];
+    dupsIn(g).forEach(function(d){ out = out.concat(d.olds); });
+    return out;
+  }
+
+  function askDrop(fold, ids){
+    var list = dropTargets(fold, ids);
+    if(!list.length){ flash('消す記録はありませんでした。'); return; }
+    var h = [];
+    h.push('<div class="dp-card">');
+    h.push('<h3>前の方の記録を消します</h3>');
+    h.push('<p class="dp-lead">下の ' + list.length + ' 件を、まるごと消します。' +
+           '<b>元にはもどせません。</b></p>');
+    h.push('<div class="dp-list">' + list.map(function(r){
+      return '<div class="dp-row"><b>' + esc(r.bldg) + '　' + esc(r.room) + '</b>' +
+             '<span>' + esc(r.name || '') + ' 様' +
+             (r.doneAt ? ('　／　' + jpDate(String(r.doneAt).slice(0,10)) + ' に完了') : '') +
+             '</span></div>';
+    }).join('') + '</div>');
+    h.push('<p class="dp-note">・スプレッドシートの「一覧」と「回答」の行も消えます<br>' +
+           '・写真と間取り図は、ドライブのごみ箱に入ります（しばらくは取り戻せます）<br>' +
+           '・いちばん新しい方の記録は、消しません</p>');
+    h.push('<div class="dp-a">' +
+           '<button type="button" class="btn sm ghost" id="dp-no">やめる</button>' +
+           '<button type="button" class="btn sm ng" id="dp-yes">' + list.length +
+           ' 件を消す</button></div>');
+    h.push('</div>');
+    $('#drop').innerHTML = h.join('');
+    $('#drop').classList.add('on');
+    $('#dp-no').addEventListener('click', function(){
+      if(fold) _dropped[fold] = 1;         /* この物件は、もう聞きません */
+      dropClose();
+    });
+    $('#dp-yes').addEventListener('click', function(){ dropClose(); doDrop(list); });
+  }
+  function dropClose(){ $('#drop').classList.remove('on'); $('#drop').innerHTML = ''; }
+
+  function doDrop(list){
+    veil(true);
+    var ids = list.map(function(r){ return r.id; });
+    var next = function(i){
+      if(i >= ids.length){
+        veil(false);
+        flash('前の方の記録を <b>' + ids.length + ' 件</b> 消しました。');
+        reload(true);
+        return;
+      }
+      post({ action:'drop', key:KEY, id:ids[i] }).then(function(d){
+        if(!d || !d.ok){
+          veil(false);
+          alert((d && d.err) || '消せませんでした。もう一度お試しください。');
+          reload(true);
+          return;
+        }
+        /* 画面からも、すぐ消します */
+        ROWS = ROWS.filter(function(x){ return x.id !== ids[i]; });
+        delete DC[ids[i]];
+        drawAll();
+        next(i + 1);
+      }).catch(function(){
+        veil(false);
+        alert('通信できませんでした。もう一度お試しください。');
+        reload(true);
+      });
+    };
+    next(0);
+  }
+
+  /* 完了タブを開いたら、重なっているお部屋がないか見ます */
+  function dropCheck(){
+    if(TAB !== 'done') return;
+    if($('#detail').classList.contains('on')) return;
+    if($('#drop').classList.contains('on')) return;
+    var rows = ROWS.filter(function(r){
+      return String(r.status||'') === '完了' && inPeriod(r); });
+    var byB = {};
+    dupsIn(rows).forEach(function(d){ byB[String(d.bldg||'')] = 1; });
+    var names = Object.keys(byB).filter(function(k){ return !_dropped[k]; });
+    if(!names.length) return;
+    /* 1つずつ、順にうかがいます（まとめて出すと、何を消すのか分からなくなるため） */
+    askDrop(names[0]);
+  }
+
   document.addEventListener('click', function(ev){
     var t = ev.target;
     if(!t || !t.closest) return;
     var b = t.closest('button');
     if(b){
+      /* ★ v2.12）まとめの中の操作 */
+      if(b.classList.contains('act-dropall')){
+        ev.stopPropagation(); askDrop(b.getAttribute('data-fold')); return;
+      }
+      if(b.classList.contains('act-drop')){
+        ev.stopPropagation(); askDrop('', [b.getAttribute('data-id')]); return;
+      }
+      if(b.classList.contains('act-open')){
+        ev.stopPropagation(); selectRow(b.getAttribute('data-id'), true); return;
+      }
+      if(b.classList.contains('act-back')){
+        ev.stopPropagation(); SEL = ''; markSel(); paint(); return;
+      }
       var host = b.closest('[data-id]');
       var id = host ? host.getAttribute('data-id') : '';
       if(!id) return;
@@ -2664,9 +3054,15 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
       }
       return;
     }
+    /* まとめの中の1行を押しても、その1件をひらきます */
+    var fr = t.closest('.fd-row');
+    if(fr){ selectRow(fr.getAttribute('data-id'), true); return; }
     /* 左のカードを押したら、その1件をひらきます */
     var it = t.closest('#list .item');
-    if(it) selectRow(it.getAttribute('data-id'));
+    if(!it) return;
+    var fk = it.getAttribute('data-fold');
+    if(fk){ selectFold(fk); return; }        /* まとめの1枚 */
+    selectRow(it.getAttribute('data-id'));
   });
 })();
 
