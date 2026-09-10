@@ -97,20 +97,24 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
 #list{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));
   gap:14px;align-items:start;}
 #list > p{grid-column:1/-1;}
+/* 白いカードは、うすい影で浮かせます（グレーの待ちと見分けるため） */
+.item:not(.gray){box-shadow:0 1px 2px rgba(0,0,0,.05), 0 4px 14px rgba(0,0,0,.05);}
 .item{position:relative;background:#fff;border:0;border-radius:18px;padding:20px 20px;margin-bottom:0;
   cursor:pointer;transition:transform .15s,box-shadow .15s;}
 .item:hover{box-shadow:var(--shadow);}
 .item:active{transform:scale(.995);}
 
-/* ---- カードの色は、4とおりだけ -------------------------------------
-     未返信       … 赤地に白文字（いちばん急ぐもの）
-     気になる点あり … 黒地に白文字
-     問題なし      … 白地に黒文字
-     完了         … グレー地
+/* ---- カードの色は、5とおり -----------------------------------------
+     未返信          … 赤地に白文字（いちばん急ぐもの）
+     仲介から返事あり … 黄地に黒文字（こちらが動く番、というしるし）
+     気になる点あり   … 黒地に白文字
+     問題なし         … 白地に黒文字
+     完了            … グレー地
    -------------------------------------------------------------------- */
 .item.red{background:var(--ng);color:#fff;}
 .item.dark{background:var(--ink);color:#fff;}
 .item.gray{background:#EAEAEE;color:var(--ink2);}
+.item.yellow{background:#F7CB45;color:var(--ink);}
 
 .item.red .i-h b,.item.dark .i-h b{color:#fff;}
 .item.red .i-b,.item.dark .i-b{color:rgba(255,255,255,.74);}
@@ -135,6 +139,22 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
 .item.red .i-rm.hot b,.item.dark .i-rm.hot b,
 .item.red .i-rm.plan b,.item.dark .i-rm.plan b{color:#fff;}
 .item.red .i-rm.plan span,.item.dark .i-rm.plan span{color:rgba(255,255,255,.74);}
+
+/* 黄色のカード（仲介から返事あり）。文字は黒のままで読みます */
+.item.yellow .i-h b{color:var(--ink);}
+.item.yellow .i-b{color:rgba(29,29,31,.70);}
+.item.yellow .i-h b{color:var(--ink);}
+.item.yellow .i-ic{background:rgba(29,29,31,.13);color:var(--ink);}
+.item.yellow .pill{background:rgba(29,29,31,.13);color:var(--ink);}
+.item.yellow .pill.ok,.item.yellow .pill.ng,
+.item.yellow .pill.exp,.item.yellow .pill.rm{background:var(--ink);color:#fff;}
+.item.yellow .btn{background:var(--ink);color:#fff;}
+.item.yellow .btn.ghost{background:rgba(29,29,31,.13);color:var(--ink);}
+.item.yellow .btn.ghost:hover{background:rgba(29,29,31,.22);opacity:1;}
+.item.yellow .i-rm,.item.yellow .i-rm.hot,.item.yellow .i-rm.plan{
+  background:rgba(255,255,255,.60);color:var(--ink2);}
+.item.yellow .i-rm b,.item.yellow .i-rm.hot b,.item.yellow .i-rm.plan b{color:var(--ink);}
+.item.yellow .i-rm.plan span{color:var(--ink2);}
 .i-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding-right:34px;}
 
 /* カードの右上の ✕（この件を一覧から消します）
@@ -148,6 +168,8 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
 .i-x:hover{background:var(--ng);color:#fff;}
 .item.red .i-x,.item.dark .i-x{background:rgba(255,255,255,.92);color:var(--ng);}
 .item.red .i-x:hover,.item.dark .i-x:hover{background:#fff;color:var(--ng);}
+.item.yellow .i-x{background:rgba(255,255,255,.92);color:var(--ng);}
+.item.yellow .i-x:hover{background:#fff;color:var(--ng);}
 .i-h b{font-size:18px;font-weight:600;letter-spacing:-.01em;}
 .pill{font-size:12.5px;font-weight:500;border-radius:100px;padding:4px 12px;border:0;
   color:var(--ink2);background:var(--fill);white-space:nowrap;}
@@ -161,6 +183,28 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
 .item.red .pill.ag,.item.dark .pill.ag{background:#fff;color:#2D4A7A;}
 .item.red .pill.ag.no,.item.dark .pill.ag.no{background:#fff;color:var(--ng);}
 .item.red .pill.ag.hold,.item.dark .pill.ag.hold{background:#fff;color:var(--ink2);}
+.item.yellow .pill.ag{background:#fff;color:#2D4A7A;}
+.item.yellow .pill.ag.no{background:#fff;color:var(--ng);}
+.item.yellow .pill.ag.hold{background:#fff;color:var(--ink2);}
+/* カードの1行目。いまどういう状態で、次に何をすればよいか */
+.i-st{font-size:15px;font-weight:600;line-height:1.6;margin-bottom:10px;padding-right:34px;}
+.i-st span{display:block;font-size:13px;font-weight:400;margin-top:3px;
+  color:var(--ink2);line-height:1.7;}
+.item.gray .i-st{color:var(--ink2);}
+.item.gray .i-st span{color:var(--ink3);}
+
+/* 「くわしく」。押すと、連絡先や日付が開きます */
+.i-more{background:transparent;border:0;padding:6px 0 0;margin:0;cursor:pointer;
+  font:inherit;font-size:13px;font-weight:500;color:var(--ink3);
+  display:inline-flex;align-items:center;gap:4px;}
+.i-more:hover{color:var(--ink2);}
+.i-more .ar{font-size:10px;transition:transform .2s;}
+.item.open .i-more .ar{transform:rotate(180deg);}
+.item.yellow .i-more{color:rgba(29,29,31,.62);}
+.item.yellow .i-more:hover{color:var(--ink);}
+.i-dt{display:none;}
+.item.open .i-dt{display:block;}
+
 .i-b{font-size:14.5px;color:var(--ink3);margin-top:10px;line-height:1.8;}
 .i-a{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;}
 
@@ -355,20 +399,40 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
   background:var(--fill);font-size:14.5px;font-weight:500;color:var(--ink);}
 
 /* ---- タブ（Apple の切りかえボタンのような形） ---- */
-.tabs3{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;margin-bottom:14px;
+.topbar{display:flex;gap:8px;align-items:center;margin-bottom:14px;max-width:900px;}
+.topbar .tabs3{flex:1;min-width:0;margin-bottom:0;}
+.topbar .sync{margin-left:auto;}
+.tabs3 button.ic{display:inline-flex;align-items:center;justify-content:center;gap:5px;
+  padding:11px 14px;}
+.tabs3 button.ic svg{width:19px;height:19px;display:block;}
+.ic-b{flex:0 0 auto;width:46px;height:46px;padding:0;border:0;border-radius:14px;
+  background:var(--fill);color:var(--ink2);cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;transition:background .15s;}
+.ic-b:hover{background:var(--fill2);color:var(--ink);}
+.ic-b.on{background:var(--ink);color:#fff;}
+.ic-b svg{width:20px;height:20px;display:block;}
+.ic-b.spin svg{animation:sp .8s linear infinite;}
+@keyframes sp{to{transform:rotate(360deg);}}
+.find{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px;max-width:900px;}
+.find input{flex:1 1 260px;min-width:0;padding:12px 15px;border:0;border-radius:12px;
+  background:var(--fill);color:var(--ink);}
+.find input:focus{outline:2px solid var(--ink);outline-offset:-2px;}
+.find select{flex:0 1 150px;min-width:0;padding:11px 14px;border:0;border-radius:12px;}
+@media (max-width:640px){ .find select{flex:1 1 30%;} }
+
+.tabs3{display:grid;grid-template-columns:1fr 1fr auto;gap:3px;margin-bottom:14px;
   max-width:900px;background:var(--fill);padding:3px;border-radius:14px;}
-@media (max-width:640px){ .tabs3{grid-template-columns:repeat(2,1fr);} }
-.tabs3 button[data-t=agdone]{color:var(--ng);}
-.tabs3 button[data-t=agdone].on{color:var(--ng);}
+@media (max-width:640px){ .tabs3{grid-template-columns:1fr 1fr auto;} }
 .tabs3 button{padding:11px 4px;border-radius:11px;border:0;background:transparent;
   font:inherit;font-size:14px;font-weight:500;color:var(--ink3);cursor:pointer;
   min-width:0;white-space:nowrap;transition:background .18s,color .18s,box-shadow .18s;}
 .tabs3 button:hover{color:var(--ink2);}
-.tabs3 button[data-t=agent]{color:var(--ng);}
 .tabs3 button.on{background:#fff;color:var(--ink);font-weight:600;
   box-shadow:0 1px 3px rgba(0,0,0,.10);}
-.tabs3 button[data-t=agent].on{color:var(--ng);}
 .tabs3 button i{font-style:normal;font-weight:500;opacity:.6;margin-left:2px;}
+/* 「対応が必要」が1件でもあれば、そこだけ黄色い印を付けます */
+.tabs3 button[data-t=act] i.hot{background:var(--ink);color:#fff;opacity:1;
+  border-radius:100px;padding:1px 9px;font-weight:700;margin-left:5px;}
 
 /* ---- ログイン画面 ---- */
 #s-key{min-height:calc(100vh - 140px);display:flex;align-items:center;justify-content:center;}
@@ -470,6 +534,134 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
   text-align:center;text-decoration:none;}
 .ph img{width:100%;height:140px;object-fit:cover;display:block;background:var(--fill2);}
 .ph span{display:block;font-size:12.5px;font-weight:500;padding:10px 4px;color:var(--ink2);}
+
+/* ================================================================
+   2カラム（左に一覧・右に中身）
+   広い画面 … 左でえらぶと、右にその1件が出ます。
+   狭い画面 … 右は畳んで、押したら全面の詳細画面をひらきます。
+   ================================================================ */
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(400px,560px);
+  gap:20px;align-items:start;}
+.col-r{position:sticky;top:78px;max-height:calc(100vh - 96px);overflow-y:auto;
+  overscroll-behavior:contain;}
+.col-r::-webkit-scrollbar{width:8px;}
+.col-r::-webkit-scrollbar-thumb{background:rgba(0,0,0,.13);border-radius:8px;}
+.col-r::-webkit-scrollbar-track{background:transparent;}
+@media (max-width:899px){
+  .two{grid-template-columns:1fr;}
+  .col-r{display:none;}
+}
+
+/* ---- 左のカード ------------------------------------------------
+     上に大きな絵、その下に 物件名・号室、お名前、ひとこと、説明。
+     絵の下地はどれも同じうすいグレーで、中の札の色だけを変えます。
+     ------------------------------------------------------------------ */
+#list{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));
+  gap:16px;align-items:stretch;}
+.item{display:block;background:#fff;color:var(--ink);padding:14px 14px 18px;
+  border-radius:20px;}
+
+/* 絵の場所（上の大きなタイル） */
+.i-tile{position:relative;height:150px;border-radius:15px;margin-bottom:14px;
+  display:flex;align-items:center;justify-content:center;overflow:hidden;
+  background:linear-gradient(155deg,#F7F7F9 0%,#ECECF0 100%);}
+.i-tile .i-ic{box-shadow:0 3px 8px rgba(0,0,0,.07), 0 16px 32px rgba(0,0,0,.12);}
+.i-ic.big{width:100px;height:100px;border-radius:30px;background:#fff;}
+.i-ic.big svg{width:54px;height:54px;stroke-width:1.5;}
+.i-ic.big.ng{background:rgba(199,54,42,.12);color:var(--ng);}
+.i-ic.big.gd{background:rgba(45,122,74,.12);color:#2D7A4A;}
+.i-ic.big.ok{background:var(--ink);color:#fff;}
+
+/* 絵の下の言葉 */
+.item .i-tx{min-width:0;}
+.item .i-tx b{display:block;font-size:17px;font-weight:600;letter-spacing:-.015em;
+  line-height:1.4;word-break:auto-phrase;line-break:strict;text-wrap:pretty;}
+.item .i-sub{display:block;font-size:12.5px;color:var(--ink3);margin-top:3px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.i-tag{display:inline-block;margin-top:9px;font-size:12.5px;font-weight:600;
+  line-height:1.5;padding:3px 11px;border-radius:100px;
+  background:var(--fill2);color:var(--ink2);}
+.i-tag.hot{background:var(--ink);color:#fff;}
+.i-tag.ng{background:var(--ngbg);color:var(--ng);}
+.i-desc{margin:8px 0 0;font-size:13.5px;line-height:1.75;color:var(--ink2);
+  word-break:auto-phrase;line-break:strict;text-wrap:pretty;}
+/* 画面が狭いときは、絵を少し小さくします（1枚が長くなりすぎないように） */
+@media (max-width:560px){
+  .i-tile{height:132px;}
+  .i-ic.big{width:88px;height:88px;border-radius:27px;}
+  .i-ic.big svg{width:47px;height:47px;}
+}
+
+/* ★ 仲介から返事が届いたカードだけ、絵がゆっくり動きます。
+     一覧の中で「いま見てほしいもの」が、目で追わなくても分かるようにするためです。
+     ふわりと上下するだけで、点滅はさせません（目が疲れるため）。 */
+.item.hi .i-ic.big{animation:hi-bob 2.8s ease-in-out infinite, hi-ring 2.8s ease-out infinite;}
+@keyframes hi-bob{
+  0%,100%{transform:translateY(0);}
+  50%    {transform:translateY(-7px);}
+}
+@keyframes hi-ring{
+  0%  {box-shadow:0 3px 8px rgba(0,0,0,.07), 0 16px 32px rgba(0,0,0,.12),
+                  0 0 0 0 rgba(199,54,42,.34);}
+  70% {box-shadow:0 3px 8px rgba(0,0,0,.07), 0 16px 32px rgba(0,0,0,.12),
+                  0 0 0 20px rgba(199,54,42,0);}
+  100%{box-shadow:0 3px 8px rgba(0,0,0,.07), 0 16px 32px rgba(0,0,0,.12),
+                  0 0 0 0 rgba(199,54,42,0);}
+}
+/* 動きを減らす設定にしている方には、動かしません */
+@media (prefers-reduced-motion:reduce){
+  .item.hi .i-ic.big{animation:none;}
+}
+
+/* えらんでいる1件 */
+.item.on{box-shadow:0 0 0 2px var(--ink) inset, 0 4px 14px rgba(0,0,0,.07);}
+.item .i-x{top:9px;right:9px;margin-top:0;width:26px;height:26px;font-size:13px;
+  opacity:.5;transition:opacity .15s;background:rgba(255,255,255,.8);}
+.item:hover .i-x,.item.on .i-x{opacity:1;}
+.item.gray{background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.04), 0 3px 10px rgba(0,0,0,.035);}
+.item.gray .i-tx b{color:var(--ink2);}
+.item.gray .i-desc{color:var(--ink3);}
+
+/* ---- 右がわ（えらんだ1件の中身）---- */
+.sd-hd{display:flex;align-items:flex-start;gap:14px;margin-bottom:4px;}
+/* 右がわの見出しの絵は、カードほど大きくしません */
+.sd-hd .i-ic.big{width:56px;height:56px;border-radius:18px;margin-top:2px;}
+.sd-hd .i-ic.big svg{width:29px;height:29px;}
+.sd-hd h3{margin:0;font-size:22px;font-weight:600;letter-spacing:-.02em;line-height:1.4;
+  word-break:auto-phrase;line-break:strict;}
+.sd-hd .who{display:block;font-size:14px;font-weight:400;color:var(--ink3);margin-top:3px;}
+.sd-st{font-size:15.5px;font-weight:600;line-height:1.65;margin:16px 0 0;
+  word-break:auto-phrase;line-break:strict;text-wrap:pretty;}
+.sd-st span{display:block;font-size:13.5px;font-weight:400;margin-top:4px;
+  color:var(--ink2);line-height:1.75;}
+.sd-none{background:#fff;border-radius:20px;padding:56px 26px;text-align:center;
+  color:var(--ink3);font-size:14.5px;line-height:1.9;}
+.sd-none .ring{width:88px;height:88px;margin:0 auto 16px;border-radius:50%;
+  background:var(--fill);display:flex;align-items:center;justify-content:center;color:var(--ink3);}
+.sd-none .ring svg{width:38px;height:38px;display:block;}
+.sd-load{font-size:13.5px;color:var(--ink3);padding:6px 2px;}
+.sd-load.err{display:flex;align-items:center;gap:10px;flex-wrap:wrap;color:var(--ng);
+  background:var(--ngbg);border-radius:12px;padding:12px 15px;margin-top:12px;}
+
+/* ---- 対応履歴（チャットのように、時系列でならべます）---- */
+.chat{display:flex;flex-direction:column;gap:11px;padding:2px 2px 4px;max-width:780px;}
+.msg{max-width:min(86%,620px);padding:11px 15px;border-radius:17px;line-height:1.75;
+  word-break:auto-phrase;line-break:strict;text-wrap:pretty;}
+.msg b{display:block;font-size:14.5px;font-weight:600;}
+.msg p{margin:4px 0 0;font-size:13.5px;line-height:1.8;white-space:pre-wrap;}
+.msg .tm{display:block;margin-top:6px;font-size:11.5px;letter-spacing:.03em;}
+.msg.them{align-self:flex-start;background:#fff;color:var(--ink);
+  border-bottom-left-radius:6px;box-shadow:0 1px 2px rgba(0,0,0,.05);}
+.msg.them p{color:var(--ink2);}
+.msg.them .tm{color:var(--ink3);}
+.msg.us{align-self:flex-end;background:var(--ink);color:#fff;border-bottom-right-radius:6px;}
+.msg.us p{color:rgba(255,255,255,.76);}
+.msg.us .tm{color:rgba(255,255,255,.55);}
+.msg.plan{align-self:stretch;max-width:100%;background:transparent;
+  border:1px dashed #C4C4CA;color:var(--ink2);}
+.msg.plan b{color:var(--ng);font-size:14px;}
+.msg.plan p{color:var(--ink3);}
+.msg.plan .tm{color:var(--ink3);}
 </style>
 </head>
 <body>
@@ -670,28 +862,38 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
   <!-- 一覧 -->
   <section id="s-list" class="hide">
     <div id="flash" class="flash hide"></div>
-    <div class="filt">
-      <select id="f-fy"></select>
-      <select id="f-mo"></select>
-      <select id="f-far"></select>
-    </div>
-    <div class="tabs3" id="tabs3">
-      <button type="button" data-t="agent">仲介へ確認 <i>0</i></button>
-      <button type="button" data-t="agwait">仲介の返事待ち <i>0</i></button>
-      <button type="button" data-t="agdone">仲介から返事 <i>0</i></button>
-      <button type="button" data-t="todo" class="on">要対応 <i>0</i></button>
-      <button type="button" data-t="waiting">未返信 <i>0</i></button>
-      <button type="button" data-t="done">完了 <i>0</i></button>
-    </div>
-    <div class="tabnote" id="tabnote"></div>
-    <div class="stats" id="stats"></div>
-    <div class="listbox">
-      <div class="row" style="margin-bottom:14px;max-width:900px;">
-        <input type="text" id="q" placeholder="物件名・お名前で探す">
-        <span id="sync" class="sync hide">最新を確認中…</span>
-        <button class="btn sm ghost" id="reload" style="flex:0 0 auto;">更新</button>
+    <!-- 上は1行だけにしています。完了は絵、探すと更新も絵にしました -->
+    <div class="topbar">
+      <div class="tabs3" id="tabs3">
+        <button type="button" data-t="act" class="on">対応が必要 <i>0</i></button>
+        <button type="button" data-t="wait">待ち <i>0</i></button>
+        <button type="button" data-t="done" class="ic" title="完了した件" aria-label="完了した件">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="9"/><path d="m7.8 12.2 2.9 2.9 5.5-6"/></svg><i>0</i></button>
       </div>
-      <div id="list"></div>
+      <span id="sync" class="sync hide">確認中…</span>
+      <button type="button" class="ic-b" id="btn-find" title="探す" aria-label="探す">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="6.6"/><path d="m16 16 4.4 4.4"/></svg></button>
+      <button type="button" class="ic-b" id="reload" title="最新にする" aria-label="最新にする">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 4.2V10h-5.8"/></svg></button>
+    </div>
+    <!-- 探すところ。ふだんは畳んでいます -->
+    <div class="find hide" id="find">
+      <input type="text" id="q" placeholder="物件名・お名前・エリアで探す">
+      <select id="f-fy" aria-label="年度"></select>
+      <select id="f-mo" aria-label="月"></select>
+      <select id="f-far" aria-label="エリア"></select>
+    </div>
+    <div class="listbox">
+      <div class="two">
+        <div class="col-l"><div id="list"></div></div>
+        <aside class="col-r"><div id="side"></div></aside>
+      </div>
     </div>
 
     <!-- いちばん下の街なみ（ただの絵です。押しても何も起きません） -->
@@ -1465,7 +1667,7 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
 
       /* つくったら、そのまま一覧へ戻ります。
          いま作ったものは「未返信」に入るので、そのタブを開いておきます。 */
-      TAB = 'waiting';
+      TAB = 'wait';
       FILT = '';
       show('list');
       reload(true);
@@ -1479,7 +1681,7 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
   /* ---- 一覧 ---- */
   var FILT = '';   /* 押している札。'' のときは、すべて出します */
 
-  var TAB = 'todo';        /* 要対応／未返信／完了 */
+  var TAB = 'act';         /* 対応が必要／待ち／完了 */
   var AREAS = [];
   var RM_MAX = 0, RM_EVERY = 0;   /* 自動督促の 上限回数／何日おき（サーバーの設定） */
   var DONE_AFTER_REMIND = true;   /* 自動督促を送ったら完了へ移すか（サーバーの設定） */
@@ -1487,14 +1689,16 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
   /* bg を true にすると、画面をおおわずに、裏で読みにいきます */
   function reload(bg){
     if(bg) syncing(true); else veil(true);
+    $('#reload').classList.add('spin');       /* 更新の絵がまわります */
     /* 年度はサーバー側でしぼります。件数が増えても重くなりません。
        0 を渡すと全部returnされます */
     var fy = $('#f-fy').value;
+    var end = function(){ veil(false); syncing(false); $('#reload').classList.remove('spin'); };
     post({ action:'list', key:KEY, fy:(fy === '' ? 0 : Number(fy)) }).then(function(res){
-      veil(false); syncing(false);
+      end();
       if(!res.ok) return;
       applyList(res); cacheSave(res, fy);
-    }).catch(function(){ veil(false); syncing(false); });
+    }).catch(end);
   }
 
   /* エリアの選択 */
@@ -1513,38 +1717,55 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
         AREAS.map(function(a){ return '<option value="' + esc(a) + '">' + esc(a) + '</option>'; }).join('');
     }
   }
-  $('#reload').addEventListener('click', function(){ reload(false); });
+  $('#reload').addEventListener('click', function(){ reload(true); });
   $('#q').addEventListener('input', drawList);
   $('#f-fy').addEventListener('change', function(){ reload(false); });
   $('#f-mo').addEventListener('change', drawAll);
 
-  function drawAll(){ drawTabs(); drawStats(); drawList(); }
+  function drawAll(){ drawTabs(); drawList(); }
+
+  /* ---- 探すところ（ふだんは畳んでいます）----
+       ・虫めがねを押すと開きます
+       ・完了を押したときも開きます（過去の件は、探して見つけるものだからです）
+       ・閉じると、書いた言葉としぼり込みは元に戻します                     */
+  function findOpen(on){
+    $('#find').classList.toggle('hide', !on);
+    $('#btn-find').classList.toggle('on', !!on);
+    if(on){ setTimeout(function(){ try{ $('#q').focus(); }catch(e){} }, 30); return; }
+    var again = false;
+    if($('#q').value){ $('#q').value = ''; again = true; }
+    if($('#f-mo').value){ $('#f-mo').value = ''; again = true; }
+    if($('#f-far').value){ $('#f-far').value = ''; again = true; }
+    if($('#f-fy').value){ $('#f-fy').value = ''; reload(); return; }
+    if(again) drawAll();
+  }
+  function findIsOpen(){ return !$('#find').classList.contains('hide'); }
+  $('#btn-find').addEventListener('click', function(){ findOpen(!findIsOpen()); });
 
   function drawTabs(){
     var rows = ROWS.filter(inPeriod);
-    var n = { agent:0, agwait:0, agdone:0, todo:0, waiting:0, done:0 };
+    var n = { act:0, wait:0, done:0 };
     rows.forEach(function(r){
       var st = String(r.status||'');
       if(st === '取消') return;
-      if(st === '完了') n.done++;
-      else if(st === '返信済'){
-        if(needAgent(r))      n.agent++;
-        else if(agDone(r))    n.agdone++;
-        else if(agWait(r))    n.agwait++;
-        else                  n.todo++;
-      }
-      else n.waiting++;
+      if(st === '完了')   n.done++;
+      else if(needAct(r)) n.act++;
+      else                n.wait++;
     });
     $$('#tabs3 button').forEach(function(b){
       var k = b.getAttribute('data-t');
       b.classList.toggle('on', TAB === k);
-      b.querySelector('i').textContent = n[k];
+      var i = b.querySelector('i');
+      i.textContent = n[k];
+      i.classList.toggle('hot', k === 'act' && n.act > 0);   /* 0件でなければ黄色 */
     });
   }
   $$('#tabs3 button').forEach(function(b){
     b.addEventListener('click', function(){
       TAB = b.getAttribute('data-t');
       FILT = '';                    /* タブを変えたら、数字の絞り込みは外します */
+      /* 完了は、過去の件を「探して見つける」ところなので、探す欄も一緒に開きます */
+      if(TAB === 'done' && !findIsOpen()) findOpen(true);
       drawAll();
     });
   });
@@ -1605,15 +1826,19 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
   /* いま選んでいるタブに入るかどうか。
      1件がどれか1つのタブにだけ入るようにしています（数が重ならないように）。
        未返信 → 仲介へ確認 → 要対応 → 完了  の順に流れます。 */
+  /* ★ 置き場所は3つだけです。
+       対応が必要 … あなたが手を動かすもの
+       待ち      … 相手の返事を待つもの（機械が自動で動きます）
+       完了      … 済んだもの                                       */
+  function needAct(r){
+    return String(r.status||'') === '返信済' && !agWait(r);
+  }
   function inTab(r){
     var st = String(r.status||'');
     if(st === '取消') return false;
-    if(TAB === 'done')    return st === '完了';
-    if(TAB === 'waiting') return st !== '完了' && st !== '返信済';
-    if(TAB === 'agent')   return needAgent(r);
-    if(TAB === 'agwait')  return agWait(r);
-    if(TAB === 'agdone')  return agDone(r);
-    return st === '返信済' && !needAgent(r) && !agWait(r) && !agDone(r);   /* 要対応 */
+    if(TAB === 'done') return st === '完了';
+    if(TAB === 'act')  return needAct(r);
+    return st !== '完了' && !needAct(r);      /* 待ち */
   }
 
   function matchFilt(r){
@@ -1627,76 +1852,6 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
   }
 
   /* このタブは何を集めた場所なのか、1行で説明します */
-  var TABNOTE = {
-    agent  : '特約に印が付いていない件です。<b>仲介業者へ連絡すると「仲介の返事待ち」へ移ります。</b>',
-    agwait : '仲介業者へ連絡ずみで、まだご回答がない件です。'
-           + '<b>連絡から7日を過ぎると、自動で一度だけ確認のメールを送ります。</b>'
-           + '先方が回答されると「仲介から返事」へ移ります。',
-    agdone : '仲介業者から、ご対応の結果が届いた件です。'
-           + '<b>内容をご確認のうえ、完了しましたら「完了にする」を押してください。</b>',
-    todo   : '内容をご確認のうえ、完了しましたら<b>「完了にする」</b>を押してください。',
-    waiting: 'まだ入居者からの返信がありません。<b>契約開始日から7日</b>を過ぎると、'
-           + '自動で督促メールを送信し、そのまま「完了」へ移します。',
-    done   : '対応済みの件です。すべて問題なしの返信と、自動督促を送信したものは、'
-           + '自動的にここへ移ります。'
-  };
-
-  function drawStats(){
-    $('#tabnote').innerHTML = TABNOTE[TAB] || '';
-
-    var rows = ROWS.filter(inPeriod).filter(inTab);
-    /* ★ 数はそれぞれ別に数えます。
-         ng      … お部屋に気になるところがある件（お部屋の話）
-         noCheck … 特約に印が付いていない件（ご説明の話）
-         exp     … そのうち「説明を受けていない」と答えた件
-       ng と noCheck は別の話なので、両方に入る件もあります。 */
-    var st = { ng:0, chk:0, exp:0, over:0, remind:0 };
-    rows.forEach(function(r){
-      if(r.ng > 0) st.ng++;
-      if(Number(r.noCheck||0) > 0) st.chk++;
-      if(r.noExp > 0) st.exp++;
-      if(r.over) st.over++;
-      if(r.remind > 0) st.remind++;
-    });
-
-    /* タブごとに、そのタブで意味のあるものだけを出します。
-       0件のものは出しません（0ばかり並ぶと、かえって読みにくいため）。 */
-    var want;
-    if(TAB === 'waiting'){
-      want = [['over', st.over, '期限すぎ', true], ['remind', st.remind, '督促ずみ', false]];
-    }else if(TAB === 'agent'){
-      want = [['chk', st.chk, '特約の未確認', true], ['exp', st.exp, 'うち 説明を受けていない', true],
-              ['ng',  st.ng,  'お部屋の報告', true]];
-    }else if(TAB === 'todo'){
-      want = [['ng',  st.ng,  'お部屋の報告', true],
-              ['chk', st.chk, '特約の未確認', false]];
-    }else{
-      want = [['ng', st.ng, 'お部屋の報告', false], ['chk', st.chk, '特約の未確認', false]];
-    }
-
-    var live = want.filter(function(x){ return x[1] > 0; });
-    if(!live.length){ $('#stats').innerHTML = ''; return; }   /* 出すものが無ければ、何も出しません */
-
-    $('#stats').innerHTML =
-      '<span class="lab">絞り込み</span>' +
-      '<div class="stat' + (FILT === '' ? ' on' : '') + '" data-k="">すべて <b>' + rows.length + '</b></div>' +
-      live.map(function(x){
-        return '<div class="stat' + (x[3] ? ' warn' : '') + (FILT === x[0] ? ' on' : '') +
-               '" data-k="' + x[0] + '">' + x[2] + ' <b>' + x[1] + '</b></div>';
-      }).join('');
-
-    $$('#stats .stat').forEach(function(el){
-      el.addEventListener('click', function(){
-        var k = el.getAttribute('data-k');
-        FILT = (FILT === k) ? '' : k;   /* もう一度押すと、絞り込みを外します */
-        drawAll();
-      });
-    });
-  }
-
-  /* 督促の状況を、言葉にします。
-     ・まだ返信が無いもの … これまで何回送ったか＋次に自動で出る日
-     ・返信ずみのもの     … 何回送ったかの記録だけ */
   function mdStr(v){ return String(v||'').replace(/^\d{4}\//,''); }   /* 2026/09/05 → 09/05 */
 
   /* 2026/09/13 → 9月13日 */
@@ -1708,53 +1863,67 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
   /* 督促の状況。
      ・まだ返信が無いもの … いつ自動で督促を送るか（赤字）＋送ったあとどうなるか
      ・返信ずみ・完了のもの … 送った記録だけ */
-  /* 仲介からの回答を、カードの中に出します。
-     ・回答が来ていれば、可否と備考
-     ・まだなら、いつ連絡したか。督促を出していれば、その日も出します */
-  function agentBox(r){
-    if(r.agentRe){
-      var memo = String(r.agentMemo||'').trim();
-      return '<div class="i-rm"><b>仲介より ' + esc(String(r.agentAns||'回答あり')) + '</b>' +
-             '<span>' + esc(mdStr(String(r.agentRe).slice(0,10))) + '</span>' +
-             (memo ? ('<span style="display:block;margin-top:5px;">' + esc(memo) + '</span>') : '') +
-             '</div>';
-    }
-    if(r.agentAt){
-      return '<div class="i-rm' + (r.agentRm ? ' hot' : '') + '">' +
-             '<b>仲介の回答待ち</b>' +
-             '<span>連絡 ' + esc(mdStr(String(r.agentAt).slice(0,10))) +
-             (r.agentN > 1 ? ('（' + r.agentN + '回）') : '') + '</span>' +
-             (r.agentRm
-               ? ('<span>／ 確認のメールを送信しました ' + esc(mdStr(String(r.agentRm).slice(0,10))) + '</span>')
-               : '<span>／ 連絡から7日で、自動で一度だけ確認のメールを送ります</span>') +
-             '</div>';
-    }
-    return '';
+  /* 仲介へ連絡した日から7日後。自動で確認メールを送る予定日です */
+  function agNext(r){
+    var m = /^(\d{4})\/(\d{2})\/(\d{2})/.exec(String(r.agentAt||''));
+    if(!m) return '';
+    var d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+    d.setDate(d.getDate() + 7);
+    var p = function(n){ return (n < 10 ? '0' : '') + n; };
+    return d.getFullYear() + '/' + p(d.getMonth() + 1) + '/' + p(d.getDate());
   }
 
-  function remindBox(r, done){
-    var n = Number(r.remind||0);
-    if(done){
-      if(!n) return '';
-      return '<div class="i-rm"><b>督促 ' + n + '回</b>' +
-             (r.lastRemind ? '<span>最終 ' + esc(mdStr(r.lastRemind)) + '</span>' : '') + '</div>';
+  /* ★ カードの1行目。
+       「いまどういう状態か」と「次に何をすればよいか」を、言葉で書きます。
+       ここを読めば、タブを行き来しなくても分かるようにしています。 */
+  function stLine(r){
+    var st = String(r.status || '');
+    var chk = Number(r.noCheck || 0);
+
+    if(st === '完了'){
+      return ['完了しています',
+              r.doneAt ? (jpDate(String(r.doneAt).slice(0,10)) + ' に完了') : ''];
     }
+    if(st === '返信済'){
+      if(r.agentRe){
+        return ['仲介から返事が届きました（' + esc(String(r.agentAns || '回答あり')) + '）',
+                '内容をご確認のうえ「完了にする」を押してください'];
+      }
+      if(agWait(r)){
+        if(r.agentRm){
+          return ['仲介から、まだ返事がありません',
+                  '確認のメールを送信済みです（' + jpDate(String(r.agentRm).slice(0,10)) +
+                  '）。お電話での確認をおすすめします'];
+        }
+        return ['仲介の返事待ち',
+                (agNext(r) ? (jpDate(agNext(r)) + ' に、') : '') +
+                '自動で一度だけ確認のメールを送ります'];
+      }
+      if(chk > 0){
+        return ['仲介業者へご連絡ください',
+                '特約に印の付いていない項目が ' + chk + ' 件あります'];
+      }
+      if(r.ng > 0){
+        return ['お部屋の報告をご確認ください',
+                'お部屋について ' + r.ng + ' 件の報告が届いています'];
+      }
+      return ['内容をご確認ください', 'すべて問題なしのご返信です'];
+    }
+    /* 未返信 */
     if(r.remindNext){
-      /* これから自動で送る予定がある */
-      return '<div class="i-rm plan">' +
-        '<b>' + esc(jpDate(r.remindNext)) + ' に 自動で督促メールを送ります</b>' +
-        '<span>送信後は、この件を自動で「完了」へ移します' +
-        (DONE_AFTER_REMIND ? '' : '（いまは移しません）') + '</span>' +
-        (n ? '<span>／ これまで ' + n + '回 送信しました</span>' : '') + '</div>';
+      return ['入居者様の返信待ち',
+              jpDate(r.remindNext) + ' に、自動で督促メールを送り、そのまま完了へ移します'];
     }
-    if(RM_MAX && n >= RM_MAX){
-      return '<div class="i-rm hot"><b>督促 ' + n + '回 送信済み</b>' +
-        (r.lastRemind ? '<span>最終 ' + esc(mdStr(r.lastRemind)) + '</span>' : '') +
-        '<span>／ 自動督促は終了です。以降は手動で送信してください</span></div>';
+    if(Number(r.remind || 0) > 0){
+      /* 自動の督促は、上限まで送ったら、もう送りません。
+         そのことを書いておかないと、いつまでも待ってしまいます。 */
+      var last = jpDate(String(r.lastRemind).slice(0,10));
+      return ['入居者様の返信待ち',
+              '督促メールを送信済みです' + (last ? ('（' + last + '）') : '') +
+              '。自動の督促はこれで終わりです。必要なら「督促メールを送る」でお送りください'];
     }
-    return '<div class="i-rm"><b>督促 未送信</b>' +
-           '<span>／ 契約開始日から ' + (r.due ? esc(jpDate(r.due)) + ' まで' : '7日') +
-           'は、自動督促は送信されません</span></div>';
+    return ['入居者様の返信待ち',
+            r.due ? ('ご返信の期限は ' + jpDate(r.due) + ' です') : ''];
   }
 
   /* ---- 線画のもと（20px の升目に描いています）----
@@ -1779,10 +1948,9 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
 
   /* 1件もないときに出す絵と言葉（タブごとに変えます） */
   var BLANK = {
-    agent  : ['chat',  '仲介業者へ確認する件は、ありません。', '特約に印が付かなかった件が出ると、ここに表示されます。'],
-    todo   : ['home',  '対応が必要な件は、ありません。',       '入居者からの返信が届くと、ここに表示されます。'],
-    waiting: ['mail',  '返信待ちの件は、ありません。',         '新しくご案内を送信すると、ここに表示されます。'],
-    done   : ['check', '完了した件は、まだありません。',       '対応済みの件が、ここに蓄積されます。']
+    act  : ['check', '対応が必要な件は、ありません。', '入居者や仲介業者から返信が届くと、ここに表示されます。'],
+    wait : ['mail',  '待っている件は、ありません。',   '新しくご案内を送信すると、ここに表示されます。'],
+    done : ['check', '完了した件は、まだありません。', '対応済みの件が、ここに蓄積されます。']
   };
   function blankHtml(searching){
     var b = searching
@@ -1790,6 +1958,112 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
       : (BLANK[TAB] || ['doc', 'ありません。', '']);
     return '<div class="blank"><div class="ring">' + svg(b[0]) + '</div>' +
            '<b>' + b[1] + '</b>' + (b[2] ? ('<span>' + b[2] + '</span>') : '') + '</div>';
+  }
+
+  /* いま画面でえらんでいる1件と、読み込んだ中身の控え */
+  var SEL  = '';
+  var DC   = {};
+  var DERR = {};   /* 読み込めなかったとき、その理由 */
+
+  /* ★ 状況を「絵柄」と「ひとこと」であらわします。
+       左のカードは、これだけを出します（物件名・号室・絵柄・ひとこと）。
+       [絵柄, 絵柄の色, ひとこと, 札の色] */
+  function stTag(r){
+    var st  = String(r.status || '');
+    var chk = Number(r.noCheck || 0);
+    if(st === '完了')   return ['check', 'ok', '完了', ''];
+    if(st === '返信済'){
+      if(r.agentRe)     return ['chat', 'ng', '仲介から返事', 'hot'];
+      if(agWait(r))     return [r.agentRm ? 'clock' : 'chat', '', '仲介の返事待ち', ''];
+      if(chk > 0)       return ['doc',  'ng', '仲介へ連絡',   'hot'];
+      if(r.ng > 0)      return ['home', 'ng', 'お部屋の報告', 'hot'];
+      return ['check', 'gd', '内容の確認', 'hot'];
+    }
+    if(r.over)          return ['clock', 'ng', '期限すぎ', 'ng'];
+    return ['mail', '', '入居者の返信待ち', ''];
+  }
+
+  /* 並べかえに使う、そろえた日時（yyyy/MM/dd HH:mm） */
+  function stamp(v){
+    var t = String(v || '').replace(/-/g, '/');
+    var m = /^(\d{4})\/(\d{2})\/(\d{2})(?:[ T](\d{2}):(\d{2}))?/.exec(t);
+    if(!m) return '';
+    return m[1] + '/' + m[2] + '/' + m[3] + ' ' + (m[4] || '00') + ':' + (m[5] || '00');
+  }
+  /* 2026/09/01 10:23 → 9月1日 10:23 */
+  function jpTime(v){
+    var t = stamp(v);
+    if(!t) return '';
+    var d = jpDate(t);
+    var hm = t.slice(11);
+    return d + (hm === '00:00' ? '' : ('　' + hm));
+  }
+
+  /* ★ 対応履歴。チャットのように、時系列でならべます。
+       右がわ（黒）… こちらが行ったこと
+       左がわ（白）… 入居者・仲介業者から届いたこと
+       点線 … これから機械が自動で行う予定           */
+  function histHtml(r){
+    var ev = [];
+    var add = function(when, side, title, body){
+      var t = stamp(when);
+      if(!t && side !== 'plan') return;
+      ev.push({ t: t || '9999/99/99 99:99', i: ev.length, s: side, h: title, b: body || '' });
+    };
+
+    add(r.created, 'us', 'ご案内のメールをお送りしました',
+        r.due ? ('ご返信の期限は ' + jpDate(r.due) + ' です') : '');
+
+    if(Number(r.remind || 0) > 0){
+      add(r.lastRemind || r.created, 'us', '督促のメールをお送りしました',
+          'これまで ' + Number(r.remind) + ' 回 お送りしました');
+    }
+
+    if(r.replied){
+      var w = [];
+      if(r.ng > 0)                 w.push('お部屋について ' + r.ng + ' 件のご報告');
+      if(Number(r.noCheck || 0)>0) w.push('ご説明の確認で、印の付かなかった項目が ' +
+                                          Number(r.noCheck) + ' 件' +
+                                          (r.noExp > 0 ? '（うち「説明を受けていない」が ' + r.noExp + ' 件）' : ''));
+      if(!w.length)                w.push('すべて問題なし、とのご返信です');
+      add(r.replied, 'them', '入居者様からご返信が届きました', w.join('\n'));
+    }
+
+    if(r.agentAt){
+      add(r.agentAt, 'us', '仲介業者へご連絡しました',
+          (String(r.agentCo || '') + ' ' + String(r.agentName || '')).trim() +
+          (Number(r.agentN || 0) > 1 ? ('（' + Number(r.agentN) + ' 回目）') : ''));
+    }
+    if(r.agentRm){
+      add(r.agentRm, 'us', '仲介業者へ、確認のメールをお送りしました',
+          'ご連絡から 7 日が過ぎたため、自動でお送りしました');
+    }
+    if(r.agentRe){
+      add(r.agentRe, 'them', '仲介業者から回答が届きました（' + String(r.agentAns || '回答あり') + '）',
+          String(r.agentMemo || '').trim());
+    }
+    if(r.doneAt) add(r.doneAt, 'us', 'この件を完了にしました', '');
+
+    /* これから起きること */
+    if(String(r.status || '') !== '完了' && String(r.status || '') !== '取消'){
+      if(!r.replied && r.remindNext){
+        add(r.remindNext, 'plan', jpDate(r.remindNext) + ' に、自動で督促メールをお送りします',
+            '送信後は、この件を自動で「完了」へ移します' + (DONE_AFTER_REMIND ? '' : '（いまは移しません）'));
+      }
+      if(agWait(r) && !r.agentRm && agNext(r)){
+        add(agNext(r), 'plan', jpDate(agNext(r)) + ' に、仲介業者へ自動で確認のメールをお送りします',
+            'お送りするのは、一度だけです');
+      }
+    }
+
+    ev.sort(function(a, b){ return a.t === b.t ? (a.i - b.i) : (a.t < b.t ? -1 : 1); });
+
+    return '<div class="chat">' + ev.map(function(x){
+      return '<div class="msg ' + x.s + '"><b>' + esc(x.h) + '</b>' +
+             (x.b ? ('<p>' + esc(x.b) + '</p>') : '') +
+             (x.s === 'plan' ? '' : ('<span class="tm">' + esc(jpTime(x.t)) + '</span>')) +
+             '</div>';
+    }).join('') + '</div>';
   }
 
   function drawList(){
@@ -1801,159 +2075,58 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
       if(!q) return true;
       return (r.bldg + r.room + r.name + (r.area||'') + (r.agentCo||'')).indexOf(q) >= 0;
     });
+    /* 「対応が必要」の中は、急ぐ順に並べます。
+       仲介から返事あり → 仲介へ連絡 → お部屋の報告 → そのほか */
+    if(TAB === 'act'){
+      var rank = function(r){
+        if(r.agentRe) return 0;
+        if(Number(r.noCheck||0) > 0) return 1;
+        if(r.ng > 0) return 2;
+        return 3;
+      };
+      rows = rows.slice().sort(function(a, b){ return rank(a) - rank(b); });
+    }
+
     if(!rows.length){
       $('#list').innerHTML = blankHtml(!!q || FILT !== '');
+      SEL = '';
+      paint();
       return;
     }
     $('#list').innerHTML = rows.map(function(r){
-      var st   = String(r.status||'');
-      var fin  = (st === '完了');
-      var done = (st === '返信済' || fin);
-      var exp  = (r.noExp > 0);
-      var chk  = (Number(r.noCheck||0) > 0);
-      var pill = fin
-        ? '<span class="pill ok">完了</span>'
-        : (done
-            ? ((chk ? '<span class="pill exp">特約の未確認 ' + r.noCheck +
-                       (exp ? '（説明なし ' + r.noExp + '）' : '') + '</span>' : '') +
-               (r.ng > 0 ? '<span class="pill ng">お部屋 ' + r.ng + '</span>' : '') +
-               (!chk && !(r.ng > 0) ? '<span class="pill ok">問題なし</span>' : ''))
-            : (r.over ? '<span class="pill ng">期限すぎ</span>' : '<span class="pill">未返信</span>'));
-      if(!done && r.remind > 0) pill += '<span class="pill rm">督促 ' + r.remind + '回</span>';
-      if(r.agentRe){
-        var ans = String(r.agentAns||'');
-        var cls = (ans.indexOf('キャンセル') >= 0) ? ' no' : (ans.indexOf('確認中') >= 0 ? ' hold' : '');
-        pill += '<span class="pill ag' + cls + '">仲介：' + esc(ans || '回答あり') + '</span>';
-      }
+      var t   = stTag(r);
+      var stl = stLine(r);
+      var nm  = String(r.bldg||'') + ' ' + String(r.room||'') +
+                (r.name ? ('（' + r.name + ' 様）') : '');
       var sub = [];
-      if(r.area) sub.push(esc(r.area));
-      if(r.agentCo || r.agentName) sub.push('仲介：' + esc(r.agentCo||'') + ' ' + esc(r.agentName||''));
-      var acts = [];
-      if(!done){
-        acts.push('<button class="btn sm ghost act-remind">督促メールを送る</button>');
-        acts.push('<button class="btn sm ghost act-copy">案内文をコピー</button>');
-      }else if(!fin){
-        /* 印の付かなかった特約が1つでもあれば出します（理由は問いません）。
-           仲介のメールが未登録でも、その場で宛先を入れて送れます。 */
-        /* 連絡ずみかどうかは、上の「仲介へ連絡 ○/○」の行で分かるので、
-           ボタンの名前は変えません（「もう一度」は分かりにくい、というご指摘） */
-        if(Number(r.noCheck||0) > 0){
-          acts.push('<button class="btn sm ghost act-agent">仲介へ連絡する</button>');
-        }
-        acts.push('<button class="btn sm act-done">完了にする</button>');
-      }else{
-        acts.push('<button class="btn sm ghost act-undo">完了を取り消す</button>');
-      }
-      /* カードの左に置く絵柄 */
-      var ico = fin ? ['check','ok']
-              : (done ? (chk ? ['doc','ng'] : (r.ng > 0 ? ['home','ng'] : ['check','gd']))
-                      : (r.over ? ['clock','ng'] : ['mail','']));
-
-      /* カードの色。4とおりだけです。
-           未返信       → 赤（白文字）
-           気になる点あり → 黒（白文字）
-           問題なし      → 白
-           完了         → グレー                                    */
-      var tone = fin  ? ' gray'
-               : (done ? ((chk || r.ng > 0) ? ' dark' : '')
-                       : ' red');
-
-      var nm = String(r.bldg||'') + ' ' + String(r.room||'') +
-               (r.name ? ('（' + r.name + ' 様）') : '');
-
-      return '<div class="item' + tone +
+      if(r.name)  sub.push(String(r.name) + ' 様');
+      if(r.area)  sub.push(String(r.area));
+      /* 仲介から返事が届いたものだけ、絵を動かします */
+      var hi = (String(r.status||'') === '返信済' && !!r.agentRe);
+      return '<div class="item' + (needAct(r) ? '' : ' gray') +
+        (hi ? ' hi' : '') + (r.id === SEL ? ' on' : '') +
         '" data-id="' + esc(r.id) + '" data-nm="' + esc(nm) + '">' +
-        '<button class="i-x act-del" title="この件を一覧から消す" ' +
-                'aria-label="この件を一覧から消す">✕</button>' +
-        '<div class="i-h"><span class="i-ic ' + ico[1] + '">' + svg(ico[0]) + '</span>' +
-          '<b>' + esc(r.bldg) + ' ' + esc(r.room) + '</b>' + pill + '</div>' +
-        '<div class="i-b">' + esc(r.name) + ' 様 ／ ' + esc(r.mail) + '<br>' +
-          (sub.length ? (sub.join(' ／ ') + '<br>') : '') +
-          '作成 ' + esc(String(r.created).slice(0,10)) + ' ／ 期限 ' + esc(r.due) +
-          (r.replied ? ' ／ 返信 ' + esc(String(r.replied).slice(0,10)) : '') +
-          (r.agentAt ? ' ／ 仲介へ連絡 ' + esc(String(r.agentAt).slice(0,10)) +
-                       (r.agentN > 1 ? '（' + r.agentN + '回）' : '') : '') +
-          (r.doneAt ? ' ／ 完了 ' + esc(String(r.doneAt).slice(0,10)) : '') +
-          '</div>' +
-        agentBox(r) +
-        remindBox(r, done) +
-        (acts.length ? ('<div class="i-a">' + acts.join('') + '</div>') : '') +
+        '<div class="i-tile">' +
+          '<button class="i-x act-del" title="この件を一覧から消す" ' +
+                  'aria-label="この件を一覧から消す">✕</button>' +
+          '<span class="i-ic big ' + t[1] + '">' + svg(t[0]) + '</span>' +
+        '</div>' +
+        '<div class="i-tx"><b>' + esc(r.bldg) + '　' + esc(r.room) + '</b>' +
+          '<span class="i-sub">' + esc(sub.join(' ／ ')) + '</span>' +
+          '<span class="i-tag ' + t[3] + '">' + esc(t[2]) + '</span>' +
+          (stl[1] ? ('<p class="i-desc">' + esc(stl[1]) + '</p>') : '') +
+        '</div>' +
       '</div>';
     }).join('');
 
-    /* 完了にする／戻す */
-    $$('.act-done, .act-undo').forEach(function(b){
-      b.addEventListener('click', function(){
-        var id = b.closest('.item').getAttribute('data-id');
-        var undo = b.classList.contains('act-undo');
-        if(!confirm(undo ? '完了を取り消しますか？' : 'この件を完了にしますか？\n（完了タブへ移ります）')) return;
-        /* 押した瞬間に動かします。送信は裏で行います */
-        var undoDraw = patchRow(id, undo ? { status:'返信済', doneAt:'' }
-                                         : { status:'完了',   doneAt:nowJp() });
-        syncing(true);
-        post({ action:'done', key:KEY, id:id, undo:undo }).then(function(res){
-          syncing(false);
-          if(!res.ok){ undoDraw(); alert(res.err || '実行できませんでした'); }
-        }).catch(function(){ syncing(false); undoDraw(); alert('通信できませんでした。'); });
-      });
-    });
-
-    /* 一覧から消す（完了にはしません。表には「取消」として残ります） */
-    $$('.act-del').forEach(function(b){
-      b.addEventListener('click', function(){
-        var it = b.closest('.item');
-        var id = it.getAttribute('data-id');
-        var nm = it.getAttribute('data-nm') || '';
-        if(!confirm('この件を一覧から消します。よろしいですか？\n\n' + nm + '\n\n' +
-                    '・「完了」にはなりません。一覧から消えるだけです。\n' +
-                    '・表には「取消」として残りますので、あとから確認できます。\n' +
-                    '・この画面から元に戻すことはできません。')) return;
-        /* 押した瞬間に消します。送信は裏で行います */
-        var undoDraw = patchRow(id, { status:'取消' });
-        syncing(true);
-        post({ action:'cancel', key:KEY, id:id }).then(function(res){
-          syncing(false);
-          if(!res.ok){ undoDraw(); alert(res.err || '消せませんでした'); }
-        }).catch(function(){ syncing(false); undoDraw(); alert('通信できませんでした。'); });
-      });
-    });
-
-    /* 仲介へ連絡する */
-    $$('.act-agent').forEach(function(b){
-      b.addEventListener('click', function(){
-        openAgent(b.closest('.item').getAttribute('data-id'));
-      });
-    });
-    $$('.act-remind').forEach(function(b){
-      b.addEventListener('click', function(){
-        var id = b.closest('.item').getAttribute('data-id');
-        if(!confirm('督促メールを送信しますか？')) return;
-        veil(true);
-        post({ action:'remind', key:KEY, id:id }).then(function(res){
-          veil(false);
-          if(!res.ok){ alert(res.err || '送信できませんでした'); return; }
-          alert('送信しました。');
-          var r = rowById(id);
-          patchRow(id, { remind: Number(r && r.remind || 0) + 1, lastRemind: nowJp().slice(0,10) });
-        }).catch(function(){ veil(false); alert('通信できませんでした。'); });
-      });
-    });
-    $$('.act-copy').forEach(function(b){
-      b.addEventListener('click', function(){
-        var it = b.closest('.item');
-        var r = ROWS.filter(function(x){ return x.id === it.getAttribute('data-id'); })[0];
-        var url = location.href.replace(/admin\.html.*$/,'') + '?id=' + r.id;
-        navigator.clipboard.writeText(r.name + ' 様\n\n▼ 入力ページ\n' + url + '\n')
-          .then(function(){ b.textContent = 'コピーしました'; });
-      });
-    });
-    /* 1件を押したら、中身を開きます（ボタンを押したときは開きません） */
-    $$('#list .item').forEach(function(el){
-      el.addEventListener('click', function(ev){
-        if(ev.target.closest('button')) return;
-        openDetail(el.getAttribute('data-id'));
-      });
-    });
+    /* 広い画面では、いつも1件が開いている状態にします */
+    var here = rows.some(function(x){ return x.id === SEL; });
+    if(!here){
+      SEL = isWide() ? rows[0].id : '';
+      if(SEL) fetchDetail(SEL);
+    }
+    markSel();
+    paint();
   }
 
   /* ---- 仲介業者へ連絡する ---- */
@@ -2006,8 +2179,10 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
       '<button type="button" class="d-nav next" aria-label="右へ">\u203a</button></div>';
   }
   /* 左右の丸ボタンは、送るところが残っているときだけ出します */
+  /* 右のカラムでも、全面の詳細画面でも、同じように働かせます */
+  function wrapList(){ return $$('#side .d-wrap').concat($$('#d-body .d-wrap')); }
   function updRows(){
-    $$('#d-body .d-wrap').forEach(function(w){
+    wrapList().forEach(function(w){
       var row = w.querySelector('.d-row');
       var pv  = w.querySelector('.d-nav.prev');
       var nx  = w.querySelector('.d-nav.next');
@@ -2018,7 +2193,7 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
     });
   }
   function wireRows(){
-    $$('#d-body .d-wrap').forEach(function(w){
+    wrapList().forEach(function(w){
       var row = w.querySelector('.d-row');
       var pv  = w.querySelector('.d-nav.prev');
       var nx  = w.querySelector('.d-nav.next');
@@ -2034,103 +2209,293 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
   }
   window.addEventListener('resize', updRows);
 
-  function openDetail(id){
-    veil(true);
+  /* ================================================================
+     右がわ ＝ えらんだ1件の中身
+       広い画面 … 右のカラム（#side）に出します
+       狭い画面 … これまでどおり、全面の詳細画面（#d-body）に出します
+     ================================================================ */
+  function isWide(){
+    try{ return window.matchMedia('(min-width:900px)').matches; }
+    catch(e){ return window.innerWidth >= 900; }
+  }
+  function paneTarget(){ return isWide() ? $('#side') : $('#d-body'); }
+
+  function markSel(){
+    $$('#list .item').forEach(function(el){
+      el.classList.toggle('on', el.getAttribute('data-id') === SEL);
+    });
+  }
+
+  /* サーバから中身を読みます（お部屋の報告・ご説明の確認・特約・間取り図）。
+     一度読んだものは覚えておき、二度目からは読みに行きません。 */
+  function fetchDetail(id){
+    if(!id || DC[id]) return;
     post({ action:'detail', key:KEY, id:id }).then(function(d){
-      veil(false);
-      if(!d.ok){ alert(d.err || '開けませんでした。'); return; }
-      $('#d-title').textContent = d.bldg + ' ' + d.room;
-      var h = [];
-
-      h.push('<div class="card">');
-      h.push('<div class="i-h"><b>' + esc(d.name) + ' 様</b></div>');
-      h.push('<div class="i-b">' + esc(d.mail) + '<br>' +
-        (d.area ? ('エリア ' + esc(d.area) + '<br>') : '') +
-        (d.parking  ? ('駐車場の区画 ' + esc(d.parking) + '<br>') : '') +
-        (d.postDial ? ('集合ポストのダイヤル ' + esc(d.postDial) + '<br>') : '') +
-        ((d.agentCo || d.agentName || d.agentMail)
-          ? ('仲介 ' + esc(d.agentCo||'') + ' ' + esc(d.agentName||'') + ' ' + esc(d.agentMail||'') + '<br>') : '') +
-        '作成 ' + esc(String(d.created).slice(0,10)) + ' ／ 状態 ' + esc(d.status) +
-        (d.replied ? ' ／ 返信 ' + esc(String(d.replied).slice(0,10)) : '') +
-        '<br>パスワード ' + esc(d.pass) +
-        (d.memo ? '<br>社内メモ ' + esc(d.memo) : '') + '</div>');
-      if(d.agentAt || d.agentRe){
-        h.push('<div class="i-rm" style="margin-top:12px;">');
-        if(d.agentRe){
-          h.push('<b>仲介より ' + esc(d.agentAns || '回答あり') + '</b>' +
-                 '<span>' + esc(String(d.agentRe).slice(0,16)) + '</span>');
-          if(String(d.agentMemo||'').trim()){
-            h.push('<span style="display:block;margin-top:6px;">' + esc(d.agentMemo) + '</span>');
-          }
-        }else{
-          h.push('<b>仲介の回答待ち</b><span>連絡 ' + esc(String(d.agentAt).slice(0,10)) + '</span>');
-          if(d.agentRm) h.push('<span>／ 確認のメール ' + esc(String(d.agentRm).slice(0,10)) + '</span>');
-        }
-        h.push('</div>');
+      if(!d || !d.ok){
+        DERR[id] = (d && d.err) || '中身を読み込めませんでした。';
+        if(SEL === id) paint();
+        return;
       }
-      if(d.plan){
-        h.push('<div class="ph" style="margin-top:12px;"><a href="' + esc(d.plan) +
-               '" target="_blank" rel="noopener"><img src="' + esc(driveThumb(d.plan)) +
-               '" alt="" onerror="this.style.display=\'none\'">' +
-               '<span>間取り図を開く</span></a></div>');
-      }
-      h.push('</div>');
+      delete DERR[id];
+      DC[id] = d;
+      if(SEL === id) paint();
+    }).catch(function(){
+      DERR[id] = '通信できませんでした。';
+      if(SEL === id) paint();
+    });
+  }
 
-      if(!d.rooms.length && !d.checks.length){
-        h.push('<div class="card"><p style="margin:0;color:#71717A;">まだ返信がありません。</p></div>');
-      }
-
-      if(d.rooms.length){
-        h.push('<div class="d-k">お部屋の中</div>');
-        h.push(rowOpen());
-        d.rooms.forEach(function(x){
-          var ng = (x.judge !== '問題なし');
-          h.push('<div class="d-item' + (ng ? ' ng' : '') + '">');
-          h.push('<b>' + esc(x.place) + '　<span class="pill' + (ng ? ' ng' : '') + '">' +
-                 esc(x.judge) + '</span></b>');
-          if(x.comment) h.push('<p>' + esc(x.comment) + '</p>');
-          if(x.photos.length){
-            h.push('<div class="ph">' + x.photos.map(function(u){
-              return '<a href="' + esc(u) + '" target="_blank" rel="noopener">' +
-                     '<img src="' + esc(driveThumb(u)) + '" alt="" ' +
-                     'onerror="this.style.display=\'none\'">' +
-                     '<span>写真を開く</span></a>';
-            }).join('') + '</div>');
-          }
-          h.push('</div>');
-        });
-        h.push(rowClose());
-      }
-
-      if(d.checks.length){
-        h.push('<div class="d-k">ご説明の確認</div>');
-        h.push(rowOpen());
-        d.checks.forEach(function(x){
-          var no = (x.judge !== '確認した');
-          var isExp = no && String(x.comment||'').indexOf('説明を受けていない') === 0;
-          h.push('<div class="d-item' + (no ? ' ng' : '') + '"><b>' + esc(x.place) +
-                 '　<span class="pill' + (isExp ? ' exp' : (no ? ' ng' : ' ok')) + '">' +
-                 esc(isExp ? '説明を受けていない' : x.judge) + '</span></b>' +
-                 (no && x.comment ? ('<p>' + esc(x.comment) + '</p>') : '') + '</div>');
-        });
-        h.push(rowClose());
-      }
-
-      if(d.clauses && d.clauses.length){
-        h.push('<div class="d-k">この契約に付けた特約</div>');
-        h.push('<div class="d-item"><p>' + esc(d.clauses.join('\n')) + '</p></div>');
-      }
-
-      $('#d-body').innerHTML = h.join('');
-      wireRows();
+  /* 1件をえらびます */
+  function selectRow(id){
+    SEL = id;
+    markSel();
+    paint();
+    fetchDetail(id);
+    if(!isWide()){
+      var r = rowById(id);
+      $('#d-title').textContent = r ? (String(r.bldg||'') + ' ' + String(r.room||'')) : '　';
       $('#detail').classList.add('on');
       $('#detail').scrollTop = 0;
-    }).catch(function(){ veil(false); alert('通信できませんでした。'); });
+    }
   }
+
+  /* まだ1件もえらんでいないとき（広い画面の右がわ） */
+  function paneNone(){
+    return '<div class="sd-none"><div class="ring">' + svg('doc') + '</div>' +
+           '左の一覧から、1件をおえらびください。<br>ここに中身と対応履歴が出ます。</div>';
+  }
+
+  /* えらんだ1件の中身をつくります。
+     r … 一覧が持っている分（すぐ出せます）
+     d … サーバから読んだ分（間に合わなければ、あとから足します） */
+  function paneHtml(r, d){
+    var st   = String(r.status||'');
+    var fin  = (st === '完了');
+    var done = (st === '返信済' || fin);
+    var t    = stTag(r);
+    var stl  = stLine(r);
+    var nm   = String(r.bldg||'') + ' ' + String(r.room||'') +
+               (r.name ? ('（' + r.name + ' 様）') : '');
+    var h = [];
+
+    /* ---- 見出しと、いまの状況と、押せるボタン ---- */
+    h.push('<div class="card" data-id="' + esc(r.id) + '" data-nm="' + esc(nm) + '">');
+    h.push('<div class="sd-hd"><span class="i-ic big ' + t[1] + '">' + svg(t[0]) + '</span>' +
+           '<div style="min-width:0;"><h3>' + esc(r.bldg) + '　' + esc(r.room) +
+           '<span class="who">' + esc(r.name) + ' 様</span></h3></div></div>');
+    h.push('<div class="sd-st">' + esc(stl[0]) +
+           (stl[1] ? ('<span>' + esc(stl[1]) + '</span>') : '') + '</div>');
+
+    var acts = [];
+    if(!done){
+      acts.push('<button class="btn sm ghost act-remind">督促メールを送る</button>');
+      acts.push('<button class="btn sm ghost act-copy">案内文をコピー</button>');
+    }else if(!fin){
+      if(Number(r.noCheck||0) > 0){
+        acts.push('<button class="btn sm ghost act-agent">仲介へ連絡する</button>');
+      }
+      acts.push('<button class="btn sm act-done">完了にする</button>');
+    }else{
+      acts.push('<button class="btn sm ghost act-undo">完了を取り消す</button>');
+    }
+    acts.push('<button class="btn sm ghost act-del">一覧から消す</button>');
+    h.push('<div class="i-a">' + acts.join('') + '</div>');
+    h.push('</div>');
+
+    /* ---- 対応履歴（チャット形式）---- */
+    h.push('<div class="d-k">対応履歴</div>');
+    h.push(histHtml(r));
+
+    /* ---- お客さまと、お手続きの情報 ---- */
+    h.push('<div class="d-k">この件の情報</div>');
+    var b = [];
+    b.push(esc(r.name) + ' 様');
+    if(r.mail) b.push(esc(r.mail));
+    if(r.area) b.push('エリア ' + esc(r.area));
+    if(d && d.parking)  b.push('駐車場の区画 ' + esc(d.parking));
+    if(d && d.postDial) b.push('集合ポストのダイヤル ' + esc(d.postDial));
+    var ag = ((r.agentCo||'') + ' ' + (r.agentName||'') + ' ' +
+              ((d && d.agentMail) || '')).replace(/\s+/g,' ').trim();
+    if(ag) b.push('仲介 ' + esc(ag));
+    b.push('作成 ' + esc(String(r.created).slice(0,10)) +
+           (r.due ? ' ／ 期限 ' + esc(r.due) : ''));
+    if(d && d.pass) b.push('パスワード ' + esc(d.pass));
+    if(d && d.memo) b.push('社内メモ ' + esc(d.memo));
+    h.push('<div class="d-item"><p>' + b.join('<br>') + '</p></div>');
+
+    if(d && d.plan){
+      h.push('<div class="ph" style="margin-top:12px;"><a href="' + esc(d.plan) +
+             '" target="_blank" rel="noopener"><img src="' + esc(driveThumb(d.plan)) +
+             '" alt="" onerror="this.style.display=\'none\'">' +
+             '<span>間取り図を開く</span></a></div>');
+    }
+
+    if(!d){
+      h.push(DERR[r.id]
+        ? ('<div class="sd-load err" data-id="' + esc(r.id) + '">' + esc(DERR[r.id]) +
+           ' <button type="button" class="btn sm ghost act-reload">もう一度読み込む</button></div>')
+        : '<div class="sd-load">お部屋のご報告を読み込んでいます…</div>');
+      return h.join('');
+    }
+
+    /* 中身が空でも、画面が止まらないようにします */
+    var rms = d.rooms  || [];
+    var cks = d.checks || [];
+    if(!rms.length && !cks.length){
+      h.push('<div class="d-item" style="margin-top:12px;">' +
+             '<p style="margin:0;">まだ返信がありません。</p></div>');
+    }
+
+    if(rms.length){
+      h.push('<div class="d-k">お部屋の中</div>');
+      h.push(rowOpen());
+      rms.forEach(function(x){
+        var ng = (x.judge !== '問題なし');
+        h.push('<div class="d-item' + (ng ? ' ng' : '') + '">');
+        h.push('<b>' + esc(x.place) + '　<span class="pill' + (ng ? ' ng' : '') + '">' +
+               esc(x.judge) + '</span></b>');
+        if(x.comment) h.push('<p>' + esc(x.comment) + '</p>');
+        if((x.photos||[]).length){
+          h.push('<div class="ph">' + x.photos.map(function(u){
+            return '<a href="' + esc(u) + '" target="_blank" rel="noopener">' +
+                   '<img src="' + esc(driveThumb(u)) + '" alt="" ' +
+                   'onerror="this.style.display=\'none\'">' +
+                   '<span>写真を開く</span></a>';
+          }).join('') + '</div>');
+        }
+        h.push('</div>');
+      });
+      h.push(rowClose());
+    }
+
+    if(cks.length){
+      h.push('<div class="d-k">ご説明の確認</div>');
+      h.push(rowOpen());
+      cks.forEach(function(x){
+        var no = (x.judge !== '確認した');
+        var isExp = no && String(x.comment||'').indexOf('説明を受けていない') === 0;
+        h.push('<div class="d-item' + (no ? ' ng' : '') + '"><b>' + esc(x.place) +
+               '　<span class="pill' + (isExp ? ' exp' : (no ? ' ng' : ' ok')) + '">' +
+               esc(isExp ? '説明を受けていない' : x.judge) + '</span></b>' +
+               (no && x.comment ? ('<p>' + esc(x.comment) + '</p>') : '') + '</div>');
+      });
+      h.push(rowClose());
+    }
+
+    if(d.clauses && d.clauses.length){
+      h.push('<div class="d-k">この契約に付けた特約</div>');
+      h.push('<div class="d-item"><p>' + esc(d.clauses.join('\n')) + '</p></div>');
+    }
+    return h.join('');
+  }
+
+  /* 右がわを描き直します */
+  function paint(){
+    var el = paneTarget();
+    if(!el) return;
+    var r = SEL ? rowById(SEL) : null;
+    if(!r){
+      /* えらんでいた1件が、いまのタブから外れた（完了にした・消した）とき */
+      el.innerHTML = isWide() ? paneNone() : '';
+      if(!isWide()) $('#detail').classList.remove('on');
+      return;
+    }
+    el.innerHTML = paneHtml(r, DC[SEL]);
+    if(!isWide()) $('#d-title').textContent = String(r.bldg||'') + ' ' + String(r.room||'');
+    wireRows();
+  }
+
   $('#d-close').addEventListener('click', function(){
     $('#detail').classList.remove('on');
   });
+
+  /* 画面の幅が変わったら、出す場所を入れかえます */
+  var _rz = null;
+  window.addEventListener('resize', function(){
+    clearTimeout(_rz);
+    _rz = setTimeout(function(){
+      if(isWide() && $('#detail').classList.contains('on')){
+        $('#detail').classList.remove('on');
+      }
+      markSel();
+      paint();
+    }, 160);
+  });
+
+  /* ---- 押されたときの動き（カードでも右がわでも、同じように働きます）---- */
+  function actDone(id, undo){
+    if(!confirm(undo ? '完了を取り消しますか？' : 'この件を完了にしますか？\n（完了タブへ移ります）')) return;
+    /* 押した瞬間に動かします。送信は裏で行います */
+    var undoDraw = patchRow(id, undo ? { status:'返信済', doneAt:'' }
+                                     : { status:'完了',   doneAt:nowJp() });
+    syncing(true);
+    post({ action:'done', key:KEY, id:id, undo:undo }).then(function(res){
+      syncing(false);
+      if(!res.ok){ undoDraw(); alert(res.err || '実行できませんでした'); }
+    }).catch(function(){ syncing(false); undoDraw(); alert('通信できませんでした。'); });
+  }
+  function actDel(id, nm){
+    if(!confirm('この件を一覧から消します。よろしいですか？\n\n' + (nm||'') + '\n\n' +
+                '・「完了」にはなりません。一覧から消えるだけです。\n' +
+                '・表には「取消」として残りますので、あとから確認できます。\n' +
+                '・この画面から元に戻すことはできません。')) return;
+    /* 押した瞬間に消します。送信は裏で行います */
+    if(SEL === id){ SEL = ''; }
+    if(!isWide()) $('#detail').classList.remove('on');
+    var undoDraw = patchRow(id, { status:'取消' });
+    syncing(true);
+    post({ action:'cancel', key:KEY, id:id }).then(function(res){
+      syncing(false);
+      if(!res.ok){ undoDraw(); alert(res.err || '消せませんでした'); }
+    }).catch(function(){ syncing(false); undoDraw(); alert('通信できませんでした。'); });
+  }
+  function actRemind(id){
+    if(!confirm('督促メールを送信しますか？')) return;
+    veil(true);
+    post({ action:'remind', key:KEY, id:id }).then(function(res){
+      veil(false);
+      if(!res.ok){ alert(res.err || '送信できませんでした'); return; }
+      alert('送信しました。');
+      var r = rowById(id);
+      patchRow(id, { remind: Number(r && r.remind || 0) + 1, lastRemind: nowJp().slice(0,10) });
+    }).catch(function(){ veil(false); alert('通信できませんでした。'); });
+  }
+  function actCopy(id, btn){
+    var r = rowById(id);
+    if(!r) return;
+    var url = location.href.replace(/admin\.html.*$/,'') + '?id=' + r.id;
+    navigator.clipboard.writeText(r.name + ' 様\n\n▼ 入力ページ\n' + url + '\n')
+      .then(function(){ btn.textContent = 'コピーしました'; });
+  }
+
+  document.addEventListener('click', function(ev){
+    var t = ev.target;
+    if(!t || !t.closest) return;
+    var b = t.closest('button');
+    if(b){
+      var host = b.closest('[data-id]');
+      var id = host ? host.getAttribute('data-id') : '';
+      if(!id) return;
+      if(b.classList.contains('act-done') || b.classList.contains('act-undo')){
+        ev.stopPropagation(); actDone(id, b.classList.contains('act-undo')); return;
+      }
+      if(b.classList.contains('act-del')){
+        ev.stopPropagation(); actDel(id, host.getAttribute('data-nm') || ''); return;
+      }
+      if(b.classList.contains('act-agent')){ ev.stopPropagation(); openAgent(id); return; }
+      if(b.classList.contains('act-remind')){ ev.stopPropagation(); actRemind(id); return; }
+      if(b.classList.contains('act-copy')){ ev.stopPropagation(); actCopy(id, b); return; }
+      if(b.classList.contains('act-reload')){
+        ev.stopPropagation(); delete DERR[id]; paint(); fetchDetail(id); return;
+      }
+      return;
+    }
+    /* 左のカードを押したら、その1件をひらきます */
+    var it = t.closest('#list .item');
+    if(it) selectRow(it.getAttribute('data-id'));
+  });
 })();
+
 </script>
 </body>
 </html>
