@@ -502,31 +502,6 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
    ・1項目＝1枚のカード。高さはそろえます。
    ・パソコンでは左右の丸ボタンで送れます（スマホは指でスワイプ）。
    ---------------------------------------------------------------------- */
-.d-wrap{position:relative;}
-.d-row{display:flex;gap:14px;align-items:stretch;overflow-x:auto;overflow-y:hidden;
-  padding:2px 2px 12px;scroll-snap-type:x proximity;scroll-behavior:smooth;}
-.d-row::-webkit-scrollbar{height:8px;}
-.d-row::-webkit-scrollbar-thumb{background:rgba(0,0,0,.13);border-radius:8px;}
-.d-row::-webkit-scrollbar-track{background:transparent;}
-.d-row > .d-item{flex:0 0 330px;margin-bottom:0;scroll-snap-align:start;}
-.d-row .ph{grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;}
-.d-row .ph img{height:92px;}
-.d-row .ph span{padding:7px 4px;font-size:12px;}
-.d-nav{position:absolute;top:calc(50% - 6px);transform:translateY(-50%);
-  width:40px;height:40px;border-radius:50%;border:0;background:rgba(255,255,255,.94);
-  box-shadow:0 1px 3px rgba(0,0,0,.12), 0 8px 20px rgba(0,0,0,.14);
-  color:var(--ink);font-size:21px;line-height:1;cursor:pointer;z-index:3;
-  display:none;align-items:center;justify-content:center;}
-.d-nav.on{display:flex;}
-.d-nav.prev{left:-10px;}
-.d-nav.next{right:-10px;}
-.d-nav:hover{background:#fff;}
-@media(max-width:560px){
-  /* スマホは指でスワイプ。高さもそろえず、中身のぶんだけにします */
-  .d-row{align-items:flex-start;}
-  .d-row > .d-item{flex:0 0 82vw;}
-  .d-nav{display:none !important;}
-}
 .d-item b{font-size:16px;font-weight:600;display:block;}
 .d-item p{margin:9px 0 0;font-size:14.5px;color:var(--ink2);white-space:pre-wrap;line-height:1.8;}
 .ph{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-top:12px;}
@@ -640,6 +615,10 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
   background:var(--fill);display:flex;align-items:center;justify-content:center;color:var(--ink3);}
 .sd-none .ring svg{width:38px;height:38px;display:block;}
 .sd-load{font-size:13.5px;color:var(--ink3);padding:6px 2px;}
+/* 気になるところが1つも無いときの、1行だけの箱 */
+.d-item.ok1{background:var(--okbg);}
+.d-item.ok1 b{color:#2D7A4A;}
+.d-item.ok1 p{color:#4A6B55;}
 .sd-load.err{display:flex;align-items:center;gap:10px;flex-wrap:wrap;color:var(--ng);
   background:var(--ngbg);border-radius:12px;padding:12px 15px;margin-top:12px;}
 
@@ -2170,44 +2149,6 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
     return m ? 'https://drive.google.com/thumbnail?id=' + m[0] + '&sz=w800' : '';
   }
 
-  /* ---- 横にならべるための、外わく ----
-       中身のカードを横一列にして、はみ出したぶんは横スクロールで見ます。 */
-  function rowOpen(){ return '<div class="d-wrap"><div class="d-row">'; }
-  function rowClose(){
-    return '</div>' +
-      '<button type="button" class="d-nav prev" aria-label="左へ">\u2039</button>' +
-      '<button type="button" class="d-nav next" aria-label="右へ">\u203a</button></div>';
-  }
-  /* 左右の丸ボタンは、送るところが残っているときだけ出します */
-  /* 右のカラムでも、全面の詳細画面でも、同じように働かせます */
-  function wrapList(){ return $$('#side .d-wrap').concat($$('#d-body .d-wrap')); }
-  function updRows(){
-    wrapList().forEach(function(w){
-      var row = w.querySelector('.d-row');
-      var pv  = w.querySelector('.d-nav.prev');
-      var nx  = w.querySelector('.d-nav.next');
-      if(!row || !pv || !nx) return;
-      var more = row.scrollWidth - row.clientWidth;
-      pv.classList.toggle('on', more > 4 && row.scrollLeft > 4);
-      nx.classList.toggle('on', more > 4 && row.scrollLeft < more - 4);
-    });
-  }
-  function wireRows(){
-    wrapList().forEach(function(w){
-      var row = w.querySelector('.d-row');
-      var pv  = w.querySelector('.d-nav.prev');
-      var nx  = w.querySelector('.d-nav.next');
-      if(!row || !pv || !nx) return;
-      var step = function(){ return Math.max(240, Math.round(row.clientWidth * 0.8)); };
-      pv.addEventListener('click', function(e){ e.stopPropagation();
-        row.scrollLeft -= step(); setTimeout(updRows, 350); });
-      nx.addEventListener('click', function(e){ e.stopPropagation();
-        row.scrollLeft += step(); setTimeout(updRows, 350); });
-      row.addEventListener('scroll', updRows);
-    });
-    updRows(); setTimeout(updRows, 80); setTimeout(updRows, 400);
-  }
-  window.addEventListener('resize', updRows);
 
   /* ================================================================
      右がわ ＝ えらんだ1件の中身
@@ -2338,22 +2279,31 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
       return h.join('');
     }
 
-    /* 中身が空でも、画面が止まらないようにします */
-    var rms = d.rooms  || [];
-    var cks = d.checks || [];
-    if(!rms.length && !cks.length){
+    /* ★ 出すのは「手を動かすところ」だけです。
+         ・お部屋 … 気になるとご報告のあったところ
+         ・ご説明 … 印の付かなかった項目と、その理由
+       すべて問題なしなら、1行で「問題なし」とだけ出します。
+       契約に付けた特約の一覧は、ここには出しません（読むものが多くなるため）。 */
+    var allR = d.rooms  || [];
+    var allC = d.checks || [];
+    var rms  = allR.filter(function(x){ return String(x.judge||'') !== '問題なし'; });
+    var cks  = allC.filter(function(x){ return String(x.judge||'') !== '確認した'; });
+
+    if(!allR.length && !allC.length){
       h.push('<div class="d-item" style="margin-top:12px;">' +
              '<p style="margin:0;">まだ返信がありません。</p></div>');
+      return h.join('');
     }
 
-    if(rms.length){
-      h.push('<div class="d-k">お部屋の中</div>');
-      h.push(rowOpen());
+    /* ---- お部屋の中 ---- */
+    h.push('<div class="d-k">お部屋の中</div>');
+    if(!rms.length){
+      h.push('<div class="d-item ok1"><b>問題なし</b>' +
+             '<p>' + allR.length + ' か所とも、問題なしのご報告です。</p></div>');
+    }else{
       rms.forEach(function(x){
-        var ng = (x.judge !== '問題なし');
-        h.push('<div class="d-item' + (ng ? ' ng' : '') + '">');
-        h.push('<b>' + esc(x.place) + '　<span class="pill' + (ng ? ' ng' : '') + '">' +
-               esc(x.judge) + '</span></b>');
+        h.push('<div class="d-item ng">');
+        h.push('<b>' + esc(x.place) + '　<span class="pill ng">気になるところあり</span></b>');
         if(x.comment) h.push('<p>' + esc(x.comment) + '</p>');
         if((x.photos||[]).length){
           h.push('<div class="ph">' + x.photos.map(function(u){
@@ -2365,26 +2315,24 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
         }
         h.push('</div>');
       });
-      h.push(rowClose());
     }
 
-    if(cks.length){
-      h.push('<div class="d-k">ご説明の確認</div>');
-      h.push(rowOpen());
+    /* ---- ご説明の確認 ---- */
+    h.push('<div class="d-k">ご説明の確認</div>');
+    if(!cks.length){
+      h.push('<div class="d-item ok1"><b>問題なし</b>' +
+             '<p>' + allC.length + ' 項目とも、ご確認いただいています。</p></div>');
+    }else{
       cks.forEach(function(x){
-        var no = (x.judge !== '確認した');
-        var isExp = no && String(x.comment||'').indexOf('説明を受けていない') === 0;
-        h.push('<div class="d-item' + (no ? ' ng' : '') + '"><b>' + esc(x.place) +
-               '　<span class="pill' + (isExp ? ' exp' : (no ? ' ng' : ' ok')) + '">' +
-               esc(isExp ? '説明を受けていない' : x.judge) + '</span></b>' +
-               (no && x.comment ? ('<p>' + esc(x.comment) + '</p>') : '') + '</div>');
+        /* コメントは「理由 ／ 追記」の形で入っています */
+        var parts = String(x.comment||'').split('／');
+        var why   = parts.shift().trim();
+        var note  = parts.join('／').trim();
+        var cls   = (why.indexOf('説明を受けていない') === 0) ? ' exp' : ' ng';
+        h.push('<div class="d-item ng"><b>' + esc(x.place) +
+               '　<span class="pill' + cls + '">' + esc(why || '理由の記入なし') + '</span></b>' +
+               (note ? ('<p>' + esc(note) + '</p>') : '') + '</div>');
       });
-      h.push(rowClose());
-    }
-
-    if(d.clauses && d.clauses.length){
-      h.push('<div class="d-k">この契約に付けた特約</div>');
-      h.push('<div class="d-item"><p>' + esc(d.clauses.join('\n')) + '</p></div>');
     }
     return h.join('');
   }
@@ -2402,7 +2350,6 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
     }
     el.innerHTML = paneHtml(r, DC[SEL]);
     if(!isWide()) $('#d-title').textContent = String(r.bldg||'') + ' ' + String(r.room||'');
-    wireRows();
   }
 
   $('#d-close').addEventListener('click', function(){
