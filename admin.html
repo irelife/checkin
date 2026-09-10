@@ -411,6 +411,13 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
 .ic-b:hover{background:var(--fill2);color:var(--ink);}
 .ic-b.on{background:var(--ink);color:#fff;}
 .ic-b svg{width:20px;height:20px;display:block;}
+/* ★ v2.13）きょう、あと何通メールを送れるか。
+     ふだんは小さく、少なくなったら色を変えて出します */
+.mail-left{margin:16px 0 0;padding:11px 14px;border-radius:12px;
+  background:var(--fill);color:var(--ink3);font-size:12.5px;line-height:1.75;}
+.mail-left.low{background:#FFF4E2;color:#7A4E0C;font-weight:600;}
+.mail-left.out{background:var(--ngbg);color:var(--ng);font-weight:700;}
+
 /* いま操作している人。上のバーのいちばん右に、小さく出します */
 .who-b{flex:0 0 auto;max-width:120px;height:46px;padding:0 15px;border:0;border-radius:14px;
   background:var(--fill);color:var(--ink2);cursor:pointer;font-size:13.5px;font-weight:600;
@@ -930,6 +937,8 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
       </div>
 
       <div class="err" id="new-err"></div>
+      <!-- ★ きょう、あと何通メールを送れるか -->
+      <div class="mail-left hide" id="mail-left"></div>
       <div class="acts">
         <button type="button" class="abtn" id="new-draft">下書き保存</button>
         <button type="button" class="abtn primary" id="new-go">依頼を送る</button>
@@ -1069,6 +1078,45 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
       .then(function(r){ return r.json(); });
   }
 
+  /* ================================================================
+     ★ v2.13）きょう、あと何通送れるか
+
+     使い切ると、ご案内も督促も送れなくなります。
+     少なくなってきたら、気づけるように出しておきます。
+     ・30通より多いとき … 新規作成の画面にだけ、小さく出します
+     ・30通以下のとき   … 一覧の上にも、はっきり出します
+     ================================================================ */
+  function mailWord(){
+    if(MAIL_LEFT < 0) return '';
+    return 'きょう送れるメールは、あと ' + MAIL_LEFT + ' 通です';
+  }
+  function mailPaint(){
+    var el = $('#mail-left');
+    if(el){
+      if(MAIL_LEFT < 0){ el.textContent = ''; el.className = 'mail-left hide'; }
+      else{
+        el.textContent = mailWord() +
+          '（1件のご案内で、3〜7通ぶんを使います）';
+        el.className = 'mail-left' + (MAIL_LEFT <= 30 ? ' low' : '') +
+                       (MAIL_LEFT <= 5 ? ' out' : '');
+      }
+    }
+    /* 少なくなったら、一覧の上にも出します */
+    if(MAIL_LEFT >= 0 && MAIL_LEFT <= 30 && !$('#s-list').classList.contains('hide')){
+      if(_mailWarned !== MAIL_LEFT){
+        _mailWarned = MAIL_LEFT;
+        flash((MAIL_LEFT <= 0
+                ? '<b>⚠️ きょう送れるメールが、なくなりました。</b><br>' +
+                  'ご案内も督促も送れません。あすの朝に元に戻ります。<br>' +
+                  '入居者からのご返信は、これまでどおり受け付けています。'
+                : '<b>⚠️ ' + mailWord() + '</b><br>' +
+                  '1件のご案内で3〜7通ぶんを使います。あと ' +
+                  Math.floor(MAIL_LEFT / 5) + ' 件ほどです。'));
+      }
+    }
+  }
+  var _mailWarned = -1;
+
   /* 上のバーに、いまのお名前を出します */
   function whoPaint(){
     var el = $('#who-b');
@@ -1153,6 +1201,10 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
                                    RM_EVERY = Number(o.remindEvery)||0; }
     if(o.doneAfterRemind !== undefined) DONE_AFTER_REMIND = (o.doneAfterRemind === true);
     if(o.rev !== undefined) REV = String(o.rev || '');   /* ★ この一覧が、いつの分か */
+    if(o.mailLeft !== undefined) MAIL_LEFT = Number(o.mailLeft);
+    /* ログインの直後は、まだ一覧が出ていません。
+       画面が出てから知らせたいので、ひと呼吸おきます。 */
+    setTimeout(mailPaint, 0);
     buildPeriod(); buildArea(); drawAll();
     LAST_AT = at || Date.now();
   }
@@ -1716,9 +1768,20 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
       FILT = '';
       show('list');
       reload(true);
-      flash('<b>✅ 作成しました。入居者へメールを送信しました。</b><br>' +
-            esc(body.bldg) + ' ' + esc(body.room) + '　' + esc(body.name) + ' 様<br>' +
-            'パスワードは、下のカードを押すとご確認いただけます。');
+      if(res.mailLeft !== undefined){ MAIL_LEFT = Number(res.mailLeft); mailPaint(); }
+      if(res.mailWarn){
+        /* ★ v2.13）依頼はできたけれど、メールだけ送れなかったとき。
+             入居者はリンクを受け取っていないので、はっきりお伝えします。 */
+        flash('<b>⚠️ 依頼はつくりましたが、メールを送れませんでした。</b><br>' +
+              esc(body.bldg) + ' ' + esc(body.room) + '　' + esc(body.name) + ' 様<br>' +
+              esc(String(res.mailWarn)) + '<br>' +
+              '<b>入居者様には、まだ届いていません。</b>' +
+              'その1件を開いて「案内文をコピー」から、お手元のメールでお送りください。');
+      }else{
+        flash('<b>✅ 作成しました。入居者へメールを送信しました。</b><br>' +
+              esc(body.bldg) + ' ' + esc(body.room) + '　' + esc(body.name) + ' 様<br>' +
+              'パスワードは、下のカードを押すとご確認いただけます。');
+      }
     }).catch(function(){ veil(false); $('#new-err').textContent = '通信できませんでした。'; });
   }
   $('#new-go').addEventListener('click', function(){ create(true); });
@@ -1729,10 +1792,16 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
   var TAB = 'act';         /* 対応が必要／待ち／完了 */
   var AREAS = [];
   var RM_MAX = 0, RM_EVERY = 0;   /* 自動督促の 上限回数／何日おき（サーバーの設定） */
+  /* ★ v2.13）きょう、あと何通メールを送れるか。
+       Gmail は1日に送れる宛先の数に上限があります
+       （無料のアカウントで100件、Workspace で1,500件）。
+       1件のご案内で3〜7通ぶんを使うので、思ったより早く減ります。 */
+  var MAIL_LEFT = -1;
   var DONE_AFTER_REMIND = true;   /* 自動督促を送ったら完了へ移すか（サーバーの設定） */
 
   /* bg を true にすると、画面をおおわずに、裏で読みにいきます */
   function reload(bg){
+    try{ pingWake(); }catch(e){}   /* 何か動いたので、こまめに見に戻ります */
     if(bg) syncing(true); else veil(true);
     $('#reload').classList.add('spin');       /* 更新の絵がまわります */
     /* 年度はサーバー側でしぼります。件数が増えても重くなりません。
@@ -1760,6 +1829,20 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
      ================================================================ */
   var _ping = null;
   var _pinging = false;
+  /* ★ v2.13）静かなときは、だんだん間をあけます。
+       いつも45秒ごとに聞きにいくと、Apps Script が1日に何百回も動きます。
+       何も変わらない時間が続いたら、そのぶん間をあけます。
+       何か変わったとき・ほかのタブから戻ったときは、45秒に戻します。 */
+  var PING_STEPS = [45000, 45000, 45000, 45000, 90000, 90000, 180000, 300000];
+  var _quiet = 0;                    /* 続けて「変わっていません」だった回数 */
+  function pingWait(){
+    return PING_STEPS[Math.min(_quiet, PING_STEPS.length - 1)];
+  }
+  function pingWake(){               /* 目を覚まします（45秒に戻します） */
+    if(_quiet === 0) return;
+    _quiet = 0;
+    if(_ping){ pingStop(); pingStart(); }
+  }
 
   function canFresh(){
     if(!KEY) return false;                                    /* まだログインしていません */
@@ -1772,25 +1855,40 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
     return true;
   }
 
+  var _pingAt = 0;
   function pingNow(){
     if(_pinging || !canFresh()) return;
+    /* ★ タブを何度も行き来されても、続けては聞きません。
+         もともと45秒より短い間隔では聞かないので、ここが効くのは
+         「戻ってきたとき」だけです。 */
+    var now = Date.now();
+    if(now - _pingAt < 15000) return;
+    _pingAt = now;
     _pinging = true;
     post({ action:'ping', key:KEY }).then(function(d){
       _pinging = false;
       if(!d || !d.ok) return;
       var v = String(d.rev || '');
       if(!v || !REV){ REV = v; return; }      /* はじめの1回は、ものさしを合わせるだけ */
-      if(v === REV) return;                   /* 何も変わっていません */
+      if(v === REV){                          /* 何も変わっていません */
+        _quiet++;
+        var want = pingWait();
+        if(_ping && want !== _pingEvery){ pingStop(); pingStart(); }
+        return;
+      }
+      pingWake();                             /* 動きがあったので、目を覚まします */
       if(!canFresh()) return;                 /* 待っているあいだに、画面が変わりました */
       reload(true);                           /* 変わったので、静かに読み直します */
     }).catch(function(){ _pinging = false; });
   }
 
+  var _pingEvery = 0;
   function pingStart(){
     if(_ping) return;
-    _ping = setInterval(pingNow, 45000);      /* 45秒に1回、軽く聞きます */
+    _pingEvery = pingWait();
+    _ping = setInterval(pingNow, _pingEvery);
   }
-  function pingStop(){ if(_ping){ clearInterval(_ping); _ping = null; } }
+  function pingStop(){ if(_ping){ clearInterval(_ping); _ping = null; } _pingEvery = 0; }
 
   /* エリアの選択 */
   function buildArea(){
@@ -1829,7 +1927,9 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
     reload(true);                                              /* 幕は出さず、裏で読みます */
   }
   document.addEventListener('visibilitychange', function(){
-    if(document.visibilityState === 'visible'){ autoFresh(); pingNow(); }
+    if(document.visibilityState !== 'visible') return;
+    pingWake();                 /* 戻ってきたら、45秒に戻します */
+    autoFresh(); pingNow();
   });
   window.addEventListener('focus', autoFresh);
   $('#q').addEventListener('input', drawList);
