@@ -475,10 +475,39 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
 #agbox .ft{display:flex;gap:10px;padding:14px 22px 20px;border:0;}
 
 /* ---- 中身を見る画面 ---- */
-#detail{position:fixed;inset:0;z-index:50;background:var(--bg);overflow-y:auto;display:none;}
-#detail.on{display:block;}
-#detail .inner{max-width:1200px;margin:0 auto;padding:22px 20px 80px;}
-.d-bar{position:sticky;top:0;z-index:2;background:rgba(29,29,31,.86);color:#fff;
+/* ---- 押した1件は、画面の中央に浮かび上がります ----
+     うしろの一覧は、うすくぼかして残します。
+     どこが元だったか分かるようにするためです。            */
+#detail{position:fixed;inset:0;z-index:50;display:none;
+  align-items:center;justify-content:center;padding:24px;
+  background:rgba(29,29,31,.30);
+  -webkit-backdrop-filter:saturate(150%) blur(14px);
+  backdrop-filter:saturate(150%) blur(14px);}
+#detail.on{display:flex;animation:d-fade .18s ease-out;}
+.d-card{width:min(880px,100%);max-height:min(88vh,100%);
+  display:flex;flex-direction:column;overflow:hidden;
+  background:var(--bg);border-radius:26px;
+  box-shadow:0 8px 24px rgba(0,0,0,.14), 0 40px 90px rgba(0,0,0,.22);
+  animation:d-pop .24s cubic-bezier(.2,.8,.25,1);}
+@keyframes d-fade{ from{opacity:0;} to{opacity:1;} }
+@keyframes d-pop{
+  from{opacity:0;transform:translateY(18px) scale(.965);}
+  to  {opacity:1;transform:none;}
+}
+@media (prefers-reduced-motion:reduce){
+  #detail.on,.d-card{animation:none;}
+}
+#detail .inner{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;
+  padding:20px 24px 34px;}
+#detail .inner::-webkit-scrollbar{width:8px;}
+#detail .inner::-webkit-scrollbar-thumb{background:rgba(0,0,0,.13);border-radius:8px;}
+#detail .inner::-webkit-scrollbar-track{background:transparent;}
+@media (max-width:640px){
+  #detail{padding:0;}
+  .d-card{width:100%;max-height:100%;height:100%;border-radius:0;}
+  #detail .inner{padding:18px 16px 40px;}
+}
+.d-bar{flex:0 0 auto;z-index:2;background:rgba(29,29,31,.92);color:#fff;
   -webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);
   padding:calc(13px + env(safe-area-inset-top)) 20px 13px;display:flex;align-items:center;gap:12px;}
 .d-bar b{font-size:19px;font-weight:600;flex:1;}
@@ -509,23 +538,6 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
   text-align:center;text-decoration:none;}
 .ph img{width:100%;height:140px;object-fit:cover;display:block;background:var(--fill2);}
 .ph span{display:block;font-size:12.5px;font-weight:500;padding:10px 4px;color:var(--ink2);}
-
-/* ================================================================
-   2カラム（左に一覧・右に中身）
-   広い画面 … 左でえらぶと、右にその1件が出ます。
-   狭い画面 … 右は畳んで、押したら全面の詳細画面をひらきます。
-   ================================================================ */
-.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(400px,560px);
-  gap:20px;align-items:start;}
-.col-r{position:sticky;top:78px;max-height:calc(100vh - 96px);overflow-y:auto;
-  overscroll-behavior:contain;}
-.col-r::-webkit-scrollbar{width:8px;}
-.col-r::-webkit-scrollbar-thumb{background:rgba(0,0,0,.13);border-radius:8px;}
-.col-r::-webkit-scrollbar-track{background:transparent;}
-@media (max-width:899px){
-  .two{grid-template-columns:1fr;}
-  .col-r{display:none;}
-}
 
 /* ---- 左のカード ------------------------------------------------
      上に大きな絵、その下に 物件名・号室、お名前、ひとこと、説明。
@@ -589,7 +601,16 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
 }
 
 /* えらんでいる1件 */
+/* 触れると、ふわりと浮き上がります */
+.item{transition:transform .16s cubic-bezier(.2,.8,.25,1), box-shadow .16s ease;}
+.item:hover{transform:translateY(-4px);
+  box-shadow:0 2px 6px rgba(0,0,0,.06), 0 18px 34px rgba(0,0,0,.11);}
+.item:active{transform:translateY(-1px) scale(.985);}
 .item.on{box-shadow:0 0 0 2px var(--ink) inset, 0 4px 14px rgba(0,0,0,.07);}
+@media (prefers-reduced-motion:reduce){
+  .item{transition:none;}
+  .item:hover,.item:active{transform:none;}
+}
 .item .i-x{top:9px;right:9px;margin-top:0;width:26px;height:26px;font-size:13px;
   opacity:.5;transition:opacity .15s;background:rgba(255,255,255,.8);}
 .item:hover .i-x,.item.on .i-x{opacity:1;}
@@ -609,11 +630,6 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
   word-break:auto-phrase;line-break:strict;text-wrap:pretty;}
 .sd-st span{display:block;font-size:13.5px;font-weight:400;margin-top:4px;
   color:var(--ink2);line-height:1.75;}
-.sd-none{background:#fff;border-radius:20px;padding:56px 26px;text-align:center;
-  color:var(--ink3);font-size:14.5px;line-height:1.9;}
-.sd-none .ring{width:88px;height:88px;margin:0 auto 16px;border-radius:50%;
-  background:var(--fill);display:flex;align-items:center;justify-content:center;color:var(--ink3);}
-.sd-none .ring svg{width:38px;height:38px;display:block;}
 .sd-load{font-size:13.5px;color:var(--ink3);padding:6px 2px;}
 /* 気になるところが1つも無いときの、1行だけの箱 */
 .d-item.ok1{background:var(--okbg);}
@@ -869,10 +885,7 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
       <select id="f-far" aria-label="エリア"></select>
     </div>
     <div class="listbox">
-      <div class="two">
-        <div class="col-l"><div id="list"></div></div>
-        <aside class="col-r"><div id="side"></div></aside>
-      </div>
+      <div id="list"></div>
     </div>
 
     <!-- いちばん下の街なみ（ただの絵です。押しても何も起きません） -->
@@ -924,9 +937,12 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
   </div>
 </div>
 
+<!-- 押した1件は、画面の中央に浮かび上がります（うしろはぼかします） -->
 <div id="detail">
-  <div class="d-bar"><b id="d-title">　</b><button id="d-close">一覧に戻る</button></div>
-  <div class="inner" id="d-body"></div>
+  <div class="d-card" role="dialog" aria-modal="true" aria-labelledby="d-title">
+    <div class="d-bar"><b id="d-title">　</b><button id="d-close">とじる</button></div>
+    <div class="inner" id="d-body"></div>
+  </div>
 </div>
 
 <div id="veil">読み込んでいます…</div>
@@ -2068,8 +2084,7 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
 
     if(!rows.length){
       $('#list').innerHTML = blankHtml(!!q || FILT !== '');
-      SEL = '';
-      paint();
+      if(SEL){ SEL = ''; detailOpen(false); }
       return;
     }
     $('#list').innerHTML = rows.map(function(r){
@@ -2098,14 +2113,11 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
       '</div>';
     }).join('');
 
-    /* 広い画面では、いつも1件が開いている状態にします */
+    /* えらんでいた1件が、いまのタブから外れていたら、浮かんでいる箱は閉じます */
     var here = rows.some(function(x){ return x.id === SEL; });
-    if(!here){
-      SEL = isWide() ? rows[0].id : '';
-      if(SEL) fetchDetail(SEL);
-    }
+    if(!here && SEL){ SEL = ''; detailOpen(false); }
     markSel();
-    paint();
+    if(SEL) paint();
   }
 
   /* ---- 仲介業者へ連絡する ---- */
@@ -2151,15 +2163,18 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
 
 
   /* ================================================================
-     右がわ ＝ えらんだ1件の中身
-       広い画面 … 右のカラム（#side）に出します
-       狭い画面 … これまでどおり、全面の詳細画面（#d-body）に出します
+     えらんだ1件の中身は、画面の中央に浮かび上がる箱に出します。
+     うしろの一覧は、うすくぼかして残します。
      ================================================================ */
-  function isWide(){
-    try{ return window.matchMedia('(min-width:900px)').matches; }
-    catch(e){ return window.innerWidth >= 900; }
+  function paneTarget(){ return $('#d-body'); }
+
+  function detailOpen(on){
+    $('#detail').classList.toggle('on', !!on);
+    /* 開いているあいだは、うしろの一覧は動かしません */
+    document.body.style.overflow = on ? 'hidden' : '';
+    if(on) $('#detail .inner').scrollTop = 0;
+    else { SEL = ''; markSel(); }
   }
-  function paneTarget(){ return isWide() ? $('#side') : $('#d-body'); }
 
   function markSel(){
     $$('#list .item').forEach(function(el){
@@ -2186,24 +2201,15 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
     });
   }
 
-  /* 1件をえらびます */
+  /* 1件をえらぶと、画面の中央に浮かび上がります */
   function selectRow(id){
     SEL = id;
     markSel();
+    var r = rowById(id);
+    $('#d-title').textContent = r ? (String(r.bldg||'') + ' ' + String(r.room||'')) : '　';
     paint();
+    detailOpen(true);
     fetchDetail(id);
-    if(!isWide()){
-      var r = rowById(id);
-      $('#d-title').textContent = r ? (String(r.bldg||'') + ' ' + String(r.room||'')) : '　';
-      $('#detail').classList.add('on');
-      $('#detail').scrollTop = 0;
-    }
-  }
-
-  /* まだ1件もえらんでいないとき（広い画面の右がわ） */
-  function paneNone(){
-    return '<div class="sd-none"><div class="ring">' + svg('doc') + '</div>' +
-           '左の一覧から、1件をおえらびください。<br>ここに中身と対応履歴が出ます。</div>';
   }
 
   /* えらんだ1件の中身をつくります。
@@ -2260,6 +2266,11 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
     if(ag) b.push('仲介 ' + esc(ag));
     b.push('作成 ' + esc(String(r.created).slice(0,10)) +
            (r.due ? ' ／ 期限 ' + esc(r.due) : ''));
+    /* 何度かご返信をいただいている件は、そのことを書きます。
+       画面に出しているのは、いちばん新しいぶんです */
+    if(d && Number(d.replies || 0) > 1){
+      b.push('ご返信 ' + Number(d.replies) + ' 回（下は、いちばん新しいぶんです）');
+    }
     if(d && d.pass) b.push('パスワード ' + esc(d.pass));
     if(d && d.memo) b.push('社内メモ ' + esc(d.memo));
     h.push('<div class="d-item"><p>' + b.join('<br>') + '</p></div>');
@@ -2344,29 +2355,23 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
     var r = SEL ? rowById(SEL) : null;
     if(!r){
       /* えらんでいた1件が、いまのタブから外れた（完了にした・消した）とき */
-      el.innerHTML = isWide() ? paneNone() : '';
-      if(!isWide()) $('#detail').classList.remove('on');
+      el.innerHTML = '';
+      detailOpen(false);
       return;
     }
     el.innerHTML = paneHtml(r, DC[SEL]);
-    if(!isWide()) $('#d-title').textContent = String(r.bldg||'') + ' ' + String(r.room||'');
+    $('#d-title').textContent = String(r.bldg||'') + ' ' + String(r.room||'');
   }
 
-  $('#d-close').addEventListener('click', function(){
-    $('#detail').classList.remove('on');
+  $('#d-close').addEventListener('click', function(){ detailOpen(false); });
+  /* うしろ（ぼかしたところ）を押しても閉じます */
+  $('#detail').addEventListener('click', function(ev){
+    if(ev.target === $('#detail')) detailOpen(false);
   });
-
-  /* 画面の幅が変わったら、出す場所を入れかえます */
-  var _rz = null;
-  window.addEventListener('resize', function(){
-    clearTimeout(_rz);
-    _rz = setTimeout(function(){
-      if(isWide() && $('#detail').classList.contains('on')){
-        $('#detail').classList.remove('on');
-      }
-      markSel();
-      paint();
-    }, 160);
+  /* Esc でも閉じます */
+  document.addEventListener('keydown', function(ev){
+    if(ev.key !== 'Escape') return;
+    if($('#detail').classList.contains('on')) detailOpen(false);
   });
 
   /* ---- 押されたときの動き（カードでも右がわでも、同じように働きます）---- */
@@ -2387,8 +2392,7 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
                 '・表には「取消」として残りますので、あとから確認できます。\n' +
                 '・この画面から元に戻すことはできません。')) return;
     /* 押した瞬間に消します。送信は裏で行います */
-    if(SEL === id){ SEL = ''; }
-    if(!isWide()) $('#detail').classList.remove('on');
+    if(SEL === id){ SEL = ''; detailOpen(false); }
     var undoDraw = patchRow(id, { status:'取消' });
     syncing(true);
     post({ action:'cancel', key:KEY, id:id }).then(function(res){
