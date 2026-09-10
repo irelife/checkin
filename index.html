@@ -177,6 +177,29 @@ footer{position:fixed;left:0;right:0;bottom:0;z-index:20;background:rgba(245,245
 footer .inner{max-width:640px;margin:0 auto;display:flex;gap:10px;}
 footer .btn{margin:0;}
 footer .btn.ghost{flex:0 0 34%;background:rgba(0,0,0,.06);}
+@media (max-width:400px){ footer .btn.ghost{flex:0 0 30%;} }
+/* ★ 一時保存は、下のバーの上に、小さな字で置きます。
+     「戻る」「つぎへ」と同じ大きさにすると、
+     「つぎへ」に入る長い字（暮らしのルールが残り 3 件）が入らなくなるためです。 */
+#hold{display:block;width:auto;margin:0 auto 10px;padding:3px 12px;border:0;border-radius:8px;
+  background:none;color:#6E6E73;font-size:13.5px;font-weight:500;line-height:1.6;
+  text-decoration:underline;text-underline-offset:3px;cursor:pointer;}
+#hold:active{opacity:.6;}
+#hold[disabled]{opacity:.45;text-decoration:none;}
+/* ★ 一時保存できたことを、下から静かに知らせます */
+#toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%) translateY(14px);
+  z-index:60;max-width:min(420px,calc(100% - 32px));padding:13px 20px;border-radius:14px;
+  background:rgba(29,29,31,.94);color:#fff;font-size:14px;line-height:1.7;text-align:center;
+  opacity:0;pointer-events:none;transition:opacity .22s ease,transform .22s ease;}
+#toast.on{opacity:1;transform:translateX(-50%) translateY(0);}
+@media (prefers-reduced-motion:reduce){ #toast{transition:none;} }
+/* ★ ご返信の受付が終わったことの、お知らせ */
+.closed-note{margin:0 0 18px;padding:15px 17px;border-radius:14px;
+  background:#FFF4E2;color:#7A4E0C;font-size:14.5px;line-height:1.85;}
+.closed-note b{display:block;font-size:15.5px;margin-bottom:5px;}
+/* ★ 前に一時保存したぶんから続けていることの、お知らせ */
+.hold-note{margin:0 0 16px;padding:13px 16px;border-radius:14px;
+  background:rgba(0,0,0,.05);color:#3A3A3C;font-size:14px;line-height:1.8;}
 
 /* ---- 送信中・完了 ---- */
 #veil{position:fixed;inset:0;z-index:60;background:rgba(245,245,247,.85);
@@ -350,17 +373,20 @@ header .h-info:hover{background:rgba(255,255,255,.22);}
 </main>
 
 <footer id="foot" class="hide">
+  <!-- ★ 途中でやめても、続きから入力できるように、こちらでお預かりします -->
+  <button id="hold" type="button">入力を一時保存する</button>
   <div class="inner">
     <button class="btn ghost hide" id="back">戻る</button>
     <button class="btn" id="next">つぎへ</button>
   </div>
 </footer>
 
+<div id="toast" role="status" aria-live="polite"></div>
 <div id="veil"><div class="in"><div class="spin"></div><span id="veil-msg">送信しています…</span></div></div>
 <div id="zoom"><img alt=""></div>
 
 <script src="clauses.js?v=7"></script>
 <script src="config.js?v=3"></script>
-<script src="app.js?v=13"></script>
+<script src="app.js?v=14"></script>
 </body>
 </html>
