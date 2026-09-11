@@ -21,6 +21,8 @@
   --ng:#C7362A;         /* 気にかけてほしい */
   --ngbg:#FCF0EE;
   --okbg:#F2F6F3;
+  --line:#E3E3E7;       /* 区切りの線 */
+  --warn:#FFD60A;       /* 数がたまっている印 */
   --shadow:0 1px 2px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.04);
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -30,7 +32,7 @@ html,body{margin:0;background:var(--bg);color:var(--ink);font-size:17px;line-hei
 button,input,textarea,select{font-family:inherit;font-size:17px;}
 
 /* ---- 上のバー ---- */
-header{position:sticky;top:0;z-index:20;background:rgba(29,29,31,.86);color:#fff;
+header{position:sticky;top:0;z-index:30;background:rgba(29,29,31,.86);color:#fff;
   -webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);
   padding:calc(13px + env(safe-area-inset-top)) 20px 13px;
   display:flex;align-items:center;gap:12px;}
@@ -41,11 +43,99 @@ header .hsub{font-size:14px;font-weight:500;color:rgba(255,255,255,.55);flex:1;}
 header button{background:rgba(255,255,255,.12);color:#fff;border:0;border-radius:100px;
   padding:8px 18px;font-size:14.5px;font-weight:500;cursor:pointer;transition:background .15s;}
 header button:hover{background:rgba(255,255,255,.2);}
+/* ★ 上のバーへ移した「最新にする」と「お名前」 */
+header .ic-b{width:36px;height:36px;padding:0;border-radius:11px;
+  background:rgba(255,255,255,.12);color:#fff;}
+header .ic-b:hover{background:rgba(255,255,255,.2);color:#fff;}
+header .ic-b svg{width:18px;height:18px;}
+header .who-b{height:36px;max-width:130px;padding:0 14px;border-radius:11px;
+  background:rgba(255,255,255,.12);color:#fff;font-size:13px;}
+header .who-b:hover{background:rgba(255,255,255,.2);color:#fff;}
+header .who-b.none{background:rgba(255,120,110,.3);color:#fff;}
+header .sync{margin-left:auto;color:rgba(255,255,255,.72);font-size:12px;}
+header .ic-b#reload{margin-left:auto;}
+header .sync:not(.hide) + .ic-b#reload{margin-left:10px;}
 
 /* 一覧は、画面の幅いっぱいに使います。
    カードは幅のぶんだけ横に並び、入りきらなくなったところで折り返します。
    新規作成とログインだけ、読みやすさのために細いままにします。 */
-main{max-width:none;margin:0;padding:22px 24px 80px;}
+main{max-width:none;margin:0;padding:0;}
+/* ================================================================
+   ★ 左のならび ＋ 1本の縦スクロール
+
+   これまではタブで切り替えていました。切り替えると、
+   ほかに何が残っているかが見えなくなります。
+   これからは、ぜんぶ1つのページに縦に並べます。
+   左のならびは「いま、どこを見ているか」を示す目次です。
+   ================================================================ */
+#s-list{display:grid;grid-template-columns:236px minmax(0,1fr);align-items:start;}
+#side{position:sticky;top:52px;align-self:start;height:calc(100vh - 52px);overflow:auto;
+  padding:24px 14px 30px;border-right:1px solid var(--line);background:var(--bg);}
+#doc{padding:28px 30px 90px;max-width:1160px;}
+.sd-find{margin-bottom:18px;}
+.sd-find input{width:100%;padding:9px 12px;border:0;border-radius:10px;
+  background:var(--fill);font-size:13.5px;}
+.sd-find input:focus{outline:2px solid var(--ink);outline-offset:-2px;}
+.sd-nav{display:block;margin-bottom:10px;}
+.sd-h{font-size:10.5px;font-weight:700;color:var(--ink3);letter-spacing:.1em;
+  padding:14px 10px 6px;}
+.sd-h:first-child{padding-top:0;}
+.sd-i{display:flex;align-items:center;gap:8px;width:100%;padding:9px 10px;margin:1px 0;
+  border:0;border-radius:9px;background:transparent;color:var(--ink2);cursor:pointer;
+  font-size:14px;font-weight:500;text-align:left;transition:background .12s,color .12s;}
+.sd-i:hover{background:var(--fill);color:var(--ink);}
+.sd-i.on{background:var(--fill2);color:var(--ink);font-weight:700;}
+.sd-i i{margin-left:auto;font-style:normal;font-size:12px;font-weight:700;color:var(--ink3);
+  padding:1px 7px;border-radius:100px;}
+.sd-i.on i{color:var(--ink2);}
+.sd-i i.hot{background:var(--warn);color:#3a2d00;}
+.sd-f{display:grid;gap:6px;padding:0 4px;}
+.sd-f select{width:100%;padding:8px 10px;border:0;border-radius:9px;
+  background:var(--fill);font-size:12.5px;color:var(--ink2);}
+.sd-foot{padding:26px 10px 0;font-size:10.5px;color:var(--ink3);}
+
+.doc-h1{font-size:31px;font-weight:700;letter-spacing:-.022em;margin:0;}
+.doc-lead{font-size:14.5px;line-height:1.9;color:var(--ink2);margin:10px 0 0;max-width:640px;}
+.sec{margin-top:44px;scroll-margin-top:66px;}
+.sec-h{font-size:21px;font-weight:700;letter-spacing:-.02em;margin:0 0 7px;}
+.sec-lead{font-size:13.5px;line-height:1.9;color:var(--ink2);margin:0 0 20px;max-width:660px;}
+
+/* PC では「しぼる」はただの見出しです */
+.sd-fb{display:block;width:100%;border:0;background:transparent;text-align:left;
+  font-family:inherit;cursor:default;}
+
+/* ================================================================
+   画面がせまいときは、ならびを上の1行にします。
+   スクロールしても上に残るので、どこへでもすぐ動けます。
+   ================================================================ */
+@media (max-width:860px){
+  #s-list{display:block;}
+  #side{position:sticky;top:52px;z-index:15;height:auto;overflow:visible;
+    border-right:0;border-bottom:1px solid var(--line);padding:10px 12px 9px;
+    background:rgba(245,245,247,.94);
+    -webkit-backdrop-filter:saturate(180%) blur(14px);backdrop-filter:saturate(180%) blur(14px);}
+  .sd-find{margin-bottom:8px;}
+  .sd-nav{display:flex;gap:6px;overflow-x:auto;margin:0;padding-bottom:1px;
+    scrollbar-width:none;-ms-overflow-style:none;}
+  .sd-nav::-webkit-scrollbar{display:none;}
+  .sd-h{display:none;}
+  .sd-i{width:auto;flex:0 0 auto;margin:0;padding:7px 13px;border-radius:100px;
+    background:var(--fill);font-size:13px;white-space:nowrap;}
+  .sd-i.on{background:var(--ink);color:#fff;}
+  .sd-i i{margin-left:6px;padding:0;}
+  .sd-i.on i{color:rgba(255,255,255,.78);}
+  /* 「しぼる」は、押したときだけ出します */
+  .sd-fb{display:inline-flex;align-items:center;flex:0 0 auto;width:auto;margin:0;
+    padding:7px 13px;border-radius:100px;background:var(--fill);color:var(--ink2);
+    font-size:13px;font-weight:500;letter-spacing:0;white-space:nowrap;cursor:pointer;}
+  .sd-fb.on{background:var(--ink);color:#fff;}
+  .sd-f{grid-template-columns:1fr 1fr 1fr;padding:8px 0 0;}
+  .sd-f.hide{display:none;}
+  .sd-foot{display:none;}
+  #doc{padding:20px 16px 70px;}
+  .doc-h1{font-size:25px;}
+  .sec{margin-top:34px;scroll-margin-top:152px;}
+}
 #s-new{max-width:720px;margin:0 auto;}
 #s-key{max-width:none;}
 
@@ -94,9 +184,9 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
 .stat:active{opacity:.6;}
 
 /* ---- 一覧（広い画面では、幅に合わせて折り返します） ---- */
-#list{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));
+.listbox{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));
   gap:14px;align-items:start;}
-#list > p{grid-column:1/-1;}
+.listbox > p{grid-column:1/-1;}
 /* 白いカードは、うすい影で浮かせます（グレーの待ちと見分けるため） */
 .item:not(.gray){box-shadow:0 1px 2px rgba(0,0,0,.05), 0 4px 14px rgba(0,0,0,.05);}
 .item{position:relative;background:#fff;border:0;border-radius:18px;padding:20px 20px;margin-bottom:0;
@@ -222,7 +312,7 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
 
 /* 1件もないとき */
 /* 一覧の入れもの。白いカードが見えるように、下地は敷きません。 */
-.listbox{padding:0;margin-bottom:18px;}
+.listbox{padding:0;}
 
 .blank{grid-column:1/-1;text-align:center;padding:46px 20px 40px;}
 .blank .ring{width:96px;height:96px;margin:0 auto 18px;border-radius:50%;
@@ -627,7 +717,7 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
      上に大きな絵、その下に 物件名・号室、お名前、ひとこと、説明。
      絵の下地はどれも同じうすいグレーで、中の札の色だけを変えます。
      ------------------------------------------------------------------ */
-#list{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));
+.listbox{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));
   gap:16px;align-items:stretch;}
 .item{display:block;background:#fff;color:var(--ink);padding:14px 14px 18px;
   border-radius:20px;}
@@ -642,6 +732,56 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
 .i-ic.big.ng{background:rgba(199,54,42,.12);color:var(--ng);}
 .i-ic.big.gd{background:rgba(45,122,74,.12);color:#2D7A4A;}
 .i-ic.big.ok{background:var(--ink);color:#fff;}
+
+/* ================================================================
+   ★ カードの下地は、どこもグレーでそろえます
+
+   見分けるのは、面の色ではなく「絵の色」です。
+
+   ・対応が必要　　… 絵は黒　（いま手を動かすところ。いちばん強く）
+   ・返事を待っている… 絵は白　（待つだけ。いちばん静かに）
+   ・完了した件　　… 絵はグレー（済んだところ。色を抜きます）
+
+   面をそろえておくと、並べたときに画面がうるさくなりません。
+   ================================================================ */
+
+/* 下地は3つとも同じグレー */
+#list-act .item,
+#list-wait .item,
+#list-done .item{background:#EAEAEE;}
+#list-act .i-tile,
+#list-wait .i-tile,
+#list-done .i-tile{background:linear-gradient(155deg,#F7F7F9 0%,#EFEFF2 100%);}
+
+/* 対応が必要 ── 絵は黒 */
+#list-act .i-ic.big{background:var(--ink);color:#fff;}
+#list-act .i-tag{background:#FBE7E3;color:#8E2A20;}
+#list-act .i-tag.hot{background:var(--ng);color:#fff;}
+
+/* 返事を待っている ── 絵は白 */
+#list-wait .i-ic.big{background:#fff;color:var(--ink);}
+#list-wait .i-tag{background:#E6EDFB;color:#254F99;}
+#list-wait .i-tag.ng{background:#FBE7E3;color:#8E2A20;}
+#list-wait .i-tag.hot{background:#2C5FB8;color:#fff;}
+
+/* 完了した件 ── 絵はグレー */
+#list-done .i-ic.big{background:#B0B0B6;color:#fff;}
+#list-done .i-tag{background:#E4F0E8;color:#215C37;}
+/* 「返事なし」だけは、これまでどおり黄色にします（見分けたいところなので） */
+#list-done .i-tag.wn{background:#FFF4E2;color:#9A6212;}
+/* まとめ（フォルダ）の絵は、白のままにします */
+#list-done .i-ic.big.fd{background:#fff;color:var(--ink2);}
+
+/* ★ 完了のカードには、うすい赤文字で completion と大きく入れます。
+     文字は、絵のいちばん上に重ねます。うしろに回すと読めなくなるためです。 */
+#list-done .i-tile::after{content:'completion';position:absolute;inset:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:34px;font-weight:800;letter-spacing:0;white-space:nowrap;
+  color:rgba(199,54,42,.62);pointer-events:none;z-index:2;}
+.i-tile .i-ic{position:relative;z-index:1;}
+
+/* 「仲介から返事」だけは、どの項目でも黒い絵にします */
+#list-act .item.hi .i-ic.big{background:var(--ink);color:#fff;}
 
 /* 絵の下の言葉 */
 .item .i-tx{min-width:0;}
@@ -751,8 +891,13 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
 <header>
   <b class="logo">check<svg class="ic" viewBox="0 0 100 100" fill="currentColor" aria-hidden="true"><circle cx="34" cy="30" r="16"/><path d="M34 51C18 51 8 66 6 88h40c0-4 .6-8 1.8-11.5l9.4 4.4c1.6.8 3.5 0 4.2-1.6.8-1.6 0-3.5-1.6-4.2l-9.6-4.5C54 60 45 51 34 51Z"/><path d="M58.5 63.5 85 53.5 94 76 67.5 86Z" fill="none" stroke="currentColor" stroke-width="6.5" stroke-linejoin="round"/><path fill-rule="evenodd" d="M79 6a21 21 0 1 0 0 42 21 21 0 0 0 0-42ZM76.2 36.4 66 26.2l4.6-4.6 5.6 5.6 12-12 4.6 4.6Z"/></svg></b>
   <span class="hsub">管理</span>
-  <button id="tab-new">新規</button>
-  <button id="tab-list">一覧</button>
+  <span id="sync" class="sync hide">確認中…</span>
+  <button type="button" class="ic-b" id="reload" title="最新にする" aria-label="最新にする">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 4.2V10h-5.8"/></svg></button>
+  <!-- いま操作している人。押すと変えられます -->
+  <button type="button" class="who-b" id="who-b" title="操作する人を変える"></button>
 </header>
 
 <main>
@@ -779,10 +924,68 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
     </div>
   </section>
 
-  <!-- 新規作成 -->
-  <section id="s-new" class="hide">
+  <!-- 一覧 -->
+  <section id="s-list" class="hide">
+    <!-- ★ 左のならび。押すと、その場所まで動きます -->
+    <aside id="side">
+      <div class="sd-find">
+        <input type="text" id="q" placeholder="物件名・お名前で探す">
+      </div>
+      <nav class="sd-nav" id="tabs3">
+        <div class="sd-h">いま、やること</div>
+        <button type="button" class="sd-i" data-t="act">対応が必要 <i>0</i></button>
+        <button type="button" class="sd-i" data-t="wait">返事を待っている <i>0</i></button>
+        <div class="sd-h">これまで</div>
+        <button type="button" class="sd-i" data-t="done">完了した件 <i>0</i></button>
+        <div class="sd-h">つくる</div>
+        <button type="button" class="sd-i" data-t="new">新しい依頼</button>
+        <button type="button" class="sd-h sd-fb" id="sd-fb">しぼる</button>
+      </nav>
+      <div class="sd-f" id="sd-f">
+        <select id="f-fy" aria-label="年度"></select>
+        <select id="f-mo" aria-label="月"></select>
+        <select id="f-far" aria-label="エリア"></select>
+      </div>
+      <div class="sd-foot">IREライフ株式会社</div>
+    </aside>
+
+    <!-- ★ 右は1本の縦スクロール。タブはありません -->
+    <div id="doc">
+      <div id="flash" class="flash hide"></div>
+
+      <h1 class="doc-h1">入居時チェック</h1>
+      <p class="doc-lead">
+        お部屋の確認と、ご契約時のご説明の確認を、1か所でまとめて見ます。<br>
+        左のならびを押すと、その場所まで動きます。
+      </p>
+
+      <section class="sec" id="sec-act">
+        <h2 class="sec-h">対応が必要</h2>
+        <p class="sec-lead">入居者様や仲介業者から返事が届いて、こちらの手が要る件です。
+          急ぐものから順に並べています。上から片づけていけば大丈夫です。</p>
+        <div id="list-act" class="listbox"></div>
+      </section>
+
+      <section class="sec" id="sec-wait">
+        <h2 class="sec-h">返事を待っている</h2>
+        <p class="sec-lead">ご案内をお送りして、まだお返事をいただけていない件です。
+          期限を過ぎると、こちらで自動で督促のメールをお送りします。手を動かす必要はありません。</p>
+        <div id="list-wait" class="listbox"></div>
+      </section>
+
+      <section class="sec" id="sec-done">
+        <h2 class="sec-h">完了した件</h2>
+        <p class="sec-lead">手が離れた件です。同じ物件が2件以上あるときは、1枚にまとめています。
+          押すとお部屋ごとに並びます。ご退去の精算でもめたときの、いちばん確かな記録になります。</p>
+        <div id="list-done" class="listbox"></div>
+      </section>
+
+      <section class="sec" id="sec-new">
+        <h2 class="sec-h">新しい依頼をつくる</h2>
+        <p class="sec-lead">入居者様へ、お部屋の確認とご説明の確認をお願いするご案内をお送りします。<br>
+          物件名・号室・お名前・メールの4つが分かれば、あとは空のままでも送れます。</p>
+        <div id="s-new">
     <div class="card">
-      <h2>新しいチェック依頼を作成</h2>
       <div id="dr-bar" class="dr hide"></div>
 
       <div class="cols">
@@ -945,43 +1148,8 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
       </div>
       <div id="made" class="made hide"></div>
     </div>
-  </section>
-
-  <!-- 一覧 -->
-  <section id="s-list" class="hide">
-    <div id="flash" class="flash hide"></div>
-    <!-- 上は1行だけにしています。完了は絵、探すと更新も絵にしました -->
-    <div class="topbar">
-      <div class="tabs3" id="tabs3">
-        <button type="button" data-t="act" class="on">対応が必要 <i>0</i></button>
-        <button type="button" data-t="wait">待ち <i>0</i></button>
-        <button type="button" data-t="done" class="ic" title="完了した件" aria-label="完了した件">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="9"/><path d="m7.8 12.2 2.9 2.9 5.5-6"/></svg><i>0</i></button>
-      </div>
-      <span id="sync" class="sync hide">確認中…</span>
-      <button type="button" class="ic-b" id="btn-find" title="探す" aria-label="探す">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <circle cx="11" cy="11" r="6.6"/><path d="m16 16 4.4 4.4"/></svg></button>
-      <button type="button" class="ic-b" id="reload" title="最新にする" aria-label="最新にする">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 4.2V10h-5.8"/></svg></button>
-      <!-- いま操作している人。押すと変えられます -->
-      <button type="button" class="who-b" id="who-b" title="操作する人を変える"></button>
-    </div>
-    <!-- 探すところ。ふだんは畳んでいます -->
-    <div class="find hide" id="find">
-      <input type="text" id="q" placeholder="物件名・お名前・エリアで探す">
-      <select id="f-fy" aria-label="年度"></select>
-      <select id="f-mo" aria-label="月"></select>
-      <select id="f-far" aria-label="エリア"></select>
-    </div>
-    <div class="listbox">
-      <div id="list"></div>
-    </div>
+        </div>
+      </section>
 
     <!-- いちばん下の街なみ（ただの絵です。押しても何も起きません） -->
     <div class="foot" aria-hidden="true">
@@ -1006,6 +1174,7 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
         <path d="M20 112h520"/>
       </svg>
       <div class="ft">IREライフ株式会社　入居時チェック</div>
+      </div>
     </div>
   </section>
 
@@ -1143,8 +1312,6 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
      ・パスワードが違っていたら、控えは消して入口へ戻します
      ・保存はサーバーが正です。控えは見せるためだけに使います   */
   var CKEY = 'ire_checkin_cache';
-  var LAST_AT = 0;                  /* 最後にサーバーから受け取った時刻 */
-  var FRESH_MS = 60000;             /* これより新しければ、読み直しません */
   /* ★ v2.11）いま画面に出ている一覧が「いつの分か」の目印。
        サーバー側は、書き込みがあるたびにこの数字を進めます。 */
   var REV = '';
@@ -1193,7 +1360,7 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
   }
 
   /* 受け取った一覧を、画面に反映します */
-  function applyList(o, at){
+  function applyList(o){
     _lastAuto = Date.now();     /* 読んだばかりなので、自動の読み直しは1分あけます */
     ROWS = o.rows || [];
     if(o.areas && o.areas.length) AREAS = o.areas;
@@ -1206,7 +1373,6 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
        画面が出てから知らせたいので、ひと呼吸おきます。 */
     setTimeout(mailPaint, 0);
     buildPeriod(); buildArea(); drawAll();
-    LAST_AT = at || Date.now();
   }
 
   /* ---- パスワード（ログイン） ----
@@ -1227,7 +1393,7 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
     var saved = ''; try{ saved = localStorage.getItem('ire_checkin_key') || ''; }catch(e){}
     var c = (KEY === saved) ? cacheLoad() : null;
     if(c){
-      applyList(c, c.at);
+      applyList(c);
       $('#s-key').classList.add('hide');
       show('list');
       syncing(true);
@@ -1240,7 +1406,7 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
       if(!res.ok){
         /* パスワードが通らなかったら、控えも消して入口へ戻します */
         cacheClear();
-        $('#s-list').classList.add('hide'); $('#s-new').classList.add('hide');
+        $('#s-list').classList.add('hide');
         $('#s-key').classList.remove('hide');
         $('#key-err').textContent = res.err || '開けませんでした。';
         return;
@@ -1285,26 +1451,60 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
     _flashT = setTimeout(function(){ el.classList.add('hide'); el.innerHTML = ''; }, 12000);
   }
 
-  function show(which){
-    $('#s-new').classList.toggle('hide', which !== 'new');
-    $('#s-list').classList.toggle('hide', which !== 'list');
-    /* ★ v2.11）一覧を見ているあいだだけ、軽く聞き続けます */
-    if(which === 'list') pingStart(); else pingStop();
-    window.scrollTo(0,0);
+  /* ================================================================
+     ★ タブをやめて、1本の縦スクロールにしました
+
+     これまでは「対応が必要」「待ち」「完了」を切り替えていました。
+     切り替えると、ほかに何が残っているかが見えなくなります。
+     いまは、ぜんぶ1つのページに縦に並んでいます。
+     左のならびは、そこへ動くための目次です。
+     ================================================================ */
+  var SECS = ['act', 'wait', 'done', 'new'];
+  var NOW  = 'act';                 /* いま見ているところ */
+
+  function secEl(k){ return $('#sec-' + k); }
+
+  /* 左のならびを押したとき。その見出しまで、すべって動きます */
+  function goSec(k, jump){
+    var el = secEl(k);
+    if(!el) return;
+    NOW = k;
+    markSide();
+    try{ el.scrollIntoView({ behavior: (jump ? 'auto' : 'smooth'), block:'start' }); }
+    catch(e){ el.scrollIntoView(); }
+    if(k === 'new') draftBar();     /* 下書きが残っていれば、上でお知らせします */
+    if(k === 'done') setTimeout(dropCheck, 400);
   }
-  $('#tab-new').addEventListener('click', function(){
-    if(!KEY) return;
-    $('#flash').classList.add('hide'); $('#flash').innerHTML = '';
-    show('new');
-    draftBar();          /* 下書きが残っていれば、上でお知らせします */
-  });
-  $('#tab-list').addEventListener('click', function(){
-    if(!KEY) return;
-    show('list');
-    /* さっき読んだばかりなら、読み直しません（そのぶん速くなります）。
-       いつでも「更新」を押せば取り直せます。 */
-    if(Date.now() - LAST_AT > FRESH_MS) reload(true);
-  });
+  function markSide(){
+    $$('#tabs3 .sd-i').forEach(function(b){
+      b.classList.toggle('on', b.getAttribute('data-t') === NOW);
+    });
+  }
+
+  /* いま画面に出ている見出しを、左のならびで光らせます */
+  function watchSecs(){
+    if(!('IntersectionObserver' in window)) return;
+    var io = new IntersectionObserver(function(list){
+      var best = null;
+      list.forEach(function(x){
+        if(!x.isIntersecting) return;
+        if(!best || x.boundingClientRect.top < best.boundingClientRect.top) best = x;
+      });
+      if(!best) return;
+      var k = String(best.target.id || '').replace('sec-', '');
+      if(k && k !== NOW){ NOW = k; markSide(); }
+    }, { rootMargin: '-64px 0px -70% 0px', threshold: 0 });
+    SECS.forEach(function(k){ var e = secEl(k); if(e) io.observe(e); });
+  }
+
+  var _watched = false;
+  function show(which){
+    $('#s-list').classList.remove('hide');
+    pingStart();
+    if(!_watched){ _watched = true; setTimeout(watchSecs, 0); }
+    if(which === 'new') goSec('new');
+    else if(which === 'list'){ NOW = 'act'; markSide(); window.scrollTo(0, 0); }
+  }
 
   /* ---- 特約の一覧（タイトルを押すと文面が開きます。読むだけです） ----
 
@@ -1762,12 +1962,10 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
       planReset();
       $('#made').classList.add('hide'); $('#made').innerHTML = '';
 
-      /* つくったら、そのまま一覧へ戻ります。
-         いま作ったものは「未返信」に入るので、そのタブを開いておきます。 */
-      TAB = 'wait';
+      /* つくったら、その件が入る「返事を待っている」まで動きます */
       FILT = '';
-      show('list');
       reload(true);
+      goSec('wait');
       if(res.mailLeft !== undefined){ MAIL_LEFT = Number(res.mailLeft); mailPaint(); }
       if(res.mailWarn){
         /* ★ v2.13）依頼はできたけれど、メールだけ送れなかったとき。
@@ -1789,7 +1987,8 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
   /* ---- 一覧 ---- */
   var FILT = '';   /* 押している札。'' のときは、すべて出します */
 
-  var TAB = 'act';         /* 対応が必要／待ち／完了 */
+  /* 昔の呼び出しが残っていても動くように、名前だけ置いておきます */
+  var TAB = 'act';
   var AREAS = [];
   var RM_MAX = 0, RM_EVERY = 0;   /* 自動督促の 上限回数／何日おき（サーバーの設定） */
   /* ★ v2.13）きょう、あと何通メールを送れるか。
@@ -1852,6 +2051,11 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
     if($('#agbox').classList.contains('on')) return false;    /* 仲介への下書き中です */
     if($('#zoom').classList.contains('on')) return false;     /* 写真を見ています */
     if($('#drop').classList.contains('on')) return false;     /* 消すかどうかを、おうかがい中です */
+    /* ★ 新しい依頼を書いている最中は、読み直しません。
+         下の一覧の高さが変わって、画面がずれてしまうためです。 */
+    var ae = document.activeElement;
+    if(ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName) &&
+       ae.closest && ae.closest('#sec-new')) return false;
     return true;
   }
 
@@ -1916,12 +2120,10 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
            中身の箱を開いているとき／仲介への下書きを書いているとき／新規作成の画面 */
   var _lastAuto = 0;
   function autoFresh(){
-    if(!KEY) return;                                          /* まだログインしていません */
-    if(document.visibilityState !== 'visible') return;
-    if($('#s-list').classList.contains('hide')) return;        /* 一覧の画面ではありません */
-    if($('#detail').classList.contains('on')) return;          /* 中身を開いています */
-    if($('#agbox').classList.contains('on')) return;           /* 仲介への下書き中です */
-    if($('#drop').classList.contains('on')) return;            /* 消すかどうかを、おうかがい中です */
+    /* 読みに行ってよいかどうかの見分けは、canFresh() にまとめています。
+       （ログイン前・見ていないとき・中身や下書きを開いているとき・
+         新しい依頼を書いている最中は、読みに行きません） */
+    if(!canFresh()) return;
     var now = Date.now();
     if(now - _lastAuto < 60000) return;                        /* 1分に1回まで */
     reload(true);                                              /* 幕は出さず、裏で読みます */
@@ -1942,19 +2144,9 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
        ・虫めがねを押すと開きます
        ・完了を押したときも開きます（過去の件は、探して見つけるものだからです）
        ・閉じると、書いた言葉としぼり込みは元に戻します                     */
-  function findOpen(on){
-    $('#find').classList.toggle('hide', !on);
-    $('#btn-find').classList.toggle('on', !!on);
-    if(on){ setTimeout(function(){ try{ $('#q').focus(); }catch(e){} }, 30); return; }
-    var again = false;
-    if($('#q').value){ $('#q').value = ''; again = true; }
-    if($('#f-mo').value){ $('#f-mo').value = ''; again = true; }
-    if($('#f-far').value){ $('#f-far').value = ''; again = true; }
-    if($('#f-fy').value){ $('#f-fy').value = ''; reload(); return; }
-    if(again) drawAll();
-  }
-  function findIsOpen(){ return !$('#find').classList.contains('hide'); }
-  $('#btn-find').addEventListener('click', function(){ findOpen(!findIsOpen()); });
+  /* 探す欄は、左のならびにいつも出ています。畳む必要はなくなりました */
+  function findOpen(on){ if(on){ try{ $('#q').focus(); }catch(e){} } }
+  function findIsOpen(){ return true; }
 
   function drawTabs(){
     var rows = ROWS.filter(inPeriod);
@@ -1966,24 +2158,42 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
       else if(needAct(r)) n.act++;
       else                n.wait++;
     });
-    $$('#tabs3 button').forEach(function(b){
+    $$('#tabs3 .sd-i').forEach(function(b){
       var k = b.getAttribute('data-t');
-      b.classList.toggle('on', TAB === k);
       var i = b.querySelector('i');
+      if(!i) return;
       i.textContent = n[k];
       i.classList.toggle('hot', k === 'act' && n.act > 0);   /* 0件でなければ黄色 */
     });
+    markSide();
   }
-  $$('#tabs3 button').forEach(function(b){
+  /* せまい画面のとき、「しぼる」を押すと 年度・月・エリア が出ます。
+     広い画面では、いつも出ています。 */
+  (function(){
+    var f = $('#sd-f'), b = $('#sd-fb');
+    if(!f || !b) return;
+    function narrow(){ return window.innerWidth <= 860; }
+    function apply(){
+      if(!narrow()){ f.classList.remove('hide'); b.classList.remove('on'); return; }
+      f.classList.add('hide'); b.classList.remove('on');
+    }
     b.addEventListener('click', function(){
-      TAB = b.getAttribute('data-t');
-      FILT = '';                    /* タブを変えたら、数字の絞り込みは外します */
+      if(!narrow()) return;
+      var on = f.classList.toggle('hide');
+      b.classList.toggle('on', !on);
+    });
+    window.addEventListener('resize', apply);
+    apply();
+  })();
+
+  $$('#tabs3 .sd-i').forEach(function(b){
+    b.addEventListener('click', function(){
+      var k = b.getAttribute('data-t');
+      if(!KEY) return;
+      FILT = '';                    /* 数字の絞り込みは外します */
       FOLD = '';                    /* まとめも閉じます */
-      /* 完了は、過去の件を「探して見つける」ところなので、探す欄も一緒に開きます */
-      if(TAB === 'done' && !findIsOpen()) findOpen(true);
       drawAll();
-      /* ★ v2.12）重なっているお部屋があれば、ここでおうかがいします */
-      if(TAB === 'done') setTimeout(dropCheck, 250);
+      goSec(k);
     });
   });
   $('#f-far').addEventListener('change', drawAll);
@@ -2050,13 +2260,15 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
   function needAct(r){
     return String(r.status||'') === '返信済' && !agWait(r);
   }
-  function inTab(r){
+  function inSec(r, k){
     var st = String(r.status||'');
     if(st === '取消') return false;
-    if(TAB === 'done') return st === '完了';
-    if(TAB === 'act')  return needAct(r);
+    if(k === 'done') return st === '完了';
+    if(k === 'act')  return needAct(r);
     return st !== '完了' && !needAct(r);      /* 待ち */
   }
+  /* 昔の呼び出しが残っていても動くように、受けておきます */
+  function inTab(r){ return inSec(r, NOW); }
 
   function matchFilt(r){
     if(!FILT) return true;
@@ -2172,14 +2384,14 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
 
   /* 1件もないときに出す絵と言葉（タブごとに変えます） */
   var BLANK = {
-    act  : ['check', '対応が必要な件は、ありません。', '入居者や仲介業者から返信が届くと、ここに表示されます。'],
-    wait : ['mail',  '待っている件は、ありません。',   '新しくご案内を送信すると、ここに表示されます。'],
-    done : ['check', '完了した件は、まだありません。', '対応済みの件が、ここに蓄積されます。']
+    act  : ['check', '対応が必要な件は、ありません。', '入居者様や仲介業者から返事が届くと、ここに出ます。'],
+    wait : ['mail',  '待っている件は、ありません。',   '新しく依頼をつくると、ここに出ます。'],
+    done : ['check', '完了した件は、まだありません。', '手が離れた件が、ここにたまっていきます。']
   };
-  function blankHtml(searching){
+  function blankHtml(searching, k){
     var b = searching
       ? ['doc', '見つかりませんでした。', '別の言葉でお探しください。']
-      : (BLANK[TAB] || ['doc', 'ありません。', '']);
+      : (BLANK[k || NOW] || ['doc', 'ありません。', '']);
     return '<div class="blank"><div class="ring">' + svg(b[0]) + '</div>' +
            '<b>' + b[1] + '</b>' + (b[2] ? ('<span>' + b[2] + '</span>') : '') + '</div>';
   }
@@ -2405,18 +2617,34 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
     }).join('') + '</div>';
   }
 
+  /* 3つの場所を、それぞれ描きます。タブではないので、いつも全部描きます */
   function drawList(){
+    var seen = { act:false, wait:false, done:false };
+    ['act', 'wait', 'done'].forEach(function(k){ seen[k] = drawSec(k); });
+
+    /* えらんでいた1件が、どこにも無くなっていたら、浮かんでいる箱は閉じます */
+    if(SEL && !document.querySelector('#doc .item[data-id="' + SEL + '"]')){
+      SEL = ''; detailOpen(false);
+    }
+    markSel();
+    if(FOLD || SEL) paint();
+  }
+
+  function drawSec(k){
+    var box = $('#list-' + k);
+    if(!box) return false;
     var q = $('#q').value.trim();
     var rows = ROWS.filter(function(r){
       if(!inPeriod(r)) return false;
-      if(!inTab(r)) return false;
+      if(!inSec(r, k)) return false;
       if(!matchFilt(r)) return false;
       if(!q) return true;
       return (r.bldg + r.room + r.name + (r.area||'') + (r.agentCo||'')).indexOf(q) >= 0;
     });
+
     /* 「対応が必要」の中は、急ぐ順に並べます。
        仲介から返事あり → 仲介へ連絡 → お部屋の報告 → そのほか */
-    if(TAB === 'act'){
+    if(k === 'act'){
       var rank = function(r){
         if(r.agentRe) return 0;
         if(Number(r.noCheck||0) > 0) return 1;
@@ -2427,55 +2655,23 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
     }
 
     if(!rows.length){
-      $('#list').innerHTML = blankHtml(!!q || FILT !== '');
-      if(SEL){ SEL = ''; detailOpen(false); }
-      if(FOLD){ FOLD = ''; detailOpen(false); }
-      return;
+      box.innerHTML = blankHtml(!!q || FILT !== '', k);
+      if(k === 'done' && FOLD){ FOLD = ''; detailOpen(false); }
+      return false;
     }
 
-    /* ★ v2.12）完了タブは、同じ物件をひとまとめにします。
+    /* ★ v2.12）完了は、同じ物件をひとまとめにします。
          探しているときは、まとめずに1件ずつ出します。 */
-    if(TAB === 'done' && !q && FILT === ''){
-      $('#list').innerHTML = foldRows(rows).map(cardOf).join('');
+    if(k === 'done' && !q && FILT === ''){
+      box.innerHTML = foldRows(rows).map(cardOf).join('');
       var still = FOLD && rows.some(function(x){ return bKey(x) === FOLD; });
       if(FOLD && !still){ FOLD = ''; SEL = ''; detailOpen(false); }
-      markSel();
-      if(FOLD || SEL) paint();
-      return;
+      return true;
     }
-    if(FOLD){ FOLD = ''; }
+    if(k === 'done' && FOLD){ FOLD = ''; }
 
-    $('#list').innerHTML = rows.map(function(r){
-      var t   = stTag(r);
-      var stl = stLine(r);
-      var nm  = String(r.bldg||'') + ' ' + String(r.room||'') +
-                (r.name ? ('（' + r.name + ' 様）') : '');
-      var sub = [];
-      if(r.name)  sub.push(String(r.name) + ' 様');
-      if(r.area)  sub.push(String(r.area));
-      /* 仲介から返事が届いたものだけ、絵を動かします */
-      var hi = (String(r.status||'') === '返信済' && !!r.agentRe);
-      return '<div class="item' + (needAct(r) ? '' : ' gray') +
-        (hi ? ' hi' : '') + (r.id === SEL ? ' on' : '') +
-        '" data-id="' + esc(r.id) + '" data-nm="' + esc(nm) + '">' +
-        '<div class="i-tile">' +
-          '<button class="i-x act-del" title="この件を一覧から消す" ' +
-                  'aria-label="この件を一覧から消す">✕</button>' +
-          '<span class="i-ic big ' + t[1] + '">' + svg(t[0]) + '</span>' +
-        '</div>' +
-        '<div class="i-tx"><b>' + esc(r.bldg) + '　' + esc(r.room) + '</b>' +
-          '<span class="i-sub">' + esc(sub.join(' ／ ')) + '</span>' +
-          '<span class="i-tag ' + t[3] + '">' + esc(t[2]) + '</span>' +
-          (stl[1] ? ('<p class="i-desc">' + esc(stl[1]) + '</p>') : '') +
-        '</div>' +
-      '</div>';
-    }).join('');
-
-    /* えらんでいた1件が、いまのタブから外れていたら、浮かんでいる箱は閉じます */
-    var here = rows.some(function(x){ return x.id === SEL; });
-    if(!here && SEL){ SEL = ''; detailOpen(false); }
-    markSel();
-    if(SEL) paint();
+    box.innerHTML = rows.map(itemHtml).join('');
+    return true;
   }
 
   /* まとめの1枚。1件だけの物件は、これまでどおりのカードにします */
@@ -2675,7 +2871,7 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
   }
 
   function markSel(){
-    $$('#list .item').forEach(function(el){
+    $$('#doc .item').forEach(function(el){
       var f = el.getAttribute('data-fold');
       el.classList.toggle('on', f ? (f === FOLD) : (el.getAttribute('data-id') === SEL));
     });
@@ -2978,8 +3174,10 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
 
   /* ---- 押されたときの動き（カードでも右がわでも、同じように働きます）---- */
   function actDone(id, undo){
-    if(!confirm(undo ? '完了を取り消しますか？' : 'この件を完了にしますか？\n（完了タブへ移ります）')) return;
+    if(!confirm(undo ? '完了を取り消しますか？' : 'この件を完了にしますか？\n（「完了した件」へ移ります）')) return;
     /* 押した瞬間に動かします。送信は裏で行います */
+    /* 別の場所へ移るので、浮かんでいる箱は閉じます */
+    if(SEL === id){ SEL = ''; detailOpen(false); }
     var undoDraw = patchRow(id, undo ? { status:'返信済', doneAt:'' }
                                      : { status:'完了',   doneAt:nowJp() });
     syncing(true);
@@ -3104,9 +3302,9 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
     next(0);
   }
 
-  /* 完了タブを開いたら、重なっているお部屋がないか見ます */
+  /* 完了のところへ来たら、重なっているお部屋がないか見ます */
   function dropCheck(){
-    if(TAB !== 'done') return;
+    if(NOW !== 'done') return;
     if($('#detail').classList.contains('on')) return;
     if($('#drop').classList.contains('on')) return;
     var rows = ROWS.filter(function(r){
@@ -3158,7 +3356,7 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
     var fr = t.closest('.fd-row');
     if(fr){ selectRow(fr.getAttribute('data-id'), true); return; }
     /* 左のカードを押したら、その1件をひらきます */
-    var it = t.closest('#list .item');
+    var it = t.closest('#doc .item');
     if(!it) return;
     var fk = it.getAttribute('data-fold');
     if(fk){ selectFold(fk); return; }        /* まとめの1枚 */
