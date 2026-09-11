@@ -95,7 +95,6 @@ main{max-width:none;margin:0;padding:0;}
 .sd-foot{padding:26px 10px 0;font-size:10.5px;color:var(--ink3);}
 
 .doc-h1{font-size:31px;font-weight:700;letter-spacing:-.022em;margin:0;}
-.doc-lead{font-size:14.5px;line-height:1.9;color:var(--ink2);margin:10px 0 0;max-width:640px;}
 .sec{margin-top:44px;scroll-margin-top:66px;}
 .sec-h{font-size:21px;font-weight:700;letter-spacing:-.02em;margin:0 0 7px;}
 .sec-lead{font-size:13.5px;line-height:1.9;color:var(--ink2);margin:0 0 20px;max-width:660px;}
@@ -929,7 +928,7 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
     <!-- ★ 左のならび。押すと、その場所まで動きます -->
     <aside id="side">
       <div class="sd-find">
-        <input type="text" id="q" placeholder="物件名・お名前で探す">
+        <input type="text" id="q" placeholder="物件名で探す">
       </div>
       <nav class="sd-nav" id="tabs3">
         <div class="sd-h">いま、やること</div>
@@ -954,10 +953,6 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
       <div id="flash" class="flash hide"></div>
 
       <h1 class="doc-h1">入居時チェック</h1>
-      <p class="doc-lead">
-        お部屋の確認と、ご契約時のご説明の確認を、1か所でまとめて見ます。<br>
-        左のならびを押すと、その場所まで動きます。
-      </p>
 
       <section class="sec" id="sec-act">
         <h2 class="sec-h">対応が必要</h2>
@@ -2639,7 +2634,8 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
       if(!inSec(r, k)) return false;
       if(!matchFilt(r)) return false;
       if(!q) return true;
-      return (r.bldg + r.room + r.name + (r.area||'') + (r.agentCo||'')).indexOf(q) >= 0;
+      /* 探すのは物件名だけです。お名前やエリアでは探しません */
+      return String(r.bldg || '').indexOf(q) >= 0;
     });
 
     /* 「対応が必要」の中は、急ぐ順に並べます。
