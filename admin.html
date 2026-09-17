@@ -3261,8 +3261,11 @@ body:not(.v-done) #sec-done{ display:none; }
   /* ★★ 完了の記録を、完全に削除します（2026/9/17）
    *
    *  これは「取消」ではありません。表から行ごと消えます。元に戻せません。
-   *  完了の記録は、退去精算でもめたときの証跡です。
-   *  ですので、何が消えるのかを必ず一覧で見せて、2段で確かめます。
+   *
+   *  確認は1回のみです。
+   *  ただし削除の対象は必ず一覧で提示します。
+   *  フォルダの ✕ は中の全件が対象となるため、
+   *  件数が分からないまま実行されるのを避けるためです。
    *
    *    fold … 物件名。その物件の完了記録を、まとめて消します
    *    one  … 1件だけのID
@@ -3286,21 +3289,11 @@ body:not(.v-done) #sec-done{ display:none; }
     });
     if(rows.length > 8) lines.push('・ほか ' + (rows.length - 8) + ' 件');
 
-    if(!confirm('次の ' + rows.length + ' 件を完全に削除します。\n\n' +
+    /* 確認は1回のみ。ただし削除の対象は一覧で提示します。 */
+    if(!confirm(rows.length + ' 件を完全に削除します。\n\n' +
                 lines.join('\n') + '\n\n' +
-                '・表から行ごと消えます。「取消」ではありません。\n' +
-                '・回答の内容・写真も、いっしょに消えます。\n' +
-                '・元に戻せません。\n\n' +
-                '退去精算でもめたときの証跡が、無くなります。')) return;
-
-    /* 2段目。数を打ち込んでいただきます（押しまちがいを防ぐため） */
-    var ans = prompt('本当に削除する場合は、件数「' + rows.length + '」を入力してください。\n' +
-                     '（やめるときは、そのまま「キャンセル」）', '');
-    if(String(ans||'').trim() !== String(rows.length)){
-      if(ans !== null) alert('数が合いませんでした。削除していません。');
-      return;
-    }
-    doDrop(rows);
+                '回答の内容と写真も削除され、元に戻せません。')) return;
+    doDrop(rows, '完了の記録');
   }
 
   function actRemind(id){
@@ -3374,13 +3367,18 @@ body:not(.v-done) #sec-done{ display:none; }
   }
   function dropClose(){ $('#drop').classList.remove('on'); $('#drop').innerHTML = ''; }
 
-  function doDrop(list){
+  /* ★ word … 何を消したのかを、終わったときの知らせに出します。
+       もとは「前の方の記録」の片づけだけで使っていました。
+       完了の記録の完全削除からも呼ぶようになったので、
+       言い換えられるようにしています（既定は、これまでどおり）。 */
+  function doDrop(list, word){
     veil(true);
+    var w = word || '前の方の記録';
     var ids = list.map(function(r){ return r.id; });
     var next = function(i){
       if(i >= ids.length){
         veil(false);
-        flash('前の方の記録を <b>' + ids.length + ' 件</b> 消しました。');
+        flash(w + 'を <b>' + ids.length + ' 件</b> 削除しました。');
         reload(true);
         return;
       }
