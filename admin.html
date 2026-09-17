@@ -785,12 +785,16 @@ body:not(.v-done) #sec-done{ display:none; }
 /* まとめ（フォルダ）の絵は、白のままにします */
 #list-done .i-ic.big.fd{background:#fff;color:var(--ink2);}
 
-/* ★ 完了のカードには、うすい赤文字で completion と大きく入れます。
-     文字は、絵のいちばん上に重ねます。うしろに回すと読めなくなるためです。 */
-#list-done .i-tile::after{content:'completion';position:absolute;inset:0;
-  display:flex;align-items:center;justify-content:center;
-  font-size:34px;font-weight:800;letter-spacing:0;white-space:nowrap;
-  color:rgba(199,54,42,.62);pointer-events:none;z-index:2;}
+/* ★ 「completion」の赤い大文字は、やめました（2026/9/17）
+ *
+ *  完了のカードに、うすい赤文字で completion と重ねていました。
+ *  ところが、フォルダの絵にかぶって、絵も文字も読みにくくなっていました。
+ *
+ *  そもそも、完了は専用の画面に分けたので、
+ *  「ここにあるものは完了です」は、もう見出しで分かります。
+ *  重ねる必要がありません。
+ *
+ *  完了かどうかは、カードの中の緑の札（完了／返事なし）で分かります。 */
 .i-tile .i-ic{position:relative;z-index:1;}
 
 /* 「仲介から返事」だけは、どの項目でも黒い絵にします */
