@@ -858,6 +858,47 @@ body:not(.v-done) #sec-done{ display:none; }
 .item .i-x{top:9px;right:9px;margin-top:0;width:26px;height:26px;font-size:13px;
   opacity:.5;transition:opacity .15s;background:rgba(255,255,255,.8);}
 .item:hover .i-x,.item.on .i-x{opacity:1;}
+
+/* ★★ 指で使う画面では、✕ をいつもはっきり出します（2026/9/17）
+ *
+ *  これまで ✕ は opacity:.5・ほぼ白の丸で、
+ *  「マウスを乗せたときだけ濃くなる」作りでした。
+ *  iPad・スマホには「乗せる」がありません。
+ *  カードの下地もほぼ白なので、白い丸がうすいまま溶けて、
+ *  ✕ があることに気づけませんでした。
+ *
+ *  乗せられない画面では、はじめから濃く出します。
+ *  指で押せるように、当たりも広げます（見た目26px／当たり40px）。 */
+@media (hover:none){
+  .item .i-x{
+    opacity:1;
+    background:#fff;
+    color:var(--ng);
+    box-shadow:0 1px 3px rgba(0,0,0,.16), 0 0 0 1px rgba(199,54,42,.30) inset;
+  }
+  /* 見た目は変えず、押せる範囲だけ広げます（枠の外まで）。
+     position:absolute なので、中の ✕ の並びはずれません。 */
+  .item .i-x::before{
+    content:'';
+    position:absolute;
+    top:-7px; right:-7px; bottom:-7px; left:-7px;
+  }
+}
+
+/* ★★ 完全削除の ✕ は、マウスのある画面でも、いつもはっきり出します。
+ *
+ *  「一覧から消す」（あとで戻せる）と違い、これは元に戻せません。
+ *  うすくして気づきにくくするより、はっきり出して、
+ *  確認で止めるほうが安全です。 */
+.item .i-x.act-purge{
+  opacity:1;
+  background:#fff;
+  color:var(--ng);
+  box-shadow:0 1px 3px rgba(0,0,0,.16), 0 0 0 1px rgba(199,54,42,.30) inset;
+}
+@media (hover:hover){
+  .item .i-x.act-purge:hover{background:var(--ng);color:#fff;}
+}
 .item.gray{background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.04), 0 3px 10px rgba(0,0,0,.035);}
 .item.gray .i-tx b{color:var(--ink2);}
 .item.gray .i-desc{color:var(--ink3);}
@@ -2725,7 +2766,14 @@ body:not(.v-done) #sec-done{ display:none; }
     if(g.rows.length < 2) return itemHtml(g.rows[0]);
 
     var dup = dupsIn(g.rows);
-    var rooms = g.rows.map(function(r){ return String(r.room || ''); });
+    /* ★ 部屋名の前後の空白を落としてから数えます（2026/9/17）
+     *
+     *  改良前）ここだけ trim していませんでした。
+     *    「B101」と「B101 」（うしろに空白）が別の部屋として数えられ、
+     *    画面に「B101、B101」「2 部屋」と出ていました。
+     *    まとめ／重なりの判定（rKey）は trim しているので、食い違います。
+     *  改良後）rKey と同じそろえ方にしました。 */
+    var rooms = g.rows.map(function(r){ return String(r.room || '').trim(); });
     var seen = {}, uniq = [];
     rooms.forEach(function(x){ if(!seen[x]){ seen[x] = 1; uniq.push(x); } });
     var head = uniq.slice(0, 6).join('、') + (uniq.length > 6 ? ' ほか' : '');
