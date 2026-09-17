@@ -2733,6 +2733,13 @@ body:not(.v-done) #sec-done{ display:none; }
     return '<div class="item fold' + (FOLD === g.name ? ' on' : '') +
       '" data-fold="' + esc(g.name) + '" data-nm="' + esc(g.name) + '">' +
       '<div class="i-tile">' +
+        /* ★ 完了の記録だけ、まとめごと完全に削除できるようにします。
+             画面（NOW）ではなく、行の状態で決めます。
+             描いたあとにタブを切り替えても、ずれないためです。 */
+        (g.rows.every(function(x){ return String(x.status||'') === '完了'; })
+          ? ('<button class="i-x act-purge" data-fold="' + esc(g.name) + '" ' +
+             'title="この物件の記録を完全に削除" aria-label="完全に削除">✕</button>')
+          : '') +
         '<span class="i-ic big fd">' + svg('fold') +
           '<i class="i-n">' + g.rows.length + '</i></span>' +
       '</div>' +
@@ -2762,8 +2769,13 @@ body:not(.v-done) #sec-done{ display:none; }
       (hi ? ' hi' : '') + (r.id === SEL ? ' on' : '') +
       '" data-id="' + esc(r.id) + '" data-nm="' + esc(nm) + '">' +
       '<div class="i-tile">' +
-        '<button class="i-x act-del" title="この件を一覧から消す" ' +
-                'aria-label="この件を一覧から消す">✕</button>' +
+        /* ★ 完了の記録は「完全に削除」、それ以外は従来の「一覧から消す」。
+             画面ではなく、行の状態で決めます。 */
+        (String(r.status||'') === '完了'
+          ? ('<button class="i-x act-purge" data-one="' + esc(r.id) + '" ' +
+             'title="この記録を完全に削除" aria-label="完全に削除">✕</button>')
+          : ('<button class="i-x act-del" title="この件を一覧から消す" ' +
+             'aria-label="この件を一覧から消す">✕</button>')) +
         '<span class="i-ic big ' + t[1] + '">' + svg(t[0]) + '</span>' +
       '</div>' +
       '<div class="i-tx"><b>' + esc(r.bldg) + '　' + esc(r.room) + '</b>' +
@@ -3246,6 +3258,51 @@ body:not(.v-done) #sec-done{ display:none; }
       if(!res.ok){ undoDraw(); alert(res.err || '消せませんでした'); }
     }).catch(function(){ syncing(false); undoDraw(); alert('通信できませんでした。'); });
   }
+  /* ★★ 完了の記録を、完全に削除します（2026/9/17）
+   *
+   *  これは「取消」ではありません。表から行ごと消えます。元に戻せません。
+   *  完了の記録は、退去精算でもめたときの証跡です。
+   *  ですので、何が消えるのかを必ず一覧で見せて、2段で確かめます。
+   *
+   *    fold … 物件名。その物件の完了記録を、まとめて消します
+   *    one  … 1件だけのID
+   */
+  function actPurge(fold, one){
+    var rows;
+    if(fold){
+      rows = ROWS.filter(function(r){
+        return String(r.status||'') === '完了' && bKey(r) === fold && inPeriod(r);
+      });
+    }else{
+      rows = ROWS.filter(function(r){ return r.id === one; });
+    }
+    if(!rows.length){ alert('対象が見つかりませんでした。'); return; }
+
+    /* 何が消えるのか、1件ずつ並べます（8件までは全部、それ以上は先頭8件） */
+    var lines = rows.slice(0, 8).map(function(r){
+      return '・' + String(r.bldg||'') + '　' + String(r.room||'') +
+             (r.name ? ('　' + r.name + ' 様') : '') +
+             (r.doneAt ? ('　（完了 ' + String(r.doneAt).slice(0, 10) + '）') : '');
+    });
+    if(rows.length > 8) lines.push('・ほか ' + (rows.length - 8) + ' 件');
+
+    if(!confirm('次の ' + rows.length + ' 件を完全に削除します。\n\n' +
+                lines.join('\n') + '\n\n' +
+                '・表から行ごと消えます。「取消」ではありません。\n' +
+                '・回答の内容・写真も、いっしょに消えます。\n' +
+                '・元に戻せません。\n\n' +
+                '退去精算でもめたときの証跡が、無くなります。')) return;
+
+    /* 2段目。数を打ち込んでいただきます（押しまちがいを防ぐため） */
+    var ans = prompt('本当に削除する場合は、件数「' + rows.length + '」を入力してください。\n' +
+                     '（やめるときは、そのまま「キャンセル」）', '');
+    if(String(ans||'').trim() !== String(rows.length)){
+      if(ans !== null) alert('数が合いませんでした。削除していません。');
+      return;
+    }
+    doDrop(rows);
+  }
+
   function actRemind(id){
     if(!confirm('督促メールを送信しますか？')) return;
     veil(true);
@@ -3374,6 +3431,13 @@ body:not(.v-done) #sec-done{ display:none; }
       }
       if(b.classList.contains('act-drop')){
         ev.stopPropagation(); askDrop('', [b.getAttribute('data-id')]); return;
+      }
+      /* ★ 完了の記録を、完全に削除します（フォルダごと／1件だけ）
+           data-id を持たないフォルダのカードでも効くよう、ここで受けます */
+      if(b.classList.contains('act-purge')){
+        ev.stopPropagation();
+        actPurge(b.getAttribute('data-fold') || '', b.getAttribute('data-one') || '');
+        return;
       }
       if(b.classList.contains('act-open')){
         ev.stopPropagation(); selectRow(b.getAttribute('data-id'), true); return;
