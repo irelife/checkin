@@ -1289,7 +1289,15 @@ body:not(.v-done) #sec-done{ display:none; }
   function $$(s){ return Array.prototype.slice.call(document.querySelectorAll(s)); }
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){
     return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
-  function veil(on){ $('#veil').classList.toggle('on', !!on); }
+  /* ★ 待ちの幕。文言を渡すと、そこに出します（2026/9/17）
+   *  渡さないときは「読み込んでいます…」に戻します。
+   *  長くかかる操作で「止まった」と思わせないためです。 */
+  var VEIL_DEF = '読み込んでいます…';
+  function veil(on, text){
+    var el = $('#veil');
+    el.textContent = (on && text) ? text : VEIL_DEF;
+    el.classList.toggle('on', !!on);
+  }
   function post(b){
     /* ★ v2.9）どの操作にも、お名前を添えます。
        1か所で入れておけば、入れ忘れが起きません。 */
@@ -3418,37 +3426,76 @@ body:not(.v-done) #sec-done{ display:none; }
   /* ★ word … 何を消したのかを、終わったときの知らせに出します。
        もとは「前の方の記録」の片づけだけで使っていました。
        完了の記録の完全削除からも呼ぶようになったので、
-       言い換えられるようにしています（既定は、これまでどおり）。 */
+       言い換えられるようにしています（既定は、これまでどおり）。
+
+     ★ 2026/9/17）遅さの手当て
+       1件ずつ順番に送っていたので、件数ぶんだけ待ち時間が足し算になり、
+       そのあいだ「読み込んでいます…」だけが出たままでした。
+       ・まず 'dropMany' で、まとめて1回だけ送ってみます。
+       ・サーバーがまだ古くて受け取れなければ、
+         これまでどおり1件ずつに戻します（動かなくなりません）。
+       ・どちらの道でも、いま何件目かを幕に出します。 */
   function doDrop(list, word){
-    veil(true);
     var w = word || '前の方の記録';
     var ids = list.map(function(r){ return r.id; });
-    var next = function(i){
-      if(i >= ids.length){
-        veil(false);
-        flash(w + 'を <b>' + ids.length + ' 件</b> 削除しました。');
-        reload(true);
+    var n = ids.length;
+
+    function dropWait(k){
+      veil(true, n > 1
+        ? (w + 'を削除しています…（' + n + ' 件のうち ' + k + ' 件目）')
+        : (w + 'を削除しています…'));
+    }
+    /* 画面とこの端末の控えから、消します */
+    function gone(id){
+      ROWS = ROWS.filter(function(x){ return x.id !== id; });
+      delete DC[id];
+    }
+    function done(){
+      veil(false);
+      flash(w + 'を <b>' + n + ' 件</b> 削除しました。');
+      drawAll();
+      reload(true);
+    }
+    function failed(msg){
+      veil(false);
+      drawAll();
+      alert(msg);
+      reload(true);
+    }
+
+    /* ---- ①1回でまとめて ---- */
+    dropWait(1);
+    post({ action:'dropMany', key:KEY, ids:ids }).then(function(d){
+      if(d && d.ok && Number(d.n) === n){
+        ids.forEach(gone);
+        done();
         return;
       }
-      post({ action:'drop', key:KEY, id:ids[i] }).then(function(d){
+      /* 一部だけ消えていたら、消えた分は画面からも消してから、残りを1件ずつ */
+      var left = ids;
+      if(d && d.ok && d.done && d.done.length){
+        d.done.forEach(gone);
+        left = ids.filter(function(x){ return d.done.indexOf(x) < 0; });
+      }
+      one(left, 0);
+    }).catch(function(){ one(ids, 0); });
+
+    /* ---- ②1件ずつ（サーバーが古いとき・まとめが通らなかったとき） ---- */
+    function one(left, i){
+      if(i >= left.length){ done(); return; }
+      dropWait(n - left.length + i + 1);
+      post({ action:'drop', key:KEY, id:left[i] }).then(function(d){
         if(!d || !d.ok){
-          veil(false);
-          alert((d && d.err) || '消せませんでした。もう一度お試しください。');
-          reload(true);
+          failed((d && d.err) || '消せませんでした。もう一度お試しください。');
           return;
         }
-        /* 画面からも、すぐ消します */
-        ROWS = ROWS.filter(function(x){ return x.id !== ids[i]; });
-        delete DC[ids[i]];
+        gone(left[i]);
         drawAll();
-        next(i + 1);
+        one(left, i + 1);
       }).catch(function(){
-        veil(false);
-        alert('通信できませんでした。もう一度お試しください。');
-        reload(true);
+        failed('通信できませんでした。もう一度お試しください。');
       });
-    };
-    next(0);
+    }
   }
 
   /* 完了のところへ来たら、重なっているお部屋がないか見ます */
