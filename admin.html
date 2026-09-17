@@ -166,6 +166,20 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
 /* ---- このタブの説明 ---- */
 .tabnote{font-size:13.5px;color:var(--ink3);line-height:1.7;margin:2px 0 16px 4px;}
 
+/* ★ 完了は、別の画面にします（2026/9/17）
+     ふだんの画面（対応が必要・返事を待っている）に完了カードが
+     積み上がっていくと、日に日に下へ長くなります。
+     完了は「ときどき探しに行く記録」なので、分けます。 */
+body.v-done #sec-act,
+body.v-done #sec-wait,
+body.v-done #sec-new,
+body.v-done .doc-h1{ display:none; }
+body:not(.v-done) #sec-done{ display:none; }
+.done-back{ float:right;font:inherit;font-size:13px;font-weight:600;
+  padding:7px 14px;border-radius:9px;border:1px solid var(--line,#ddd);
+  background:#fff;color:var(--ink2,#555);cursor:pointer; }
+.done-back:hover{ background:#f5f5f5; }
+
 /* ---- 絞り込みの札 ---- */
 .stats{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:18px;}
 .stats .lab{font-size:12.5px;font-weight:500;color:var(--ink3);margin-right:2px;}
@@ -969,9 +983,12 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
       </section>
 
       <section class="sec" id="sec-done">
-        <h2 class="sec-h">完了した件</h2>
-        <p class="sec-lead">手が離れた件です。同じ物件が2件以上あるときは、1枚にまとめています。
-          押すとお部屋ごとに並びます。ご退去の精算でもめたときの、いちばん確かな記録になります。</p>
+        <h2 class="sec-h">完了した件
+          <button type="button" id="done-back" class="done-back">← 戻る</button>
+        </h2>
+        <p class="sec-lead">手が離れた件です。<b>ふだんの画面には出しません。</b>ここだけに入っていきます。<br>
+          同じ物件が2件以上あるときは、1枚にまとめています。押すとお部屋ごとに並びます。
+          ご退去の精算でもめたときの、いちばん確かな記録になります。</p>
         <div id="list-done" class="listbox"></div>
       </section>
 
@@ -1460,16 +1477,50 @@ input:focus,textarea:focus,select:focus{outline:none;background:#fff;
   function secEl(k){ return $('#sec-' + k); }
 
   /* 左のならびを押したとき。その見出しまで、すべって動きます */
+  /* ★ 完了は、別の画面にします（2026/9/17）
+   *
+   *  これまで、右側は1本の縦スクロールでした。
+   *  「対応が必要」「返事を待っている」の下に「完了した件」が続きます。
+   *
+   *  完了は減りません。積み上がる一方です。
+   *  日がたつほど、ふだんの画面が下へ長くなっていきます。
+   *
+   *  完了は「ときどき探しに行く記録」で、毎日見るものではありません。
+   *  別の画面に分けます。ふだんの画面には出しません。
+   *
+   *  ★ 消すのではありません。左の「完了した件」から、いつでも見られます。
+   *    年度・月・エリアでのしぼり込みも、探す欄も、そのまま使えます。 */
+  function setView(k){
+    var done = (k === 'done');
+    try{ document.body.classList.toggle('v-done', done); }catch(e){}
+    return done;
+  }
+
   function goSec(k, jump){
+    var wasDone = false;
+    try{ wasDone = document.body.classList.contains('v-done'); }catch(e){}
+    var isDone = setView(k);
     var el = secEl(k);
     if(!el) return;
     NOW = k;
     markSide();
-    try{ el.scrollIntoView({ behavior: (jump ? 'auto' : 'smooth'), block:'start' }); }
-    catch(e){ el.scrollIntoView(); }
+    /* 画面が入れ替わったときは、いちばん上から見せます（途中から始まると迷うため） */
+    if(wasDone !== isDone){
+      try{ window.scrollTo({ top:0, behavior:'auto' }); }catch(e){ window.scrollTo(0, 0); }
+    }
+    if(!isDone){
+      try{ el.scrollIntoView({ behavior: (jump ? 'auto' : 'smooth'), block:'start' }); }
+      catch(e){ el.scrollIntoView(); }
+    }
     if(k === 'new') draftBar();     /* 下書きが残っていれば、上でお知らせします */
     if(k === 'done') setTimeout(dropCheck, 400);
   }
+
+  /* 完了の画面から、ふだんの画面へ戻ります */
+  (function(){
+    var b = document.getElementById('done-back');
+    if(b) b.addEventListener('click', function(){ goSec('act'); });
+  })();
   function markSide(){
     $$('#tabs3 .sd-i').forEach(function(b){
       b.classList.toggle('on', b.getAttribute('data-t') === NOW);
