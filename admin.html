@@ -858,6 +858,47 @@ body:not(.v-done) #sec-done{ display:none; }
 .item .i-x{top:9px;right:9px;margin-top:0;width:26px;height:26px;font-size:13px;
   opacity:.5;transition:opacity .15s;background:rgba(255,255,255,.8);}
 .item:hover .i-x,.item.on .i-x{opacity:1;}
+
+/* ★★ 指で使う画面では、✕ をいつもはっきり出します（2026/9/17）
+ *
+ *  これまで ✕ は opacity:.5・ほぼ白の丸で、
+ *  「マウスを乗せたときだけ濃くなる」作りでした。
+ *  iPad・スマホには「乗せる」がありません。
+ *  カードの下地もほぼ白なので、白い丸がうすいまま溶けて、
+ *  ✕ があることに気づけませんでした。
+ *
+ *  乗せられない画面では、はじめから濃く出します。
+ *  指で押せるように、当たりも広げます（見た目26px／当たり40px）。 */
+@media (hover:none){
+  .item .i-x{
+    opacity:1;
+    background:#fff;
+    color:var(--ng);
+    box-shadow:0 1px 3px rgba(0,0,0,.16), 0 0 0 1px rgba(199,54,42,.30) inset;
+  }
+  /* 見た目は変えず、押せる範囲だけ広げます（枠の外まで）。
+     position:absolute なので、中の ✕ の並びはずれません。 */
+  .item .i-x::before{
+    content:'';
+    position:absolute;
+    top:-7px; right:-7px; bottom:-7px; left:-7px;
+  }
+}
+
+/* ★★ 完全削除の ✕ は、マウスのある画面でも、いつもはっきり出します。
+ *
+ *  「一覧から消す」（あとで戻せる）と違い、これは元に戻せません。
+ *  うすくして気づきにくくするより、はっきり出して、
+ *  確認で止めるほうが安全です。 */
+.item .i-x.act-purge{
+  opacity:1;
+  background:#fff;
+  color:var(--ng);
+  box-shadow:0 1px 3px rgba(0,0,0,.16), 0 0 0 1px rgba(199,54,42,.30) inset;
+}
+@media (hover:hover){
+  .item .i-x.act-purge:hover{background:var(--ng);color:#fff;}
+}
 .item.gray{background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.04), 0 3px 10px rgba(0,0,0,.035);}
 .item.gray .i-tx b{color:var(--ink2);}
 .item.gray .i-desc{color:var(--ink3);}
@@ -1248,7 +1289,15 @@ body:not(.v-done) #sec-done{ display:none; }
   function $$(s){ return Array.prototype.slice.call(document.querySelectorAll(s)); }
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){
     return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
-  function veil(on){ $('#veil').classList.toggle('on', !!on); }
+  /* ★ 待ちの幕。文言を渡すと、そこに出します（2026/9/17）
+   *  渡さないときは「読み込んでいます…」に戻します。
+   *  長くかかる操作で「止まった」と思わせないためです。 */
+  var VEIL_DEF = '読み込んでいます…';
+  function veil(on, text){
+    var el = $('#veil');
+    el.textContent = (on && text) ? text : VEIL_DEF;
+    el.classList.toggle('on', !!on);
+  }
   function post(b){
     /* ★ v2.9）どの操作にも、お名前を添えます。
        1か所で入れておけば、入れ忘れが起きません。 */
@@ -1373,7 +1422,8 @@ body:not(.v-done) #sec-done{ display:none; }
   /* 受け取った一覧を、画面に反映します */
   function applyList(o){
     _lastAuto = Date.now();     /* 読んだばかりなので、自動の読み直しは1分あけます */
-    ROWS = o.rows || [];
+    /* ★ 消したことが確かなものは、入れません（戻ってこないように） */
+    ROWS = goneFilter(o.rows);
     if(o.areas && o.areas.length) AREAS = o.areas;
     if(o.remindMax !== undefined){ RM_MAX = Number(o.remindMax)||0;
                                    RM_EVERY = Number(o.remindEvery)||0; }
@@ -2088,8 +2138,36 @@ body:not(.v-done) #sec-done{ display:none; }
     if(_ping){ pingStop(); pingStart(); }
   }
 
+  /* ★★ 送信の最中は、自動の読み直しを止めます（2026/9/17）
+   *
+   *  【これまでの不具合】
+   *  削除は1件ずつサーバーへ送っていました。写真が多いと数分かかります。
+   *  そのあいだ 45秒ごとの「何か変わりましたか」が動きます。
+   *  削除で目印（rev）が進んでいるので「変わった」と判断し、
+   *  reload → applyList で ROWS をサーバーの一覧に入れ替えます。
+   *  サーバーはまだ全部消し終わっていないので、
+   *  消したはずのカードが画面に戻ってきます。
+   *  それを消して、また戻ってきて……で「全然削除されない」になります。
+   *
+   *  送信のあいだは、読み直しに行かないようにします。 */
+  var _busy = 0;
+  function busy(on){ _busy += (on ? 1 : -1); if(_busy < 0) _busy = 0; }
+
+  /* ★★ 消したことが確かなものは、古い一覧で戻ってこないようにします。
+   *  ネットの行き違いで前の一覧が届いても、消えたものは消えたままにします。
+   *  3分たったら忘れます（そのころにはサーバーも消え終わっています）。 */
+  var _gone = {};
+  function goneMark(id){ _gone[id] = Date.now(); }
+  function goneFilter(rows){
+    var t = Date.now();
+    for(var k in _gone){ if(t - _gone[k] > 180000) delete _gone[k]; }
+    return (rows || []).filter(function(r){ return !_gone[r.id]; });
+  }
+
   function canFresh(){
     if(!KEY) return false;                                    /* まだログインしていません */
+    if(_busy > 0) return false;                               /* 送っている最中です */
+    if($('#veil').classList.contains('on')) return false;     /* 幕が出ています */
     if(document.visibilityState !== 'visible') return false;  /* 見ていません */
     if($('#s-list').classList.contains('hide')) return false; /* 一覧の画面ではありません */
     if($('#detail').classList.contains('on')) return false;   /* 中身を開いています */
@@ -2725,7 +2803,14 @@ body:not(.v-done) #sec-done{ display:none; }
     if(g.rows.length < 2) return itemHtml(g.rows[0]);
 
     var dup = dupsIn(g.rows);
-    var rooms = g.rows.map(function(r){ return String(r.room || ''); });
+    /* ★ 部屋名の前後の空白を落としてから数えます（2026/9/17）
+     *
+     *  改良前）ここだけ trim していませんでした。
+     *    「B101」と「B101 」（うしろに空白）が別の部屋として数えられ、
+     *    画面に「B101、B101」「2 部屋」と出ていました。
+     *    まとめ／重なりの判定（rKey）は trim しているので、食い違います。
+     *  改良後）rKey と同じそろえ方にしました。 */
+    var rooms = g.rows.map(function(r){ return String(r.room || '').trim(); });
     var seen = {}, uniq = [];
     rooms.forEach(function(x){ if(!seen[x]){ seen[x] = 1; uniq.push(x); } });
     var head = uniq.slice(0, 6).join('、') + (uniq.length > 6 ? ' ほか' : '');
@@ -3261,8 +3346,9 @@ body:not(.v-done) #sec-done{ display:none; }
   /* ★★ 完了の記録を、完全に削除します（2026/9/17）
    *
    *  これは「取消」ではありません。表から行ごと消えます。元に戻せません。
-   *  完了の記録は、退去精算でもめたときの証跡です。
-   *  ですので、何が消えるのかを必ず一覧で見せて、2段で確かめます。
+   *
+   *  確認は1回のみ。件数の打ち込みはしません。
+   *  押したらすぐ画面から消し、送信は裏で行います（actDel と同じ形）。
    *
    *    fold … 物件名。その物件の完了記録を、まとめて消します
    *    one  … 1件だけのID
@@ -3278,29 +3364,18 @@ body:not(.v-done) #sec-done{ display:none; }
     }
     if(!rows.length){ alert('対象が見つかりませんでした。'); return; }
 
-    /* 何が消えるのか、1件ずつ並べます（8件までは全部、それ以上は先頭8件） */
-    var lines = rows.slice(0, 8).map(function(r){
-      return '・' + String(r.bldg||'') + '　' + String(r.room||'') +
-             (r.name ? ('　' + r.name + ' 様') : '') +
-             (r.doneAt ? ('　（完了 ' + String(r.doneAt).slice(0, 10) + '）') : '');
-    });
-    if(rows.length > 8) lines.push('・ほか ' + (rows.length - 8) + ' 件');
-
-    if(!confirm('次の ' + rows.length + ' 件を完全に削除します。\n\n' +
-                lines.join('\n') + '\n\n' +
-                '・表から行ごと消えます。「取消」ではありません。\n' +
-                '・回答の内容・写真も、いっしょに消えます。\n' +
-                '・元に戻せません。\n\n' +
-                '退去精算でもめたときの証跡が、無くなります。')) return;
-
-    /* 2段目。数を打ち込んでいただきます（押しまちがいを防ぐため） */
-    var ans = prompt('本当に削除する場合は、件数「' + rows.length + '」を入力してください。\n' +
-                     '（やめるときは、そのまま「キャンセル」）', '');
-    if(String(ans||'').trim() !== String(rows.length)){
-      if(ans !== null) alert('数が合いませんでした。削除していません。');
-      return;
+    /* 何を消すのかは、ひと目で分かるだけにします */
+    var what;
+    if(fold){
+      what = fold + ' の完了の記録 ' + rows.length + ' 件';
+    }else{
+      var r0 = rows[0];
+      what = String(r0.bldg||'') + '　' + String(r0.room||'') +
+             (r0.name ? ('（' + r0.name + ' 様）') : '');
     }
-    doDrop(rows);
+    if(!confirm(what + 'を削除してよろしいですか？\n\n' +
+                '回答の内容と写真も削除され、元に戻せません。')) return;
+    doDrop(rows, '完了の記録');
   }
 
   function actRemind(id){
@@ -3374,35 +3449,85 @@ body:not(.v-done) #sec-done{ display:none; }
   }
   function dropClose(){ $('#drop').classList.remove('on'); $('#drop').innerHTML = ''; }
 
-  function doDrop(list){
-    veil(true);
+  /* ★ word … 何を消したのかを、知らせに出します。
+       もとは「前の方の記録」の片づけだけで使っていました。
+       完了の記録の完全削除からも呼ぶので、言い換えられるようにしています。
+
+     ★★ 2026/9/17）お待たせしないようにしました
+
+     【これまで】
+       veil(true) で幕を出し、1件ずつサーバーへ送り、
+       ぜんぶ終わるまで幕を出したままでした。
+       サーバー側は写真1枚ごとにドライブを3回さわるので、
+       写真が多いと数分かかります。
+       そのあいだ画面は「読み込んでいます…」のまま。
+       さらに 45秒ごとの自動の読み直しが、
+       消したはずのカードを画面に戻していました。
+
+     【これから】
+       ・幕は出しません。押したらその場でカードが消えます。
+       ・送信は裏で行います（完了にする・一覧から消す と同じ形）。
+       ・送っているあいだは、自動の読み直しを止めます（busy）。
+       ・消えたものは _gone に覚えて、古い一覧で戻ってこないようにします。
+       ・うまくいかなかったら、サーバーの一覧を読み直して本当の姿に戻し、
+         できなかったことをお知らせします。
+         （消えたものは消えたまま、消えていないものは画面に戻ります） */
+  function doDrop(list, word){
+    var w = word || '前の方の記録';
     var ids = list.map(function(r){ return r.id; });
-    var next = function(i){
-      if(i >= ids.length){
-        veil(false);
-        flash('前の方の記録を <b>' + ids.length + ' 件</b> 消しました。');
-        reload(true);
-        return;
+    var n = ids.length;
+
+    /* ---- その場で、画面から消します ---- */
+    ids.forEach(function(id){
+      if(SEL === id){ SEL = ''; detailOpen(false); }
+      delete DC[id];
+    });
+    ROWS = ROWS.filter(function(x){ return ids.indexOf(x.id) < 0; });
+    drawAll();
+    flash(w + 'を <b>' + n + ' 件</b> 削除しています…');
+
+    /* ---- 送信は裏で ---- */
+    busy(true);
+    syncing(true);
+    var okIds = [];
+
+    function finish(err){
+      busy(false);
+      syncing(false);
+      okIds.forEach(goneMark);       /* 消えたものは、もう戻しません */
+      if(err){
+        alert(err + '\n\n（' + okIds.length + ' 件は削除できました。' +
+              '残りは一覧を読み直します）');
+      }else{
+        flash(w + 'を <b>' + n + ' 件</b> 削除しました。');
       }
-      post({ action:'drop', key:KEY, id:ids[i] }).then(function(d){
+      reload(true);                  /* 本当の姿を、静かに読み直します */
+    }
+
+    /* ①まとめて1回。②だめなら1件ずつ（古いサーバーでも動きます） */
+    post({ action:'dropMany', key:KEY, ids:ids }).then(function(d){
+      if(d && d.ok && Number(d.n) === n){ okIds = ids.slice(); finish(''); return; }
+      var left = ids;
+      if(d && d.ok && d.done && d.done.length){
+        okIds = d.done.slice();
+        left = ids.filter(function(x){ return d.done.indexOf(x) < 0; });
+      }
+      one(left, 0);
+    }).catch(function(){ one(ids, 0); });
+
+    function one(left, i){
+      if(i >= left.length){ finish(''); return; }
+      post({ action:'drop', key:KEY, id:left[i] }).then(function(d){
         if(!d || !d.ok){
-          veil(false);
-          alert((d && d.err) || '消せませんでした。もう一度お試しください。');
-          reload(true);
+          finish((d && d.err) || '消せませんでした。もう一度お試しください。');
           return;
         }
-        /* 画面からも、すぐ消します */
-        ROWS = ROWS.filter(function(x){ return x.id !== ids[i]; });
-        delete DC[ids[i]];
-        drawAll();
-        next(i + 1);
+        okIds.push(left[i]);
+        one(left, i + 1);
       }).catch(function(){
-        veil(false);
-        alert('通信できませんでした。もう一度お試しください。');
-        reload(true);
+        finish('通信できませんでした。もう一度お試しください。');
       });
-    };
-    next(0);
+    }
   }
 
   /* 完了のところへ来たら、重なっているお部屋がないか見ます */
