@@ -1422,7 +1422,8 @@ body:not(.v-done) #sec-done{ display:none; }
   /* 受け取った一覧を、画面に反映します */
   function applyList(o){
     _lastAuto = Date.now();     /* 読んだばかりなので、自動の読み直しは1分あけます */
-    ROWS = o.rows || [];
+    /* ★ 消したことが確かなものは、入れません（戻ってこないように） */
+    ROWS = goneFilter(o.rows);
     if(o.areas && o.areas.length) AREAS = o.areas;
     if(o.remindMax !== undefined){ RM_MAX = Number(o.remindMax)||0;
                                    RM_EVERY = Number(o.remindEvery)||0; }
@@ -2137,8 +2138,36 @@ body:not(.v-done) #sec-done{ display:none; }
     if(_ping){ pingStop(); pingStart(); }
   }
 
+  /* ★★ 送信の最中は、自動の読み直しを止めます（2026/9/17）
+   *
+   *  【これまでの不具合】
+   *  削除は1件ずつサーバーへ送っていました。写真が多いと数分かかります。
+   *  そのあいだ 45秒ごとの「何か変わりましたか」が動きます。
+   *  削除で目印（rev）が進んでいるので「変わった」と判断し、
+   *  reload → applyList で ROWS をサーバーの一覧に入れ替えます。
+   *  サーバーはまだ全部消し終わっていないので、
+   *  消したはずのカードが画面に戻ってきます。
+   *  それを消して、また戻ってきて……で「全然削除されない」になります。
+   *
+   *  送信のあいだは、読み直しに行かないようにします。 */
+  var _busy = 0;
+  function busy(on){ _busy += (on ? 1 : -1); if(_busy < 0) _busy = 0; }
+
+  /* ★★ 消したことが確かなものは、古い一覧で戻ってこないようにします。
+   *  ネットの行き違いで前の一覧が届いても、消えたものは消えたままにします。
+   *  3分たったら忘れます（そのころにはサーバーも消え終わっています）。 */
+  var _gone = {};
+  function goneMark(id){ _gone[id] = Date.now(); }
+  function goneFilter(rows){
+    var t = Date.now();
+    for(var k in _gone){ if(t - _gone[k] > 180000) delete _gone[k]; }
+    return (rows || []).filter(function(r){ return !_gone[r.id]; });
+  }
+
   function canFresh(){
     if(!KEY) return false;                                    /* まだログインしていません */
+    if(_busy > 0) return false;                               /* 送っている最中です */
+    if($('#veil').classList.contains('on')) return false;     /* 幕が出ています */
     if(document.visibilityState !== 'visible') return false;  /* 見ていません */
     if($('#s-list').classList.contains('hide')) return false; /* 一覧の画面ではありません */
     if($('#detail').classList.contains('on')) return false;   /* 中身を開いています */
@@ -3318,10 +3347,8 @@ body:not(.v-done) #sec-done{ display:none; }
    *
    *  これは「取消」ではありません。表から行ごと消えます。元に戻せません。
    *
-   *  確認は1回のみです。
-   *  ただし削除の対象は必ず一覧で提示します。
-   *  フォルダの ✕ は中の全件が対象となるため、
-   *  件数が分からないまま実行されるのを避けるためです。
+   *  確認は1回のみ。件数の打ち込みはしません。
+   *  押したらすぐ画面から消し、送信は裏で行います（actDel と同じ形）。
    *
    *    fold … 物件名。その物件の完了記録を、まとめて消します
    *    one  … 1件だけのID
@@ -3337,17 +3364,16 @@ body:not(.v-done) #sec-done{ display:none; }
     }
     if(!rows.length){ alert('対象が見つかりませんでした。'); return; }
 
-    /* 何が消えるのか、1件ずつ並べます（8件までは全部、それ以上は先頭8件） */
-    var lines = rows.slice(0, 8).map(function(r){
-      return '・' + String(r.bldg||'') + '　' + String(r.room||'') +
-             (r.name ? ('　' + r.name + ' 様') : '') +
-             (r.doneAt ? ('　（完了 ' + String(r.doneAt).slice(0, 10) + '）') : '');
-    });
-    if(rows.length > 8) lines.push('・ほか ' + (rows.length - 8) + ' 件');
-
-    /* 確認は1回のみ。ただし削除の対象は一覧で提示します。 */
-    if(!confirm(rows.length + ' 件を完全に削除します。\n\n' +
-                lines.join('\n') + '\n\n' +
+    /* 何を消すのかは、ひと目で分かるだけにします */
+    var what;
+    if(fold){
+      what = fold + ' の完了の記録 ' + rows.length + ' 件';
+    }else{
+      var r0 = rows[0];
+      what = String(r0.bldg||'') + '　' + String(r0.room||'') +
+             (r0.name ? ('（' + r0.name + ' 様）') : '');
+    }
+    if(!confirm(what + 'を削除してよろしいですか？\n\n' +
                 '回答の内容と写真も削除され、元に戻せません。')) return;
     doDrop(rows, '完了の記録');
   }
@@ -3423,77 +3449,83 @@ body:not(.v-done) #sec-done{ display:none; }
   }
   function dropClose(){ $('#drop').classList.remove('on'); $('#drop').innerHTML = ''; }
 
-  /* ★ word … 何を消したのかを、終わったときの知らせに出します。
+  /* ★ word … 何を消したのかを、知らせに出します。
        もとは「前の方の記録」の片づけだけで使っていました。
-       完了の記録の完全削除からも呼ぶようになったので、
-       言い換えられるようにしています（既定は、これまでどおり）。
+       完了の記録の完全削除からも呼ぶので、言い換えられるようにしています。
 
-     ★ 2026/9/17）遅さの手当て
-       1件ずつ順番に送っていたので、件数ぶんだけ待ち時間が足し算になり、
-       そのあいだ「読み込んでいます…」だけが出たままでした。
-       ・まず 'dropMany' で、まとめて1回だけ送ってみます。
-       ・サーバーがまだ古くて受け取れなければ、
-         これまでどおり1件ずつに戻します（動かなくなりません）。
-       ・どちらの道でも、いま何件目かを幕に出します。 */
+     ★★ 2026/9/17）お待たせしないようにしました
+
+     【これまで】
+       veil(true) で幕を出し、1件ずつサーバーへ送り、
+       ぜんぶ終わるまで幕を出したままでした。
+       サーバー側は写真1枚ごとにドライブを3回さわるので、
+       写真が多いと数分かかります。
+       そのあいだ画面は「読み込んでいます…」のまま。
+       さらに 45秒ごとの自動の読み直しが、
+       消したはずのカードを画面に戻していました。
+
+     【これから】
+       ・幕は出しません。押したらその場でカードが消えます。
+       ・送信は裏で行います（完了にする・一覧から消す と同じ形）。
+       ・送っているあいだは、自動の読み直しを止めます（busy）。
+       ・消えたものは _gone に覚えて、古い一覧で戻ってこないようにします。
+       ・うまくいかなかったら、サーバーの一覧を読み直して本当の姿に戻し、
+         できなかったことをお知らせします。
+         （消えたものは消えたまま、消えていないものは画面に戻ります） */
   function doDrop(list, word){
     var w = word || '前の方の記録';
     var ids = list.map(function(r){ return r.id; });
     var n = ids.length;
 
-    function dropWait(k){
-      veil(true, n > 1
-        ? (w + 'を削除しています…（' + n + ' 件のうち ' + k + ' 件目）')
-        : (w + 'を削除しています…'));
-    }
-    /* 画面とこの端末の控えから、消します */
-    function gone(id){
-      ROWS = ROWS.filter(function(x){ return x.id !== id; });
+    /* ---- その場で、画面から消します ---- */
+    ids.forEach(function(id){
+      if(SEL === id){ SEL = ''; detailOpen(false); }
       delete DC[id];
-    }
-    function done(){
-      veil(false);
-      flash(w + 'を <b>' + n + ' 件</b> 削除しました。');
-      drawAll();
-      reload(true);
-    }
-    function failed(msg){
-      veil(false);
-      drawAll();
-      alert(msg);
-      reload(true);
+    });
+    ROWS = ROWS.filter(function(x){ return ids.indexOf(x.id) < 0; });
+    drawAll();
+    flash(w + 'を <b>' + n + ' 件</b> 削除しています…');
+
+    /* ---- 送信は裏で ---- */
+    busy(true);
+    syncing(true);
+    var okIds = [];
+
+    function finish(err){
+      busy(false);
+      syncing(false);
+      okIds.forEach(goneMark);       /* 消えたものは、もう戻しません */
+      if(err){
+        alert(err + '\n\n（' + okIds.length + ' 件は削除できました。' +
+              '残りは一覧を読み直します）');
+      }else{
+        flash(w + 'を <b>' + n + ' 件</b> 削除しました。');
+      }
+      reload(true);                  /* 本当の姿を、静かに読み直します */
     }
 
-    /* ---- ①1回でまとめて ---- */
-    dropWait(1);
+    /* ①まとめて1回。②だめなら1件ずつ（古いサーバーでも動きます） */
     post({ action:'dropMany', key:KEY, ids:ids }).then(function(d){
-      if(d && d.ok && Number(d.n) === n){
-        ids.forEach(gone);
-        done();
-        return;
-      }
-      /* 一部だけ消えていたら、消えた分は画面からも消してから、残りを1件ずつ */
+      if(d && d.ok && Number(d.n) === n){ okIds = ids.slice(); finish(''); return; }
       var left = ids;
       if(d && d.ok && d.done && d.done.length){
-        d.done.forEach(gone);
+        okIds = d.done.slice();
         left = ids.filter(function(x){ return d.done.indexOf(x) < 0; });
       }
       one(left, 0);
     }).catch(function(){ one(ids, 0); });
 
-    /* ---- ②1件ずつ（サーバーが古いとき・まとめが通らなかったとき） ---- */
     function one(left, i){
-      if(i >= left.length){ done(); return; }
-      dropWait(n - left.length + i + 1);
+      if(i >= left.length){ finish(''); return; }
       post({ action:'drop', key:KEY, id:left[i] }).then(function(d){
         if(!d || !d.ok){
-          failed((d && d.err) || '消せませんでした。もう一度お試しください。');
+          finish((d && d.err) || '消せませんでした。もう一度お試しください。');
           return;
         }
-        gone(left[i]);
-        drawAll();
+        okIds.push(left[i]);
         one(left, i + 1);
       }).catch(function(){
-        failed('通信できませんでした。もう一度お試しください。');
+        finish('通信できませんでした。もう一度お試しください。');
       });
     }
   }
