@@ -69,30 +69,38 @@ main{max-width:none;margin:0;padding:0;}
    左のならびは「いま、どこを見ているか」を示す目次です。
    ================================================================ */
 #s-list{display:grid;grid-template-columns:236px minmax(0,1fr);align-items:start;}
+/* ★★ 左のならびを、黒地に白文字にしました（2026/9/18）
+ *  右の一覧（白）とはっきり分かれて、いま何を見ているかが分かりやすくなります。
+ *  中の文字・数字・選択欄も、黒地の上で読める色にそろえます。 */
 #side{position:sticky;top:52px;align-self:start;height:calc(100vh - 52px);overflow:auto;
-  padding:24px 14px 30px;border-right:1px solid var(--line);background:var(--bg);}
+  padding:24px 14px 30px;border-right:0;background:#1D1D1F;color:#fff;}
 #doc{padding:28px 30px 90px;max-width:1160px;}
 .sd-find{margin-bottom:18px;}
 .sd-find input{width:100%;padding:9px 12px;border:0;border-radius:10px;
-  background:var(--fill);font-size:13.5px;}
-.sd-find input:focus{outline:2px solid var(--ink);outline-offset:-2px;}
+  background:rgba(255,255,255,.12);color:#fff;font-size:13.5px;}
+.sd-find input::placeholder{color:rgba(255,255,255,.45);}
+.sd-find input:focus{outline:2px solid rgba(255,255,255,.55);outline-offset:-2px;}
 .sd-nav{display:block;margin-bottom:10px;}
-.sd-h{font-size:10.5px;font-weight:700;color:var(--ink3);letter-spacing:.1em;
+.sd-h{font-size:10.5px;font-weight:700;color:rgba(255,255,255,.5);letter-spacing:.1em;
   padding:14px 10px 6px;}
 .sd-h:first-child{padding-top:0;}
 .sd-i{display:flex;align-items:center;gap:8px;width:100%;padding:9px 10px;margin:1px 0;
-  border:0;border-radius:9px;background:transparent;color:var(--ink2);cursor:pointer;
+  border:0;border-radius:9px;background:transparent;color:rgba(255,255,255,.78);cursor:pointer;
   font-size:14px;font-weight:500;text-align:left;transition:background .12s,color .12s;}
-.sd-i:hover{background:var(--fill);color:var(--ink);}
-.sd-i.on{background:var(--fill2);color:var(--ink);font-weight:700;}
-.sd-i i{margin-left:auto;font-style:normal;font-size:12px;font-weight:700;color:var(--ink3);
-  padding:1px 7px;border-radius:100px;}
+.sd-i:hover{background:rgba(255,255,255,.10);color:#fff;}
+.sd-i.on{background:#fff;color:var(--ink);font-weight:700;}
+.sd-i i{margin-left:auto;font-style:normal;font-size:12px;font-weight:700;
+  color:rgba(255,255,255,.55);padding:1px 7px;border-radius:100px;}
 .sd-i.on i{color:var(--ink2);}
+/* ★ 要対応の件数。黒地でも目に入るよう、黄色はそのまま使います */
 .sd-i i.hot{background:var(--warn);color:#3a2d00;}
+.sd-i.on i.hot{background:var(--warn);color:#3a2d00;}
 .sd-f{display:grid;gap:6px;padding:0 4px;}
 .sd-f select{width:100%;padding:8px 10px;border:0;border-radius:9px;
-  background:var(--fill);font-size:12.5px;color:var(--ink2);}
-.sd-foot{padding:26px 10px 0;font-size:10.5px;color:var(--ink3);}
+  background:rgba(255,255,255,.12);font-size:12.5px;color:#fff;}
+/* えらぶ中身は、ブラウザが白地で出します。文字を黒に戻しておきます */
+.sd-f select option{background:#fff;color:var(--ink);}
+.sd-foot{padding:26px 10px 0;font-size:10.5px;color:rgba(255,255,255,.45);}
 
 .doc-h1{font-size:31px;font-weight:700;letter-spacing:-.022em;margin:0;}
 .sec{margin-top:44px;scroll-margin-top:66px;}
@@ -109,9 +117,12 @@ main{max-width:none;margin:0;padding:0;}
    ================================================================ */
 @media (max-width:860px){
   #s-list{display:block;}
+  /* ★ せまい画面では、左のならびが上の1行になります。
+       ここも黒地にそろえます。
+       （白文字のまま下地だけ明るいと、字が読めなくなります） */
   #side{position:sticky;top:52px;z-index:15;height:auto;overflow:visible;
-    border-right:0;border-bottom:1px solid var(--line);padding:10px 12px 9px;
-    background:rgba(245,245,247,.94);
+    border-right:0;border-bottom:0;padding:10px 12px 9px;
+    background:rgba(29,29,31,.94);color:#fff;
     -webkit-backdrop-filter:saturate(180%) blur(14px);backdrop-filter:saturate(180%) blur(14px);}
   .sd-find{margin-bottom:8px;}
   .sd-nav{display:flex;gap:6px;overflow-x:auto;margin:0;padding-bottom:1px;
@@ -119,15 +130,18 @@ main{max-width:none;margin:0;padding:0;}
   .sd-nav::-webkit-scrollbar{display:none;}
   .sd-h{display:none;}
   .sd-i{width:auto;flex:0 0 auto;margin:0;padding:7px 13px;border-radius:100px;
-    background:var(--fill);font-size:13px;white-space:nowrap;}
-  .sd-i.on{background:var(--ink);color:#fff;}
-  .sd-i i{margin-left:6px;padding:0;}
-  .sd-i.on i{color:rgba(255,255,255,.78);}
+    background:rgba(255,255,255,.12);color:rgba(255,255,255,.78);
+    font-size:13px;white-space:nowrap;}
+  .sd-i:hover{background:rgba(255,255,255,.20);color:#fff;}
+  .sd-i.on{background:#fff;color:var(--ink);}
+  .sd-i i{margin-left:6px;padding:0;color:rgba(255,255,255,.55);}
+  .sd-i.on i{color:var(--ink2);}
   /* 「しぼる」は、押したときだけ出します */
   .sd-fb{display:inline-flex;align-items:center;flex:0 0 auto;width:auto;margin:0;
-    padding:7px 13px;border-radius:100px;background:var(--fill);color:var(--ink2);
+    padding:7px 13px;border-radius:100px;background:rgba(255,255,255,.12);
+    color:rgba(255,255,255,.78);
     font-size:13px;font-weight:500;letter-spacing:0;white-space:nowrap;cursor:pointer;}
-  .sd-fb.on{background:var(--ink);color:#fff;}
+  .sd-fb.on{background:#fff;color:var(--ink);}
   .sd-f{grid-template-columns:1fr 1fr 1fr;padding:8px 0 0;}
   .sd-f.hide{display:none;}
   .sd-foot{display:none;}
