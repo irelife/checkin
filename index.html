@@ -118,6 +118,29 @@ p,li{word-break:auto-phrase;line-break:strict;text-wrap:pretty;}
 .duebox b{display:block;font-size:15.5px;font-weight:600;color:var(--ng);margin-bottom:8px;}
 .duebox p{margin:0;font-size:14px;line-height:1.9;color:var(--ink2);}
 
+/* ★★ 退去のときの精算について（2026/9/18）
+ *
+ *  上の赤い箱は「期限までに返してください」というお願いです。
+ *  それだけだと、細かなキズまで気にして手が止まってしまいます。
+ *  実際には、はっきりした破損だけを実費でいただき、
+ *  どちらとも言えないものは事情をうかがって決めています。
+ *
+ *  そこを先にお伝えする箱です。赤にすると不安が増えるので、
+ *  落ち着いた灰色にしています。
+ *  ★つらつら書いても読まれないので、2つの表だけにしています。 */
+.easebox{background:var(--card);border-radius:18px;padding:18px 18px;margin-bottom:16px;}
+.easebox b.ttl{display:block;font-size:15.5px;font-weight:600;color:var(--ink);margin-bottom:4px;}
+.easebox .ease-lead{margin:0 0 14px;font-size:14px;line-height:1.85;color:var(--ink2);}
+.easebox dl{margin:0;}
+.easebox dt{font-size:12px;font-weight:700;letter-spacing:.06em;color:var(--ink3);
+  margin:0 0 6px;}
+.easebox dd{margin:0 0 14px;font-size:14px;line-height:1.85;color:var(--ink2);}
+.easebox dd:last-child{margin-bottom:0;}
+.easebox ul{margin:0;padding-left:1.15em;}
+.easebox li{margin:2px 0;}
+.easebox .ease-end{margin:14px 0 0;padding-top:14px;border-top:1px solid var(--fill2);
+  font-size:14px;line-height:1.85;color:var(--ink2);}
+
 /* ---- 確認事項 ---- */
 .chk{display:block;border:0;border-radius:18px;background:var(--fill);
   padding:16px 16px;margin-bottom:8px;position:relative;cursor:pointer;
@@ -288,6 +311,34 @@ header .h-info:hover{background:rgba(255,255,255,.22);}
         <b style="display:inline;font-size:14.5px;">期限までにご返信がないと</b>、入居前からあったキズや汚れであっても、
         ご退去のときにご負担をお願いすることがあります。<br>
         期限を過ぎてもご返信がない場合は、管理会社よりご連絡いたします。
+      </p>
+    </div>
+
+    <!-- ★ 細かなキズまで気に病まないでいただくための、ご案内です -->
+    <div class="easebox">
+      <b class="ttl">細かなキズまで、気にされなくて大丈夫です</b>
+      <p class="ease-lead">
+        ご退去のときは、下のように分けて精算しています。
+      </p>
+      <dl>
+        <dt>実費でご負担いただくもの（これまでの例）</dt>
+        <dd>
+          <ul>
+            <li>ペットの糞尿によるにおい・しみ</li>
+            <li>ひっかき傷によるクロスの破れ</li>
+            <li>ぶつけたことによる建具・ガラスの割れ</li>
+            <li>タバコのヤニによるクロスの変色</li>
+          </ul>
+        </dd>
+        <dt>ご事情をうかがったうえで決めるもの</dt>
+        <dd>
+          家具のあと、軽いこすれキズ、入居中についたか判断がつかないもの。<br>
+          一律にご負担いただくことはありません。
+        </dd>
+      </dl>
+      <p class="ease-end">
+        うっかり壊してしまったときは、<b>ご加入の保険</b>でまかなえることがあります。
+        まずは管理会社までご連絡ください。
       </p>
     </div>
 
