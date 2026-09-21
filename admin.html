@@ -75,11 +75,18 @@ main{max-width:none;margin:0;padding:0;}
 #side{position:sticky;top:52px;align-self:start;height:calc(100vh - 52px);overflow:auto;
   padding:24px 14px 30px;border-right:0;background:#1D1D1F;color:#fff;}
 #doc{padding:28px 30px 90px;max-width:1160px;}
-.sd-find{margin-bottom:18px;}
-.sd-find input{width:100%;padding:9px 12px;border:0;border-radius:10px;
+.sd-find{position:relative;margin-bottom:18px;}
+/* ★ 何を入れる欄なのか、ひと目で分かるように虫眼鏡を置きます */
+.sd-find .sd-mag{position:absolute;left:11px;top:50%;transform:translateY(-50%);
+  width:15px;height:15px;pointer-events:none;
+  fill:none;stroke:rgba(255,255,255,.55);stroke-width:2;
+  stroke-linecap:round;stroke-linejoin:round;}
+.sd-find:focus-within .sd-mag{stroke:#fff;}
+#side .sd-find input{width:100%;padding:9px 12px 9px 34px;border:0;border-radius:10px;
   background:rgba(255,255,255,.12);color:#fff;font-size:13.5px;}
-.sd-find input::placeholder{color:rgba(255,255,255,.45);}
-.sd-find input:focus{outline:2px solid rgba(255,255,255,.55);outline-offset:-2px;}
+#side .sd-find input::placeholder{color:rgba(255,255,255,.62);}
+#side .sd-find input:focus{outline:2px solid rgba(255,255,255,.55);outline-offset:-2px;
+  background:rgba(255,255,255,.18);box-shadow:none;}
 .sd-nav{display:block;margin-bottom:10px;}
 .sd-h{font-size:10.5px;font-weight:700;color:rgba(255,255,255,.5);letter-spacing:.1em;
   padding:14px 10px 6px;}
@@ -121,26 +128,28 @@ main{max-width:none;margin:0;padding:0;}
        ここも黒地にそろえます。
        （白文字のまま下地だけ明るいと、字が読めなくなります） */
   #side{position:sticky;top:52px;z-index:15;height:auto;overflow:visible;
-    border-right:0;border-bottom:0;padding:10px 12px 9px;
+    border-right:0;border-bottom:0;padding:9px 10px 8px;
     background:rgba(29,29,31,.94);color:#fff;
     -webkit-backdrop-filter:saturate(180%) blur(14px);backdrop-filter:saturate(180%) blur(14px);}
-  .sd-find{margin-bottom:8px;}
-  .sd-nav{display:flex;gap:6px;overflow-x:auto;margin:0;padding-bottom:1px;
-    scrollbar-width:none;-ms-overflow-style:none;}
-  .sd-nav::-webkit-scrollbar{display:none;}
+  .sd-find{margin-bottom:7px;}
+  #side .sd-find input{padding:8px 12px 8px 32px;font-size:13px;}
+  .sd-find .sd-mag{left:10px;width:14px;height:14px;}
+  /* ★ せまい画面では横に流さず、入りきらない分は下へ折り返します。
+       横に流すと、端の札が切れて何があるか分からなくなるためです。 */
+  .sd-nav{display:flex;flex-wrap:wrap;gap:5px;overflow:visible;margin:0;padding:0;}
   .sd-h{display:none;}
-  .sd-i{width:auto;flex:0 0 auto;margin:0;padding:7px 13px;border-radius:100px;
+  .sd-i{width:auto;flex:0 0 auto;margin:0;padding:7px 10px;border-radius:100px;
     background:rgba(255,255,255,.12);color:rgba(255,255,255,.78);
-    font-size:13px;white-space:nowrap;}
+    font-size:12.5px;white-space:nowrap;}
   .sd-i:hover{background:rgba(255,255,255,.20);color:#fff;}
   .sd-i.on{background:#fff;color:var(--ink);}
   .sd-i i{margin-left:6px;padding:0;color:rgba(255,255,255,.55);}
   .sd-i.on i{color:var(--ink2);}
   /* 「しぼる」は、押したときだけ出します */
   .sd-fb{display:inline-flex;align-items:center;flex:0 0 auto;width:auto;margin:0;
-    padding:7px 13px;border-radius:100px;background:rgba(255,255,255,.12);
+    padding:7px 10px;border-radius:100px;background:rgba(255,255,255,.12);
     color:rgba(255,255,255,.78);
-    font-size:13px;font-weight:500;letter-spacing:0;white-space:nowrap;cursor:pointer;}
+    font-size:12.5px;font-weight:500;letter-spacing:0;white-space:nowrap;cursor:pointer;}
   .sd-fb.on{background:#fff;color:var(--ink);}
   .sd-f{grid-template-columns:1fr 1fr 1fr;padding:8px 0 0;}
   .sd-f.hide{display:none;}
@@ -1001,6 +1010,9 @@ body:not(.v-done) #sec-done{ display:none; }
     <!-- ★ 左のならび。押すと、その場所まで動きます -->
     <aside id="side">
       <div class="sd-find">
+        <svg class="sd-mag" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <circle cx="11" cy="11" r="7"></circle><path d="M16.6 16.6 L21 21"></path>
+        </svg>
         <input type="text" id="q" placeholder="検索（物件名）">
       </div>
       <nav class="sd-nav" id="tabs3">
@@ -1043,7 +1055,7 @@ body:not(.v-done) #sec-done{ display:none; }
         <h2 class="sec-h">完了
           <button type="button" id="done-back" class="done-back">← 戻る</button>
         </h2>
-        <p class="sec-lead">処理済みの案件です。通常画面には表示しません。同一物件が2件以上の場合は1枚に集約し、クリックで部屋別に展開します。退去精算時の証跡となります。</p>
+        <p class="sec-lead">処理済みの案件です。通常画面には表示しません。同一物件が2件以上の場合は1枚に集約し、クリックで部屋別に展開します。退去精算時の証跡となります。<span id="done-year-note"></span></p>
         <div id="list-done" class="listbox"></div>
       </section>
 
@@ -2112,9 +2124,12 @@ body:not(.v-done) #sec-done{ display:none; }
     try{ pingWake(); }catch(e){}   /* 何か動いたので、こまめに見に戻ります */
     if(bg) syncing(true); else veil(true);
     $('#reload').classList.add('spin');       /* 更新の絵がまわります */
-    /* 年度はサーバー側でしぼります。件数が増えても重くなりません。
-       0 を渡すと全部returnされます */
-    var fy = $('#f-fy').value;
+    /* ★ サーバーには年を渡しません（0＝全部もらいます）。
+         サーバー側は4月はじまりの年度で数えているため、1月はじまりの年を
+         そのまま渡すと、1〜3月の分が抜け落ちてしまいます。
+         全部もらってから、この画面の中で年ごとに分けます。
+         （サーバー側も1月はじまりに直せば、ここで渡して軽くできます） */
+    var fy = '';
     _lastAuto = Date.now();          /* 自動の読み直しは、ここから1分あけます */
     var end = function(){ veil(false); syncing(false); $('#reload').classList.remove('spin'); };
     post({ action:'list', key:KEY, fy:(fy === '' ? 0 : Number(fy)) }).then(function(res){
@@ -2272,7 +2287,8 @@ body:not(.v-done) #sec-done{ display:none; }
   });
   window.addEventListener('focus', autoFresh);
   $('#q').addEventListener('input', drawList);
-  $('#f-fy').addEventListener('change', function(){ reload(false); });
+  /* 年を変えても、もう読み直しません（すでに全部手元にあります）。描き直すだけです */
+  $('#f-fy').addEventListener('change', drawAll);
   $('#f-mo').addEventListener('change', drawAll);
 
   function drawAll(){ drawTabs(); drawList(); }
@@ -2335,32 +2351,64 @@ body:not(.v-done) #sec-done{ display:none; }
   });
   $('#f-far').addEventListener('change', drawAll);
 
-  /* 年度は4月はじまりです。2026年4月〜2027年3月＝2026年度 */
+  /* ★ 年は1月はじまりです。2026年1月〜12月＝2026年。
+       （もとは4月はじまりの年度でした。2026/9/21 に暦の年へ変えました） */
   function ymOf(v){ var m = /^(\d{4})\/(\d{2})/.exec(String(v||'')); return m ? {y:+m[1], m:+m[2]} : null; }
-  function fyOf(v){ var t = ymOf(v); return t ? (t.m >= 4 ? t.y : t.y - 1) : null; }
+  function fyOf(v){ var t = ymOf(v); return t ? t.y : null; }
+
+  /* 完了の案件は「完了した日」の年で数えます。
+     受け付けたのが去年でも、今年 完了したなら今年の分です。
+     完了日が入っていない古いものだけ、受付日で代えます。 */
+  function doneYearOf(r){
+    var t = ymOf(String(r && r.doneAt || '').replace(/-/g, '/')) || ymOf(r && r.created);
+    return t ? t.y : null;
+  }
+  function thisYear(){ return new Date().getFullYear(); }
+
+  /* ★ 完了の一覧は、年が変わると自動で新しい年にきりかわります。
+       （2027/1/1 になったら、2026年に完了した分は出なくなります）
+       過去の分は、絞り込みで年を選べば出ます。物件名の検索もそのまま効きます。
+       ※要対応・未返信は、年をまたいでも消えません。仕事が残っているためです。 */
+  function inDonePeriod(r){
+    if(!inPeriod(r)) return false;
+    var y = doneYearOf(r);
+    var pick = $('#f-fy').value;
+    if(pick) return String(y) === pick;   /* 年を選んでいるなら、その年の完了分 */
+    return y === thisYear();              /* 選んでいないときは、今年の完了分だけ */
+  }
 
   /* 年度の選択を、蓄積されている分から作ります */
   function buildPeriod(){
     var keep = $('#f-fy').value;
     var fys = [];
+    var add = function(f){ if(f !== null && fys.indexOf(f) < 0) fys.push(f); };
     ROWS.forEach(function(r){
-      var f = fyOf(r.created);
-      if(f !== null && fys.indexOf(f) < 0) fys.push(f);
+      add(fyOf(r.created));     /* 受け付けた年 */
+      add(doneYearOf(r));       /* 完了した年（年をまたいだ分も選べるように） */
     });
-    var now = new Date();
-    var nowFy = (now.getMonth() + 1) >= 4 ? now.getFullYear() : now.getFullYear() - 1;
+    var nowFy = thisYear();
     if(fys.indexOf(nowFy) < 0) fys.push(nowFy);
     fys.sort(function(a,b){ return b - a; });
-    $('#f-fy').innerHTML = '<option value="">年度：すべて</option>' +
+    $('#f-fy').innerHTML = '<option value="">年：すべて</option>' +
       fys.map(function(f){
-        return '<option value="' + f + '">' + f + '年度（' + f + '年4月〜' + (f+1) + '年3月）</option>';
+        return '<option value="' + f + '">' + f + '年（1月〜12月）</option>';
       }).join('');
     $('#f-fy').value = keep || '';
+    doneNote();
     if(!$('#f-mo').options.length){
       var o = ['<option value="">月：すべて</option>'];
       for(var i=1;i<=12;i++) o.push('<option value="' + i + '">' + i + '月</option>');
       $('#f-mo').innerHTML = o.join('');
     }
+  }
+
+  /* 完了のところに「いま何年の分を見ているか」を書きます */
+  function doneNote(){
+    var el = $('#done-year-note'); if(!el) return;
+    var pick = $('#f-fy').value;
+    el.textContent = pick
+      ? '　いまは ' + pick + '年 に完了した分を出しています。'
+      : '　いまは ' + thisYear() + '年 に完了した分を出しています。過去の年は［絞り込み］から選べます。';
   }
 
   function inPeriod(r){
@@ -2772,7 +2820,8 @@ body:not(.v-done) #sec-done{ display:none; }
     if(!box) return false;
     var q = $('#q').value.trim();
     var rows = ROWS.filter(function(r){
-      if(!inPeriod(r)) return false;
+      /* 完了だけ、年で区切ります（要対応・未返信は年をまたいでも消しません） */
+      if(!(k === 'done' ? inDonePeriod(r) : inPeriod(r))) return false;
       if(!inSec(r, k)) return false;
       if(!matchFilt(r)) return false;
       if(!q) return true;
@@ -3233,7 +3282,7 @@ body:not(.v-done) #sec-done{ display:none; }
     /* ★ v2.12）まとめを開いているときは、中の一覧を出します */
     if(FOLD && !SEL){
       var g = ROWS.filter(function(x){
-        return String(x.status||'') === '完了' && inPeriod(x) && bKey(x) === FOLD; });
+        return String(x.status||'') === '完了' && inDonePeriod(x) && bKey(x) === FOLD; });
       if(!g.length){ FOLD = ''; el.innerHTML = ''; detailOpen(false); return; }
       el.innerHTML = foldHtml(FOLD, g);
       $('#d-title').textContent = FOLD;
@@ -3371,7 +3420,7 @@ body:not(.v-done) #sec-done{ display:none; }
     var rows;
     if(fold){
       rows = ROWS.filter(function(r){
-        return String(r.status||'') === '完了' && bKey(r) === fold && inPeriod(r);
+        return String(r.status||'') === '完了' && bKey(r) === fold && inDonePeriod(r);
       });
     }else{
       rows = ROWS.filter(function(r){ return r.id === one; });
@@ -3425,7 +3474,7 @@ body:not(.v-done) #sec-done{ display:none; }
       return ids.map(rowById).filter(Boolean);
     }
     var g = ROWS.filter(function(x){
-      return String(x.status||'') === '完了' && inPeriod(x) && bKey(x) === fold; });
+      return String(x.status||'') === '完了' && inDonePeriod(x) && bKey(x) === fold; });
     var out = [];
     dupsIn(g).forEach(function(d){ out = out.concat(d.olds); });
     return out;
@@ -3550,7 +3599,7 @@ body:not(.v-done) #sec-done{ display:none; }
     if($('#detail').classList.contains('on')) return;
     if($('#drop').classList.contains('on')) return;
     var rows = ROWS.filter(function(r){
-      return String(r.status||'') === '完了' && inPeriod(r); });
+      return String(r.status||'') === '完了' && inDonePeriod(r); });
     var byB = {};
     dupsIn(rows).forEach(function(d){ byB[String(d.bldg||'')] = 1; });
     var names = Object.keys(byB).filter(function(k){ return !_dropped[k]; });
