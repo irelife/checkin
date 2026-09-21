@@ -75,11 +75,18 @@ main{max-width:none;margin:0;padding:0;}
 #side{position:sticky;top:52px;align-self:start;height:calc(100vh - 52px);overflow:auto;
   padding:24px 14px 30px;border-right:0;background:#1D1D1F;color:#fff;}
 #doc{padding:28px 30px 90px;max-width:1160px;}
-.sd-find{margin-bottom:18px;}
-.sd-find input{width:100%;padding:9px 12px;border:0;border-radius:10px;
+.sd-find{position:relative;margin-bottom:18px;}
+/* ★ 何を入れる欄なのか、ひと目で分かるように虫眼鏡を置きます */
+.sd-find .sd-mag{position:absolute;left:11px;top:50%;transform:translateY(-50%);
+  width:15px;height:15px;pointer-events:none;
+  fill:none;stroke:rgba(255,255,255,.55);stroke-width:2;
+  stroke-linecap:round;stroke-linejoin:round;}
+.sd-find:focus-within .sd-mag{stroke:#fff;}
+#side .sd-find input{width:100%;padding:9px 12px 9px 34px;border:0;border-radius:10px;
   background:rgba(255,255,255,.12);color:#fff;font-size:13.5px;}
-.sd-find input::placeholder{color:rgba(255,255,255,.45);}
-.sd-find input:focus{outline:2px solid rgba(255,255,255,.55);outline-offset:-2px;}
+#side .sd-find input::placeholder{color:rgba(255,255,255,.62);}
+#side .sd-find input:focus{outline:2px solid rgba(255,255,255,.55);outline-offset:-2px;
+  background:rgba(255,255,255,.18);box-shadow:none;}
 .sd-nav{display:block;margin-bottom:10px;}
 .sd-h{font-size:10.5px;font-weight:700;color:rgba(255,255,255,.5);letter-spacing:.1em;
   padding:14px 10px 6px;}
@@ -121,26 +128,28 @@ main{max-width:none;margin:0;padding:0;}
        ここも黒地にそろえます。
        （白文字のまま下地だけ明るいと、字が読めなくなります） */
   #side{position:sticky;top:52px;z-index:15;height:auto;overflow:visible;
-    border-right:0;border-bottom:0;padding:10px 12px 9px;
+    border-right:0;border-bottom:0;padding:9px 10px 8px;
     background:rgba(29,29,31,.94);color:#fff;
     -webkit-backdrop-filter:saturate(180%) blur(14px);backdrop-filter:saturate(180%) blur(14px);}
-  .sd-find{margin-bottom:8px;}
-  .sd-nav{display:flex;gap:6px;overflow-x:auto;margin:0;padding-bottom:1px;
-    scrollbar-width:none;-ms-overflow-style:none;}
-  .sd-nav::-webkit-scrollbar{display:none;}
+  .sd-find{margin-bottom:7px;}
+  #side .sd-find input{padding:8px 12px 8px 32px;font-size:13px;}
+  .sd-find .sd-mag{left:10px;width:14px;height:14px;}
+  /* ★ せまい画面では横に流さず、入りきらない分は下へ折り返します。
+       横に流すと、端の札が切れて何があるか分からなくなるためです。 */
+  .sd-nav{display:flex;flex-wrap:wrap;gap:5px;overflow:visible;margin:0;padding:0;}
   .sd-h{display:none;}
-  .sd-i{width:auto;flex:0 0 auto;margin:0;padding:7px 13px;border-radius:100px;
+  .sd-i{width:auto;flex:0 0 auto;margin:0;padding:7px 10px;border-radius:100px;
     background:rgba(255,255,255,.12);color:rgba(255,255,255,.78);
-    font-size:13px;white-space:nowrap;}
+    font-size:12.5px;white-space:nowrap;}
   .sd-i:hover{background:rgba(255,255,255,.20);color:#fff;}
   .sd-i.on{background:#fff;color:var(--ink);}
   .sd-i i{margin-left:6px;padding:0;color:rgba(255,255,255,.55);}
   .sd-i.on i{color:var(--ink2);}
   /* 「しぼる」は、押したときだけ出します */
   .sd-fb{display:inline-flex;align-items:center;flex:0 0 auto;width:auto;margin:0;
-    padding:7px 13px;border-radius:100px;background:rgba(255,255,255,.12);
+    padding:7px 10px;border-radius:100px;background:rgba(255,255,255,.12);
     color:rgba(255,255,255,.78);
-    font-size:13px;font-weight:500;letter-spacing:0;white-space:nowrap;cursor:pointer;}
+    font-size:12.5px;font-weight:500;letter-spacing:0;white-space:nowrap;cursor:pointer;}
   .sd-fb.on{background:#fff;color:var(--ink);}
   .sd-f{grid-template-columns:1fr 1fr 1fr;padding:8px 0 0;}
   .sd-f.hide{display:none;}
@@ -1001,6 +1010,9 @@ body:not(.v-done) #sec-done{ display:none; }
     <!-- ★ 左のならび。押すと、その場所まで動きます -->
     <aside id="side">
       <div class="sd-find">
+        <svg class="sd-mag" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <circle cx="11" cy="11" r="7"></circle><path d="M16.6 16.6 L21 21"></path>
+        </svg>
         <input type="text" id="q" placeholder="検索（物件名）">
       </div>
       <nav class="sd-nav" id="tabs3">
