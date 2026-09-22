@@ -425,12 +425,6 @@ body:not(.v-done) #sec-done{ display:none; }
 #s-new .thumb-b img{width:100%;height:100%;object-fit:contain;display:block;}
 #s-new .note{font-size:12.5px;color:var(--ink3);margin:9px 0 0;}
 
-/* 下書きのお知らせ */
-.dr{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
-  background:var(--fill);border-radius:12px;padding:11px 15px;margin-bottom:22px;
-  font-size:13.5px;color:var(--ink2);}
-.dr b{font-weight:600;color:var(--ink);}
-.dr .sp{margin-left:auto;display:flex;gap:8px;}
 
 /* いちばん下のボタン */
 #s-new .acts{display:flex;justify-content:flex-end;gap:12px;
@@ -523,7 +517,7 @@ body:not(.v-done) #sec-done{ display:none; }
 /* 送らない分の欄は、うすくして「送りません」とお伝えします */
 .off-note{display:none;font-size:12.5px;color:var(--ng);margin:6px 0 0;line-height:1.6;}
 .is-off .off-note{display:block;}
-.is-off #cl-list,.is-off #pick-list,.is-off .row{opacity:.4;}
+.is-off #cl-list,.is-off #pick-list,.is-off .row,.is-off .file-row{opacity:.4;}
 
 /* ---- つくったあとの控え ---- */
 .made{background:var(--fill);border:0;border-radius:18px;padding:20px;margin-top:18px;}
@@ -1085,8 +1079,6 @@ body:not(.v-done) #sec-done{ display:none; }
         <p class="sec-lead">入居者様へ、入居のしおり・室内確認・重要事項の確認依頼を送付します。送る内容は、印を付けたものだけを選べます。必須は物件名・号室・氏名・メールの4項目です。</p>
         <div id="s-new">
     <div class="card">
-      <div id="dr-bar" class="dr hide"></div>
-
       <div class="sec">
         <p class="sec-t">送る内容</p>
         <p class="hint">印を付けたものだけを、入居者様の画面に出します。<b>1つ以上</b>お選びください</p>
@@ -1200,8 +1192,10 @@ body:not(.v-done) #sec-done{ display:none; }
         </div>
       </div>
 
-      <div class="sec">
+      <div class="sec" id="sec-plan">
         <p class="sec-t">間取り図</p>
+        <p class="hint">入居者様の「室内チェック」の画面に出ます</p>
+        <p class="off-note">「室内チェック」に印が付いていないため、間取り図はお送りできません。</p>
         <div class="file-row">
           <div class="thumb-b" id="plan-box">
             <img id="plan-th" class="hide" alt="">
@@ -1251,7 +1245,6 @@ body:not(.v-done) #sec-done{ display:none; }
       <!-- ★ きょう、あと何通メールを送れるか -->
       <div class="mail-left hide" id="mail-left"></div>
       <div class="acts">
-        <button type="button" class="abtn" id="new-draft">下書き保存</button>
         <button type="button" class="abtn primary" id="new-go">依頼を送る</button>
       </div>
       <div id="made" class="made hide"></div>
@@ -1617,7 +1610,6 @@ body:not(.v-done) #sec-done{ display:none; }
       try{ el.scrollIntoView({ behavior: (jump ? 'auto' : 'smooth'), block:'start' }); }
       catch(e){ el.scrollIntoView(); }
     }
-    if(k === 'new') draftBar();     /* 下書きが残っていれば、上でお知らせします */
   }
 
   /* 完了の画面から、ふだんの画面へ戻ります */
@@ -1816,13 +1808,23 @@ body:not(.v-done) #sec-done{ display:none; }
              .map(function(e){ return e.getAttribute('data-k'); });
   }
 
-  /* 送らない分の欄を、うすくします（入れても出ない、と分かるように）*/
+  /* 送らない分の欄を、うすくします（入れても出ない、と分かるように）。
+     間取り図は「室内チェック」の画面に出るものですので、
+     印が付いていないあいだは、選べないようにします。 */
   function partPaint(){
     var on = {};
     partKeys().forEach(function(k){ on[k] = 1; });
-    var pick = $('#sec-pick'), cl = $('#sec-cl');
+    var pick = $('#sec-pick'), cl = $('#sec-cl'), pl = $('#sec-plan');
     if(pick) pick.classList.toggle('is-off', !on.guide);
     if(cl)   cl.classList.toggle('is-off', !on.terms);
+    if(pl)   pl.classList.toggle('is-off', !on.room);
+    var f = $('#f-plan');
+    if(f){
+      f.disabled = !on.room;
+      /* 印を外したときは、選んでいただいた間取り図も片づけます
+         （送らないものを、そのまま持っておかないためです） */
+      if(!on.room && planData) planReset();
+    }
   }
 
   /* 最初の状態（3つとも送る）に戻します */
@@ -1886,8 +1888,11 @@ body:not(.v-done) #sec-done{ display:none; }
     });
   }
 
-  /* 前に画面で直した文面の控えが残っていれば、片づけます（もう使いません） */
+  /* 前にこの端末へ残していたものが残っていれば、片づけます（もう使いません）
+       checkin_clause_edit … 画面で直した文面の控え
+       ire_check_draft    … 下書き（「下書き保存」は、やめました） */
   try{ localStorage.removeItem('checkin_clause_edit'); }catch(e){}
+  try{ localStorage.removeItem('ire_check_draft'); }catch(e){}
 
   $('#cl-all').addEventListener('click', function(){
     $$('#cl-list .cl').forEach(function(e){ e.querySelector('input').checked = true; e.classList.add('on'); }); });
@@ -2015,87 +2020,6 @@ body:not(.v-done) #sec-done{ display:none; }
   });
   function feAllClear(){ NEED.forEach(feClear); }
 
-  /* ---- 下書き（この端末にだけ残します。サーバーへは送りません）--------- */
-  var DKEY = 'ire_check_draft';
-  var DFLD = ['#f-bldg','#f-room','#f-name','#f-mail','#f-move','#f-area',
-              '#f-park','#f-parkt','#f-park2','#f-park2t',
-              '#f-dir1','#f-post-r','#f-dir2','#f-post-l',
-              '#f-agco','#f-agnm','#f-agml','#f-extra','#f-memo'];
-
-  function draftSave(){
-    var d = { at: nowLabel(), v:{} };
-    DFLD.forEach(function(k){ d.v[k] = $(k).value; });
-    d.picks = $$('#pick-list select').map(function(sl){ return sl.value; });
-    d.cl = $$('#cl-list .cl').filter(function(e){ return e.querySelector('input').checked; })
-             .map(function(e){ return e.getAttribute('data-t'); });
-    d.pt = partKeys();
-    try{ localStorage.setItem(DKEY, JSON.stringify(d)); }catch(e){}
-  }
-  function draftGet(){
-    try{ return JSON.parse(localStorage.getItem(DKEY) || 'null'); }catch(e){ return null; }
-  }
-  function draftDrop(){ try{ localStorage.removeItem(DKEY); }catch(e){} $('#dr-bar').classList.add('hide'); }
-
-  function draftPut(d){
-    if(!d) return;
-    DFLD.forEach(function(k){ if(typeof d.v[k] === 'string') $(k).value = d.v[k]; });
-    park2Able();
-    ['#f-parkt','#f-park2','#f-park2t'].forEach(function(k){
-      if(typeof d.v[k] === 'string' && !$(k).disabled){ $(k).value = d.v[k]; park2Able(); }
-    });
-    var sl = $$('#pick-list select');
-    (d.picks || []).forEach(function(v, i){ if(sl[i]) sl[i].value = v || ''; });
-    if(d.cl){
-      var on = {}; d.cl.forEach(function(t){ on[t] = 1; });
-      $$('#cl-list .cl').forEach(function(e){
-        var y = !!on[e.getAttribute('data-t')];
-        e.querySelector('input').checked = y;
-        e.classList.toggle('on', y);
-      });
-    }
-    if(d.pt){
-      var pon = {}; d.pt.forEach(function(k){ pon[k] = 1; });
-      $$('#pt-list .pt').forEach(function(e){
-        var y = !!pon[e.getAttribute('data-k')];
-        e.querySelector('input').checked = y;
-        e.classList.toggle('on', y);
-      });
-      partPaint();
-    }
-    feAllClear();
-    $('#dr-bar').classList.add('hide');
-  }
-
-  function nowLabel(){
-    var d = new Date();
-    return (d.getMonth()+1) + '月' + d.getDate() + '日 ' +
-           ('0'+d.getHours()).slice(-2) + ':' + ('0'+d.getMinutes()).slice(-2);
-  }
-
-  /* 新規の画面を開いたとき、下書きがあればお知らせします */
-  function draftBar(){
-    var d = draftGet();
-    if(!d){ $('#dr-bar').classList.add('hide'); return; }
-    var who = (d.v && (d.v['#f-bldg'] || '')) + ' ' + (d.v && (d.v['#f-room'] || ''));
-    $('#dr-bar').innerHTML =
-      '<span><b>下書きがあります</b>　' + esc(who.trim() || '（物件名なし）') +
-        '　' + esc(d.at || '') + '</span>' +
-      '<span class="sp">' +
-        '<button type="button" class="btn ghost sm" id="dr-use">読み込む</button>' +
-        '<button type="button" class="btn ghost sm" id="dr-del">削除</button></span>';
-    $('#dr-bar').classList.remove('hide');
-    $('#dr-use').addEventListener('click', function(){ draftPut(draftGet()); });
-    $('#dr-del').addEventListener('click', function(){ draftDrop(); });
-  }
-
-  $('#new-draft').addEventListener('click', function(){
-    draftSave();
-    $('#new-err').textContent = '';
-    $('#dr-bar').innerHTML = '<span><b>下書きを保存しました。</b>この端末にのみ保存されます。' +
-      '次回「新規」を開いた際に、読み込めます。</span>';
-    $('#dr-bar').classList.remove('hide');
-  });
-
   /* ★ 同じ物件・同じ号室の記録をさがします（取り消したものは除きます）。
        登録のたびに見て、あれば先におうかがいします。 */
   function sameRoomRows(bldg, room){
@@ -2163,7 +2087,8 @@ body:not(.v-done) #sec-done{ display:none; }
       parts: PT,
       sendMail: !!sendMail
     };
-    if(planData) body.plan = { data:planData, name:'madori.jpg' };
+    /* 間取り図は「室内チェック」をお送りするときだけ付けます */
+    if(planData && PT.indexOf('room') >= 0) body.plan = { data:planData, name:'madori.jpg' };
 
     /* 「必須」の欄を、1つずつ見ます。だめなところは、その場に赤字で出します */
     var first = null, allOk = true;
@@ -2243,7 +2168,6 @@ body:not(.v-done) #sec-done{ display:none; }
       resetClauses();
       resetParts();
       feAllClear();
-      draftDrop();
       planReset();
       $('#made').classList.add('hide'); $('#made').innerHTML = '';
 
