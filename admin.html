@@ -1509,6 +1509,7 @@ body:not(.v-done) #sec-done{ display:none; }
       applyList(res); cacheSave(res, '');
       $('#s-key').classList.add('hide');
       show('list');
+      setTimeout(dropCheck, 700);   /* ★開いた直後にも、一度見にいきます */
     }).catch(function(){
       veil(false); syncing(false);
       if(c){
@@ -2200,6 +2201,7 @@ body:not(.v-done) #sec-done{ display:none; }
       end();
       if(!res.ok) return;
       applyList(res); cacheSave(res, fy);
+      setTimeout(dropCheck, 400);   /* ★読み込んで気づいたら、その時点でおうかがい */
     }).catch(end);
   }
 
@@ -3589,8 +3591,8 @@ body:not(.v-done) #sec-done{ display:none; }
     if(!list.length){ flash('消す記録はありませんでした。'); return; }
     var h = [];
     h.push('<div class="dp-card">');
-    h.push('<h3>前の方の記録を消します</h3>');
-    h.push('<p class="dp-lead">下の ' + list.length + ' 件を、まるごと消します。' +
+    h.push('<h3>同じ号室の記録が、重なっています</h3>');
+    h.push('<p class="dp-lead">下の ' + list.length + ' 件（古いほう）を、まるごと消します。' +
            '<b>元にはもどせません。</b></p>');
     h.push('<div class="dp-list">' + list.map(function(r){
       return '<div class="dp-row"><b>' + esc(r.bldg) + '　' + esc(r.room) + '</b>' +
@@ -3698,8 +3700,19 @@ body:not(.v-done) #sec-done{ display:none; }
   }
 
   /* 完了のところへ来たら、重なっているお部屋がないか見ます */
+  /* ★ 同じ号室の記録が重なったら、その時点でおうかがいします。
+       ［完了］を開いていなくても出ます。
+       完了は、督促のあと サーバー側で自動でもなります。そのときは
+       誰も画面を見ていないので、「なった瞬間」には出せません。
+       代わりに、この画面が新しい中身を読み込んで気づいた時点で出します。
+       （読み込みは、開いているあいだ ひとりでに行われます）
+
+       ただし、次のときは邪魔しません。
+         ・新規の入力中（書きかけが消えたように見えるため）
+         ・1件を開いているとき
+         ・ほかのおうかがいが出ているとき */
   function dropCheck(){
-    if(NOW !== 'done') return;
+    if(NOW === 'new') return;
     if($('#detail').classList.contains('on')) return;
     if($('#drop').classList.contains('on')) return;
     var rows = ROWS.filter(function(r){
