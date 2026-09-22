@@ -37,6 +37,46 @@
       return String(m).split('{ゴミ回収}').join(t);
     });
   }
+  /* ★ 送る内容。管理の画面で印を付けたものだけをお見せします。
+       guide … 入居のしおり（ご案内と、暮らしのルール）
+       room  … 室内チェック
+       terms … 重要事項（特約のご確認）
+       印が分からない、これまでの分は、3つとも出します。 */
+  var PART = { guide:true, room:true, terms:true };
+  /* 出す順番。いちばん後ろの send（送信）は、いつもあります */
+  var FLOW = ['room', 'terms', 'guide', 'send'];
+  var SECT = { room:'#s1', terms:'#s2', guide:'#s-guide', send:'#s3' };
+  var SECS = ['#s1', '#s2', '#s-guide', '#s3'];
+  var STEPT = { room:'お部屋', terms:'ご説明', guide:'しおり', send:'送信' };
+  var NEXTT = { room:'次へ（お部屋の確認）', terms:'次へ（ご説明の確認）',
+                guide:'次へ（入居のしおり）', send:'確認' };
+  var MARU  = ['①', '②', '③', '④'];
+
+  /* いまの段（'room' / 'terms' / 'guide' / 'send'） */
+  function nowKey(){ return FLOW[step - 1] || 'send'; }
+
+  /* 送る内容を読み取り、段の並びを決めます */
+  function readParts(){
+    var d = DATA || {};
+    var v = (d.parts && d.parts.length) ? d.parts : (d.clauses || []);
+    PART = window.partsRead ? window.partsRead(v) : { guide:true, room:true, terms:true };
+    FLOW = ['room', 'terms', 'guide'].filter(function(k){ return PART[k]; }).concat(['send']);
+    drawSteps();
+  }
+
+  /* 上の ①②③ を、送る内容に合わせて組み立てます */
+  function drawSteps(){
+    $('#steps').innerHTML = FLOW.map(function(k, i){
+      return '<span data-s="' + (i+1) + '">' + MARU[i] + ' ' + STEPT[k] + '</span>';
+    }).join('');
+  }
+
+  /* 送られてきた内容の名前（「室内チェック・重要事項」）*/
+  function partLabel(){
+    return (window.PARTS || []).filter(function(p){ return PART[p.key]; })
+             .map(function(p){ return p.t; }).join('・');
+  }
+
   var step = 1;
   var rooms = {};                // { 場所: {ng:bool, comment:'', photos:[dataURL]} }
   var whys  = {};                // { 特約のタイトル: {why:'…', note:'…'} } 印を付けなかった理由
@@ -71,9 +111,15 @@
   function askHtml(){
     var hp = '';
     try{ hp = String((window.APP_CONFIG||{}).HP_URL || '').trim(); }catch(e){}
+    /* お受けしている内容は、お送りした分だけを書きます */
+    var can = [];
+    if(PART.room)  can.push('お部屋の状態の確認');
+    if(PART.terms) can.push('ご契約時のご説明内容の確認');
+    if(PART.guide) can.push('暮らしのルールの確認');
+    if(!can.length) can.push('ご確認いただいた内容の受け取り');
     return '<b>ご質問・ご要望について</b>' +
-      '<p>このページでお受けしているのは、<b>お部屋の状態の確認</b>と' +
-      '<b>ご契約時のご説明内容の確認</b>の、2つだけです。<br>' +
+      '<p>このページでお受けしているのは、' +
+      can.map(function(x){ return '<b>' + x + '</b>'; }).join('と') + 'だけです。<br>' +
       'それ以外のご質問・ご要望につきましては、このページではお答えいたしかねます。<br>' +
       'お手数ですが、弊社ホームページの<b>お問い合わせ</b>よりご連絡くださいますよう、' +
       'くれぐれもよろしくお願いいたします。</p>' +
@@ -247,7 +293,9 @@
       PASS = p; DATA = res;
       CLOSED = !!res.closed;
       passSave(p);                               /* 次から、入れずに開けます */
-      $('#btn-info').classList.remove('hide');   /* いつでも見返せるように */
+      readParts();                               /* 何をお送りしたかを見ます */
+      /* 「お部屋のご案内」は、入居のしおりをお送りした方だけにお出しします */
+      $('#btn-info').classList.toggle('hide', !PART.guide);
 
       /* ★ ご返信の受付が終わっている件。
            入力の画面は出さず、「お部屋のご案内」だけをお見せします。
@@ -345,8 +393,8 @@
       });
     }
 
-    /* 場所ごとのカード */
-    var places = window.PLACES || [];
+    /* 場所ごとのカード（室内チェックをお送りした方だけ） */
+    var places = PART.room ? (window.PLACES || []) : [];
     $('#places').innerHTML = places.map(function(p, i){
       var cur = rooms[p] || {};
       return '<div class="place' + (cur.ng ? ' is-ng' : '') + '" data-p="' + esc(p) + '">' +
@@ -363,31 +411,57 @@
     }).join('');
     $$('#places .place').forEach(bindPlace);
 
-    /* 確認事項 */
     var all = window.CLAUSES || [];
-    var mine = (DATA.clauses && DATA.clauses.length)
-      ? all.filter(function(c){ return DATA.clauses.indexOf(c.t) >= 0; })
-      : [];
-    if(!mine.length) mine = all;   // 指定が無いときは、すべて表示します
+    /* 送った内容の記録（【送付内容】…）は、特約ではありません。外します */
+    var mycl = (DATA.clauses || []).filter(function(t){
+      return !(window.isPartsMark && window.isPartsMark(t));
+    });
 
     /* 特約の一覧に無いものは「この物件について」として、そのまま出します。
        管理画面で「個別に伝えたいこと」に書いた文が、ここに来ます。 */
     var known = {}, extra = [];
     all.forEach(function(c){ known[c.t] = 1; });
-    (DATA.clauses || []).forEach(function(t){
+    mycl.forEach(function(t){
       if(!known[t] && String(t).trim()) extra.push({ t:t, b:'', money:false, extra:true });
     });
-    $('#cl-money').innerHTML = mine.filter(function(c){ return c.money; }).map(clHtml).join('')
-      || '<p class="note">該当なし</p>';
-    $('#cl-other').innerHTML =
-      (extra.length ? '<p class="note" style="margin:2px 0 6px">この物件・お部屋について</p>' + extra.map(clHtml).join('') : '') +
-      (mine.filter(function(c){ return !c.money; }).map(clHtml).join('')
-        || (extra.length ? '' : '<p class="note">該当なし</p>'));
-    $('#manners').innerHTML = manners().map(function(m){
-      return '<label class="chk mn' + (checks[m] ? ' on' : '') + '" data-t="' + esc(m) + '">' +
-        '<input type="checkbox"' + (checks[m]?' checked':'') + '>' +
-        '<div class="chk-h"><i class="box"></i><div class="chk-t">' + esc(m) + '</div></div></label>';
-    }).join('');
+
+    /* 確認事項（重要事項をお送りした方だけ） */
+    if(!PART.terms){
+      $('#cl-money').innerHTML = '';
+      $('#cl-other').innerHTML = '';
+    }else{
+      var mine = mycl.length
+        ? all.filter(function(c){ return mycl.indexOf(c.t) >= 0; })
+        : [];
+      if(!mine.length) mine = all;   // 指定が無いときは、すべて表示します
+
+      $('#cl-money').innerHTML = mine.filter(function(c){ return c.money; }).map(clHtml).join('')
+        || '<p class="note">該当なし</p>';
+      $('#cl-other').innerHTML =
+        (extra.length ? '<p class="note" style="margin:2px 0 6px">この物件・お部屋について</p>' + extra.map(clHtml).join('') : '') +
+        (mine.filter(function(c){ return !c.money; }).map(clHtml).join('')
+          || (extra.length ? '' : '<p class="note">該当なし</p>'));
+    }
+
+    /* 入居のしおり（ご案内と、暮らしのルール）をお送りした方だけ */
+    if(!PART.guide){
+      $('#guide-body').innerHTML = '';
+      $('#manners').innerHTML = '';
+    }else{
+      /* 重要事項をお送りしないときは、個別のお知らせをこちらに出します。
+         せっかく書いていただいた文が、どこにも出ないままになるためです。 */
+      $('#guide-body').innerHTML = infoHtml() +
+        ((!PART.terms && extra.length)
+          ? ('<div class="card"><h2>この物件・お部屋について</h2>' +
+             '<p class="lead">お読みいただいたものに、印を付けてください。</p>' +
+             extra.map(clHtml).join('') + '</div>')
+          : '');
+      $('#manners').innerHTML = manners().map(function(m){
+        return '<label class="chk mn' + (checks[m] ? ' on' : '') + '" data-t="' + esc(m) + '">' +
+          '<input type="checkbox"' + (checks[m]?' checked':'') + '>' +
+          '<div class="chk-h"><i class="box"></i><div class="chk-t">' + esc(m) + '</div></div></label>';
+      }).join('');
+    }
     $$('.clwrap').forEach(bindClause);      /* 特約（理由つき） */
     $$('#manners .chk').forEach(bindChk);   /* 暮らしのルール（理由なし） */
   }
@@ -558,12 +632,15 @@
     var note = CLOSED
       ? ('<div class="closed-note"><b>ご返信の受付は終了しました</b>' +
          esc(CLOSED_MSG || '') +
-         '<br>このご案内（ゴミの出し方・駐車場の区画・集合ポストのダイヤルなど）は、' +
-         'これまでどおり、いつでもご覧いただけます。</div>')
+         (PART.guide
+           ? ('<br>このご案内（ゴミの出し方・駐車場の区画・集合ポストのダイヤルなど）は、' +
+              'これまでどおり、いつでもご覧いただけます。')
+           : '<br>ご用の際は、管理会社までご連絡ください。') + '</div>')
       : '';
-    $('#info-body').innerHTML = note + infoHtml() + keepHtml();
+    /* 入居のしおりをお送りしていない方には、ご案内の中身はありません */
+    $('#info-body').innerHTML = note + (PART.guide ? infoHtml() : '') + keepHtml();
     $('#ask5').innerHTML = askHtml();
-    ['#s-pw','#s1','#s2','#s3','#s-done'].forEach(function(x){ $(x).classList.add('hide'); });
+    ['#s-pw','#s1','#s2','#s-guide','#s3','#s-done'].forEach(function(x){ $(x).classList.add('hide'); });
     $('#foot').classList.add('hide');
     $('#steps').classList.add('hide');       /* ①②③ は、ご案内の画面では出しません */
     $('#s-info').classList.remove('hide');
@@ -767,68 +844,77 @@
 
   /* ---------- 進みぐあい ---------- */
   function progress(){
-    var places = window.PLACES || [];
+    var key = nowKey();
+    var places = PART.room ? (window.PLACES || []) : [];
     var doneP = places.filter(function(p){ return rooms[p] && rooms[p].ng !== null; }).length;
     var total = places.length;
-    var pct = total ? Math.round(doneP / total * 100) : 0;
-    if(step === 2) pct = 100;
-    if(step === 3) pct = 100;
-    $('#bar').style.width = (step === 1 ? pct : 100) + '%';
+    var pct = total ? Math.round(doneP / total * 100) : 100;
+    $('#bar').style.width = (key === 'room' ? pct : 100) + '%';
     var okAll = (doneP === total);
 
     /* 暮らしのルールは、全部に印が付くまで先へ進めません。 */
-    var mn = manners();
+    var mn = PART.guide ? manners() : [];
     var mnLeft = mn.filter(function(m){ return !checks[m]; }).length;
 
-    $('#next').disabled = (step === 1 && !okAll) || (step === 2 && mnLeft > 0);
-    $('#next').textContent = (step === 1)
-      ? (okAll ? '次へ（ご説明の確認）' : '残り ' + (total - doneP) + 'か所')
-      : (step === 2
-          ? (mnLeft > 0 ? '暮らしのルールが残り ' + mnLeft + ' 件' : '確認')
-          : '送信する');
+    var nx = NEXTT[FLOW[step]] || '次へ';      /* つぎの段のご案内 */
+    $('#next').disabled = (key === 'room' && !okAll) || (key === 'guide' && mnLeft > 0);
+    $('#next').textContent =
+      (key === 'room')  ? (okAll ? nx : '残り ' + (total - doneP) + 'か所') :
+      (key === 'guide') ? (mnLeft > 0 ? '暮らしのルールが残り ' + mnLeft + ' 件' : nx) :
+      (key === 'send')  ? '送信する' : nx;
   }
 
   /* ---------- 画面の切り替え ---------- */
   function go(n){
-    step = n;
+    step = Math.min(Math.max(1, n), FLOW.length);
+    var key = nowKey();
     $('#s-pw').classList.add('hide');
-    ['#s1','#s2','#s3'].forEach(function(s,i){ $(s).classList.toggle('hide', i !== n-1); });
+    SECS.forEach(function(x){ $(x).classList.toggle('hide', x !== SECT[key]); });
     $('#foot').classList.remove('hide');
-    $('#back').classList.toggle('hide', n === 1);
+    $('#back').classList.toggle('hide', step === 1);
     $('#steps').classList.remove('hide');
-    $$('#steps span').forEach(function(sp){ sp.classList.toggle('on', Number(sp.getAttribute('data-s')) === n); });
-    if(n === 3){ drawSum(); $('#ask3').innerHTML = askHtml(); }
+    $$('#steps span').forEach(function(sp){
+      sp.classList.toggle('on', Number(sp.getAttribute('data-s')) === step); });
+    if(key === 'send'){ drawSum(); $('#ask3').innerHTML = askHtml(); }
     window.scrollTo(0,0);
     save(); progress();
   }
 
   function drawSum(){
-    var places = window.PLACES || [];
+    var places = PART.room ? (window.PLACES || []) : [];
     var ng = places.filter(function(p){ return rooms[p] && rooms[p].ng; });
-    var all = (window.CLAUSES||[]).concat(manners().map(function(m){ return {t:m}; }));
-    var mine = all.filter(function(c){ return checks.hasOwnProperty(c.t) || true; });
+    /* 画面に出ている分（特約・暮らしのルール）だけを数えます */
     var shown = $$('.chk').map(function(e){ return e.getAttribute('data-t'); });
     var noChk = shown.filter(function(t){ return !checks[t]; });
     var photos = 0;
     places.forEach(function(p){ if(rooms[p]) photos += (rooms[p].photos||[]).length; });
 
     var h = '';
-    h += row('ご確認いただいた箇所', places.length + ' か所');
-    h += row('気になるところ', ng.length ? ('<b class="sum-ng">' + ng.length + ' か所</b>') : '<b>なし</b>');
-    if(ng.length) h += row('　場所', esc(ng.join('、')));
-    h += row('写真', photos + ' 枚');
-    h += row('ご説明の確認', noChk.length ? ('<b class="sum-ng">未確認 ' + noChk.length + ' 件</b>') : '<b>すべて確認済み</b>');
-    if(noChk.length) h += row('　未確認', esc(noChk.join('、')));
+    h += row('ご確認いただく内容', esc(partLabel()));
+    if(PART.room){
+      h += row('ご確認いただいた箇所', places.length + ' か所');
+      h += row('気になるところ', ng.length ? ('<b class="sum-ng">' + ng.length + ' か所</b>') : '<b>なし</b>');
+      if(ng.length) h += row('　場所', esc(ng.join('、')));
+      h += row('写真', photos + ' 枚');
+    }
+    if(shown.length){
+      var ttl = (PART.terms && PART.guide) ? 'ご説明・ルールの確認'
+              : (PART.terms ? 'ご説明の確認' : '暮らしのルールの確認');
+      h += row(ttl, noChk.length ? ('<b class="sum-ng">未確認 ' + noChk.length + ' 件</b>') : '<b>すべて確認済み</b>');
+      if(noChk.length) h += row('　未確認', esc(noChk.join('、')));
+    }
     $('#sum').innerHTML = h;
     function row(k,v){ return '<div class="sum-row"><span>' + k + '</span><span>' + v + '</span></div>'; }
   }
 
   /* ---------- 送信 ---------- */
   function submit(){
-    var places = window.PLACES || [];
+    var places = PART.room ? (window.PLACES || []) : [];
     var payload = {
       action:'submit', id:ID, pass:PASS,
-      guide: infoText(),        /* ご返信のあと、この文をそのままお送りします */
+      /* ご返信のあと、この文をそのままお送りします
+         （入居のしおりをお送りしていない方には、付けません） */
+      guide: PART.guide ? infoText() : '',
       rooms: places.map(function(p){
         var s = rooms[p] || {};
         return { place:p, ng:!!s.ng, comment:s.comment||'', photos:(s.ng ? (s.photos||[]) : []) };
@@ -857,9 +943,11 @@
         alert(res.err || '送信できませんでした。もう一度お試しください。'); return;
       }
       clear();
-      showDone(res.ng > 0
-        ? 'ありがとうございました。いただきました室内チェックのご内容は、ご退去時まで記録として保管させていただきます。'
-        : 'ありがとうございました。問題なしとして承りました。いただきました室内チェックのご内容は、ご退去時まで記録として保管させていただきます。');
+      showDone(!PART.room
+        ? 'ありがとうございました。いただきましたご確認の内容は、ご退去時まで記録として保管させていただきます。'
+        : (res.ng > 0
+            ? 'ありがとうございました。いただきました室内チェックのご内容は、ご退去時まで記録として保管させていただきます。'
+            : 'ありがとうございました。問題なしとして承りました。いただきました室内チェックのご内容は、ご退去時まで記録として保管させていただきます。'));
     }).catch(function(){
       keepAwake(false);
       veil(false);
@@ -868,10 +956,13 @@
   }
 
   function showDone(msg){
-    ['#s-pw','#s1','#s2','#s3'].forEach(function(s){ $(s).classList.add('hide'); });
+    ['#s-pw','#s1','#s2','#s-guide','#s3'].forEach(function(s){ $(s).classList.add('hide'); });
     $('#foot').classList.add('hide');
     $('#steps').classList.add('hide');
     $('#s-done').classList.remove('hide');
+    /* お部屋のご案内は、入居のしおりをお送りした方だけにお出しします */
+    $('#done-info').classList.toggle('hide', !PART.guide);
+    $('#done-info-note').classList.toggle('hide', !PART.guide);
     $('#done-msg').textContent = msg;
     $('#ask4').innerHTML = askHtml();
     $('#bar').style.width = '100%';
@@ -941,7 +1032,7 @@
   $('#pw-go').addEventListener('click', function(){ openIt(); });
   $('#pw').addEventListener('keydown', function(e){ if(e.key === 'Enter') openIt(); });
   $('#next').addEventListener('click', function(){
-    if(step < 3) go(step + 1); else submit();
+    if(step < FLOW.length) go(step + 1); else submit();
   });
   $('#back').addEventListener('click', function(){ if(step > 1) go(step - 1); });
   /* 「すべてに印を付ける」は外しました。

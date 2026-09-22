@@ -511,6 +511,20 @@ body:not(.v-done) #sec-done{ display:none; }
 .cl .m{font-size:11.5px;font-weight:500;background:var(--fill2);color:var(--ink2);
   border-radius:100px;padding:2px 9px;margin-left:7px;}
 
+/* ---- 送る内容（3つのうち、送るものを選びます） ---- */
+#pt-list{display:grid;gap:8px;}
+.pt{display:block;border-radius:13px;padding:13px 15px;cursor:pointer;
+  background:var(--fill);transition:background .15s;}
+.pt:hover{background:var(--fill2);}
+.pt input{width:20px;height:20px;margin-right:11px;vertical-align:-4px;accent-color:var(--ink);}
+.pt b{font-size:15px;font-weight:500;color:var(--ink3);transition:color .15s;}
+.pt.on b{color:var(--ink);font-weight:600;}
+.pt .pt-l{margin:6px 0 0 31px;font-size:12.5px;color:var(--ink3);line-height:1.6;}
+/* 送らない分の欄は、うすくして「送りません」とお伝えします */
+.off-note{display:none;font-size:12.5px;color:var(--ng);margin:6px 0 0;line-height:1.6;}
+.is-off .off-note{display:block;}
+.is-off #cl-list,.is-off #pick-list,.is-off .row{opacity:.4;}
+
 /* ---- つくったあとの控え ---- */
 .made{background:var(--fill);border:0;border-radius:18px;padding:20px;margin-top:18px;}
 .made .k{font-size:12.5px;font-weight:500;color:var(--ink3);margin-top:14px;}
@@ -1068,10 +1082,17 @@ body:not(.v-done) #sec-done{ display:none; }
 
       <section class="sec" id="sec-new">
         <h2 class="sec-h">新規登録</h2>
-        <p class="sec-lead">入居者様へ、室内確認と重要事項の確認依頼を送付します。必須は物件名・号室・氏名・メールの4項目です。</p>
+        <p class="sec-lead">入居者様へ、入居のしおり・室内確認・重要事項の確認依頼を送付します。送る内容は、印を付けたものだけを選べます。必須は物件名・号室・氏名・メールの4項目です。</p>
         <div id="s-new">
     <div class="card">
       <div id="dr-bar" class="dr hide"></div>
+
+      <div class="sec">
+        <p class="sec-t">送る内容</p>
+        <p class="hint">印を付けたものだけを、入居者様の画面に出します。<b>1つ以上</b>お選びください</p>
+        <div id="pt-list"></div>
+        <p class="fe" id="pt-err"></p>
+      </div>
 
       <div class="cols">
         <div class="sec">
@@ -1193,15 +1214,17 @@ body:not(.v-done) #sec-done{ display:none; }
         </div>
       </div>
 
-      <div class="sec">
+      <div class="sec" id="sec-pick">
         <p class="sec-t">この物件の設定</p>
         <p class="hint">該当項目を選択してください（該当なしの場合は未選択のまま）</p>
+        <p class="off-note">「入居のしおり」に印が付いていないため、この内容は入居者様には出ません。</p>
         <div id="pick-list"></div>
       </div>
 
-      <div class="sec">
+      <div class="sec" id="sec-cl">
         <p class="sec-t">この契約に該当する特約</p>
         <p class="hint">チェックしたものだけ入居者に表示されます／<b>タイトルを押すと文面が開きます</b></p>
+        <p class="off-note">「重要事項」に印が付いていないため、この内容は入居者様には出ません。</p>
         <div class="row" style="margin:12px 0 10px;">
           <button type="button" class="btn ghost sm" id="cl-all">全選択</button>
           <button type="button" class="btn ghost sm" id="cl-none">全解除</button>
@@ -1303,7 +1326,7 @@ body:not(.v-done) #sec-done{ display:none; }
   <img alt="">
 </div>
 
-<script src="clauses.js?v=7"></script>
+<script src="clauses.js?v=8"></script>
 <script src="config.js?v=3"></script>
 <script>
 (function(){
@@ -1765,6 +1788,63 @@ body:not(.v-done) #sec-done{ display:none; }
              .filter(function(v){ return v; });
   }
 
+  /* ---- 送る内容（入居のしおり・室内チェック・重要事項）----------------
+       印を付けたものだけを、入居者様の画面に出します。
+       何を送ったかは、特約の一覧のいちばん後ろに1行で残します
+       （clauses.js の partsMark / partsRead が、その1行の書き手と読み手です）。
+     ---------------------------------------------------------------------- */
+  function drawParts(){
+    $('#pt-list').innerHTML = (window.PARTS || []).map(function(p){
+      return '<label class="pt on" data-k="' + esc(p.key) + '">' +
+        '<input type="checkbox" checked><b>' + esc(p.t) + '</b>' +
+        '<p class="pt-l">' + esc(p.lead || '') + '</p></label>';
+    }).join('');
+    $$('#pt-list .pt').forEach(function(el){
+      var box = el.querySelector('input');
+      box.addEventListener('change', function(){
+        el.classList.toggle('on', box.checked);
+        $('#pt-err').textContent = '';
+        partPaint();
+      });
+    });
+    partPaint();
+  }
+
+  /* 印の付いているものの名前（['guide','room','terms'] の形）*/
+  function partKeys(){
+    return $$('#pt-list .pt').filter(function(e){ return e.querySelector('input').checked; })
+             .map(function(e){ return e.getAttribute('data-k'); });
+  }
+
+  /* 送らない分の欄を、うすくします（入れても出ない、と分かるように）*/
+  function partPaint(){
+    var on = {};
+    partKeys().forEach(function(k){ on[k] = 1; });
+    var pick = $('#sec-pick'), cl = $('#sec-cl');
+    if(pick) pick.classList.toggle('is-off', !on.guide);
+    if(cl)   cl.classList.toggle('is-off', !on.terms);
+  }
+
+  /* 最初の状態（3つとも送る）に戻します */
+  function resetParts(){
+    $$('#pt-list .pt').forEach(function(e){
+      e.querySelector('input').checked = true;
+      e.classList.add('on');
+    });
+    $('#pt-err').textContent = '';
+    partPaint();
+  }
+
+  /* 選んだものの名前を、つなげて出します（「入居のしおり・室内チェック」）*/
+  function partLabel(keys){
+    var on = {};
+    (keys || []).forEach(function(k){ on[k] = 1; });
+    return (window.PARTS || []).filter(function(p){ return on[p.key]; })
+             .map(function(p){ return p.t; }).join('・');
+  }
+
+  drawParts();
+
   function drawClauses(){
     /* プルダウンで出すものは、チェックの一覧には出しません */
     $('#cl-list').innerHTML = (window.CLAUSES||[]).filter(function(c){ return !isPick(c); }).map(function(c){
@@ -1948,6 +2028,7 @@ body:not(.v-done) #sec-done{ display:none; }
     d.picks = $$('#pick-list select').map(function(sl){ return sl.value; });
     d.cl = $$('#cl-list .cl').filter(function(e){ return e.querySelector('input').checked; })
              .map(function(e){ return e.getAttribute('data-t'); });
+    d.pt = partKeys();
     try{ localStorage.setItem(DKEY, JSON.stringify(d)); }catch(e){}
   }
   function draftGet(){
@@ -1971,6 +2052,15 @@ body:not(.v-done) #sec-done{ display:none; }
         e.querySelector('input').checked = y;
         e.classList.toggle('on', y);
       });
+    }
+    if(d.pt){
+      var pon = {}; d.pt.forEach(function(k){ pon[k] = 1; });
+      $$('#pt-list .pt').forEach(function(e){
+        var y = !!pon[e.getAttribute('data-k')];
+        e.querySelector('input').checked = y;
+        e.classList.toggle('on', y);
+      });
+      partPaint();
     }
     feAllClear();
     $('#dr-bar').classList.add('hide');
@@ -2050,6 +2140,10 @@ body:not(.v-done) #sec-done{ display:none; }
        dup … お知らせを見たあとかどうか。undefined のときだけ、お知らせを出します。
              （前の記録は、ここでは消しません） */
   function create(sendMail, dup){
+    /* 送る内容（印を付けたものだけ）。
+       サーバーには parts として渡し、あわせて特約の一覧のいちばん後ろにも
+       1行で残します。入居者の画面は、どちらからでも読み取れます。 */
+    var PT = partKeys();
     var body = {
       action:'create', key:KEY,
       bldg:$('#f-bldg').value.trim(), room:$('#f-room').value.trim(),
@@ -2064,7 +2158,9 @@ body:not(.v-done) #sec-done{ display:none; }
                 .concat(pickedClauses())
                 .concat(($('#f-extra').value || '').split(/\r?\n/)
                   .map(function(x){ return x.trim(); })
-                  .filter(function(x){ return x; })),
+                  .filter(function(x){ return x; }))
+                .concat([window.partsMark(PT)]),
+      parts: PT,
       sendMail: !!sendMail
     };
     if(planData) body.plan = { data:planData, name:'madori.jpg' };
@@ -2072,6 +2168,15 @@ body:not(.v-done) #sec-done{ display:none; }
     /* 「必須」の欄を、1つずつ見ます。だめなところは、その場に赤字で出します */
     var first = null, allOk = true;
     NEED.forEach(function(el){ if(!feOk(el)){ allOk = false; if(!first) first = el; } });
+
+    /* 送る内容が1つも選ばれていないと、入居者様には何も出ません */
+    if(!PT.length){
+      $('#pt-err').textContent = '送る内容を、1つ以上お選びください。';
+      allOk = false;
+      if(!first) first = $('#pt-list input');
+    }else{
+      $('#pt-err').textContent = '';
+    }
 
     /* 番号を選んだのに、区画の種類が空のまま */
     var kindMiss = null;
@@ -2136,6 +2241,7 @@ body:not(.v-done) #sec-done{ display:none; }
       parkClear();
       dialClear();
       resetClauses();
+      resetParts();
       feAllClear();
       draftDrop();
       planReset();
@@ -2157,6 +2263,7 @@ body:not(.v-done) #sec-done{ display:none; }
       }else{
         flash('<b>✅ 作成しました。入居者へメールを送信しました。</b><br>' +
               esc(body.bldg) + ' ' + esc(body.room) + '　' + esc(body.name) + ' 様<br>' +
+              '送った内容：' + esc(partLabel(PT)) + '<br>' +
               'パスワードは、下のカードを押すとご確認いただけます。');
       }
     }).catch(function(){ veil(false); $('#new-err').textContent = '通信できませんでした。'; });

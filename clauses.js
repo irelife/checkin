@@ -182,3 +182,58 @@ window.MANNERS = [
 'ご転居や連絡先の変更、修繕のご依頼、ご契約・ご解約に関するご連絡は、弊社ホームページのお問い合わせよりお願いいたします（記録が残るため、行き違いを防ぐことができます）'
 ];
 
+
+/* 送る内容（3つのうち、印を付けたものだけを入居者の画面に出します）-------
+key  … 中で使う名前です。変えないでください
+t    … 画面に出る名前
+tag  … 記録に残す短い名前。この字で見分けますので、重ならない字にしてください
+lead … 管理の画面で、名前の下に小さく出るご説明             */
+window.PARTS = [
+{ key:'guide', t:'入居のしおり', tag:'しおり',
+lead:'駐車場・集合ポストのダイヤル・ゴミの出し方・暮らしのルール（モラル）のご案内です' },
+{ key:'room', t:'室内チェック', tag:'室内',
+lead:'お部屋のキズ・汚れ・不具合を、場所ごとにご確認いただきます' },
+{ key:'terms', t:'重要事項', tag:'重要事項',
+lead:'重要事項説明書の特約について、1つずつご確認いただきます' }
+];
+
+/* 何を送ったかは、特約の一覧のいちばん後ろに、この1行で残します。
+   入居者の画面には出しません（この行だけは、見分けて外しています）。 */
+window.PARTS_MARK = '【送付内容】';
+
+/* 選んだものを、記録に残す1行にします */
+window.partsMark = function(keys){
+  var on = {};
+  (keys || []).forEach(function(k){ on[k] = 1; });
+  var t = (window.PARTS || []).filter(function(p){ return on[p.key]; })
+            .map(function(p){ return p.tag; });
+  return window.PARTS_MARK + (t.length ? t.join('・') : 'なし');
+};
+
+/* 何を送ったかを読み取ります。
+   v … ['guide','room'] のような並び、または特約の一覧（上の1行をさがします）
+   どちらも見つからないときは、これまでどおり「すべて送った」ものとします。 */
+window.partsRead = function(v){
+  var P = window.PARTS || [], all = {}, out = {};
+  P.forEach(function(p){ all[p.key] = true; out[p.key] = false; });
+
+  var list = (Object.prototype.toString.call(v) === '[object Array]')
+               ? v : (v == null ? [] : [v]);
+  var mark = '', keyed = false;
+  list.forEach(function(x){
+    var s = String(x == null ? '' : x);
+    if(s.indexOf(window.PARTS_MARK) === 0){ mark = s; return; }
+    if(Object.prototype.hasOwnProperty.call(all, s)){ out[s] = true; keyed = true; }
+  });
+  if(keyed) return out;
+  if(mark){
+    P.forEach(function(p){ out[p.key] = mark.indexOf(p.tag) >= 0; });
+    return out;
+  }
+  return all;
+};
+
+/* 上の1行（送付内容の記録）かどうか */
+window.isPartsMark = function(t){
+  return String(t == null ? '' : t).indexOf(window.PARTS_MARK) === 0;
+};
