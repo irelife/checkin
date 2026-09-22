@@ -742,7 +742,8 @@ body:not(.v-done) #sec-done{ display:none; }
 .dp-row b{display:block;font-size:15px;font-weight:600;}
 .dp-row span{display:block;margin-top:2px;font-size:12.5px;color:var(--ink2);}
 .dp-note{margin:16px 0 0;font-size:12.5px;line-height:1.85;color:var(--ink3);}
-.dp-a{display:flex;gap:10px;margin-top:22px;}
+.dp-a{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px;}
+.dp-a .btn{min-width:8.5em;}
 .dp-a .btn{flex:1 1 0;margin:0;}
 @media (max-width:560px){ .dp-card{padding:22px 18px;} }
 
@@ -2006,8 +2007,52 @@ body:not(.v-done) #sec-done{ display:none; }
     $('#dr-bar').classList.remove('hide');
   });
 
-  /* ---- 作る ---- */
-  function create(sendMail){
+  /* ★ 同じ物件・同じ号室の記録をさがします（取り消したものは除きます）。
+       登録のたびに見て、あれば先におうかがいします。 */
+  function sameRoomRows(bldg, room){
+    var b = findKey(bldg), m = findKey(room);
+    if(!b || !m) return [];
+    return ROWS.filter(function(r){
+      if(String(r.status || '') === '取消') return false;
+      return findKey(r.bldg) === b && findKey(r.room) === m;
+    });
+  }
+
+  /* ★ 同じ号室の記録が見つかったときの、おうかがい。
+       go(消すもの) … 「残して作る」なら null、「消して作る」なら その一覧 */
+  function askDup(list, bldg, room, go){
+    var h = [];
+    h.push('<div class="dp-card">');
+    h.push('<h3>この号室には、すでに記録があります</h3>');
+    h.push('<p class="dp-lead"><b>' + esc(bldg) + '　' + esc(room) + '</b> の記録が ' +
+           list.length + ' 件 見つかりました。前の記録を、どうしますか。</p>');
+    h.push('<div class="dp-list">' + list.map(function(r){
+      var st = String(r.status || '') || '（状況なし）';
+      var d  = r.doneAt || r.replied || r.created || '';
+      return '<div class="dp-row"><b>' + esc(st) + '　' + esc(r.name || '') + ' 様</b>' +
+             '<span>' + (d ? jpDate(String(d).slice(0, 10)) : '') + '</span></div>';
+    }).join('') + '</div>');
+    h.push('<p class="dp-note">' +
+           '・「消して作る」を選ぶと、上の記録はまるごと消えます。<b>元にはもどせません。</b><br>' +
+           '・スプレッドシートの「一覧」と「回答」の行も消えます<br>' +
+           '・写真と間取り図は、ドライブのごみ箱に入ります<br>' +
+           '・前の入居者様の証跡として残すなら、「残して作る」をお選びください</p>');
+    h.push('<div class="dp-a">' +
+           '<button type="button" class="btn sm ghost" id="du-no">やめる</button>' +
+           '<button type="button" class="btn sm ghost" id="du-keep">残して作る</button>' +
+           '<button type="button" class="btn sm ng" id="du-drop">消して作る</button></div>');
+    h.push('</div>');
+    $('#drop').innerHTML = h.join('');
+    $('#drop').classList.add('on');
+    $('#du-no').addEventListener('click', dropClose);
+    $('#du-keep').addEventListener('click', function(){ dropClose(); go(null); });
+    $('#du-drop').addEventListener('click', function(){ dropClose(); go(list); });
+  }
+
+  /* ---- 作る ----
+       dup … おうかがいの答え。undefined のときだけ、おうかがいします。
+             null＝前の記録は残す ／ 一覧＝作ったあとに、それを消す */
+  function create(sendMail, dup){
     var body = {
       action:'create', key:KEY,
       bldg:$('#f-bldg').value.trim(), room:$('#f-room').value.trim(),
@@ -2072,6 +2117,16 @@ body:not(.v-done) #sec-done{ display:none; }
       try{ first.scrollIntoView({ behavior:'smooth', block:'center' }); }catch(e){}
       return;
     }
+    /* ★ 同じ物件・同じ号室の記録があれば、作る前におうかがいします */
+    if(dup === undefined){
+      var same = sameRoomRows(body.bldg, body.room);
+      if(same.length){
+        askDup(same, body.bldg, body.room, function(drop){ create(sendMail, drop); });
+        return;
+      }
+      dup = null;
+    }
+
     $('#new-err').textContent = '';
     veil(true);
     post(body).then(function(res){
@@ -2107,6 +2162,9 @@ body:not(.v-done) #sec-done{ display:none; }
               esc(body.bldg) + ' ' + esc(body.room) + '　' + esc(body.name) + ' 様<br>' +
               'パスワードは、下のカードを押すとご確認いただけます。');
       }
+      /* ★ 前の記録を消すのは、作れたあとです。
+           先に消すと、作れなかったときに、どちらも無くなってしまいます。 */
+      if(dup && dup.length) doDrop(dup, '前の記録');
     }).catch(function(){ veil(false); $('#new-err').textContent = '通信できませんでした。'; });
   }
   $('#new-go').addEventListener('click', function(){ create(true); });

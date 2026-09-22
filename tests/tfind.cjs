@@ -29,5 +29,28 @@ ok(box.hitFind(R, 'アイレニック　201') === true,  '★全角の空白で�
 ok(box.hitFind({ bldg:'', room:'' }, '201') === false, '中身が空なら当たらない');
 ok(box.hitFind(R, '   ') === true,                '空白だけなら、ぜんぶ出る');
 
+/* ── 同じ物件・同じ号室をさがす（登録のときのおうかがい用）── */
+{
+  const a2 = src.indexOf('  function sameRoomRows(bldg, room){');
+  const b2 = src.indexOf('\n  }', a2) + 4;
+  const ROWS = [
+    { id:'1', bldg:'アイレニック', room:'201', status:'完了' },
+    { id:'2', bldg:'アイレニック', room:'202', status:'未返信' },
+    { id:'3', bldg:'マーベラス',   room:'201', status:'完了' },
+    { id:'4', bldg:'アイレニック', room:'２０１', status:'取消' },   /* 取り消しは除く */
+    { id:'5', bldg:'アイレニック', room:'２０１', status:'返信済' },  /* 全角でも同じ部屋 */
+  ];
+  const same = new Function('ROWS', 'findKey',
+    src.slice(a2, b2) + '; return sameRoomRows;')(ROWS, box.findKey);
+
+  const ids = (b, r) => same(b, r).map(x => x.id).join(',');
+  ok(ids('アイレニック', '201') === '1,5', '★同じ物件・同じ号室を見つける（取り消しは除く・全角も同じ）');
+  ok(ids('アイレニック', '202') === '2',   '別の号室は混ざらない');
+  ok(ids('マーベラス', '201')   === '3',   '別の物件は混ざらない');
+  ok(ids('アイレニック', '999') === '',    '無ければ空');
+  ok(ids('', '201') === '',                '物件名が空なら、おうかがいしない');
+  ok(ids('アイレニック', '') === '',       '号室が空なら、おうかがいしない');
+}
+
 console.log('PASS=' + pass + ' FAIL=' + fail);
 process.exit(fail === 0 ? 0 : 1);
