@@ -103,10 +103,16 @@ main{max-width:none;margin:0;padding:0;}
 .sd-i i.hot{background:var(--warn);color:#3a2d00;}
 .sd-i.on i.hot{background:var(--warn);color:#3a2d00;}
 .sd-f{display:grid;gap:6px;padding:0 4px;}
-.sd-f select{width:100%;padding:8px 10px;border:0;border-radius:9px;
+#side .sd-f select{width:100%;padding:8px 10px;border:0;border-radius:9px;
   background:rgba(255,255,255,.12);font-size:12.5px;color:#fff;}
+/* ★押したときに白地へ変わると、白文字と重なって読めなくなります。
+     共通の決まり（select:focus{background:#fff}）が同じ強さで
+     あとに書いてあるため、#side を付けて打ち消します。 */
+#side .sd-f select:hover{background:rgba(255,255,255,.18);}
+#side .sd-f select:focus{background:rgba(255,255,255,.22);color:#fff;
+  outline:2px solid rgba(255,255,255,.55);outline-offset:-2px;box-shadow:none;}
 /* えらぶ中身は、ブラウザが白地で出します。文字を黒に戻しておきます */
-.sd-f select option{background:#fff;color:var(--ink);}
+#side .sd-f select option{background:#fff;color:var(--ink);}
 .sd-foot{padding:26px 10px 0;font-size:10.5px;color:rgba(255,255,255,.45);}
 
 .doc-h1{font-size:31px;font-weight:700;letter-spacing:-.022em;margin:0;}
@@ -1013,7 +1019,7 @@ body:not(.v-done) #sec-done{ display:none; }
         <svg class="sd-mag" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
           <circle cx="11" cy="11" r="7"></circle><path d="M16.6 16.6 L21 21"></path>
         </svg>
-        <input type="text" id="q" placeholder="検索（物件名）">
+        <input type="text" id="q" placeholder="検索（物件名・号室）">
       </div>
       <nav class="sd-nav" id="tabs3">
         <div class="sd-h">対応</div>
@@ -2820,6 +2826,30 @@ body:not(.v-done) #sec-done{ display:none; }
     }).join('') + '</div>';
   }
 
+  /* ★探すための道具。物件名と号室の両方から探します。
+       ・「アイレニック 201」のように分けて書いても当たります
+       ・「201」だけでも当たります
+       ・全角の数字・英字・空白は、半角と同じに見なします
+       お名前やエリアでは探しません（そこは［絞り込み］の役目です） */
+  function findKey(v){
+    return String(v == null ? '' : v)
+      .replace(/[０-９Ａ-Ｚａ-ｚ]/g, function(c){
+        return String.fromCharCode(c.charCodeAt(0) - 0xFEE0);
+      })
+      .replace(/　/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim().toLowerCase();
+  }
+  function hitFind(r, q){
+    if(!q) return true;
+    var hay = findKey(String(r.bldg || '') + ' ' + String(r.room || ''));
+    var ws  = findKey(q).split(' ');
+    for(var i = 0; i < ws.length; i++){
+      if(ws[i] && hay.indexOf(ws[i]) < 0) return false;
+    }
+    return true;
+  }
+
   /* 3つの場所を、それぞれ描きます。タブではないので、いつも全部描きます */
   function drawList(){
     var seen = { act:false, wait:false, done:false };
@@ -2842,9 +2872,7 @@ body:not(.v-done) #sec-done{ display:none; }
       if(!(k === 'done' ? inDonePeriod(r) : inPeriod(r))) return false;
       if(!inSec(r, k)) return false;
       if(!matchFilt(r)) return false;
-      if(!q) return true;
-      /* 探すのは物件名だけです。お名前やエリアでは探しません */
-      return String(r.bldg || '').indexOf(q) >= 0;
+      return hitFind(r, q);
     });
 
     /* 「対応が必要」の中は、急ぐ順に並べます。
