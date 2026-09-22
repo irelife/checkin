@@ -955,6 +955,28 @@ body:not(.v-done) #sec-done{ display:none; }
 .item.gray .i-tx b{color:var(--ink2);}
 .item.gray .i-desc{color:var(--ink3);}
 
+/* ---- メールが届かなかった件は、カードぜんたいを、うすい赤にします ----
+     ひと目で「このお部屋は、まだ届いていない」と分かるようにするためです */
+#list-act .item.is-ng,
+#list-wait .item.is-ng,
+#list-done .item.is-ng{background:#FBE7E3;
+  box-shadow:inset 0 0 0 1px rgba(199,54,42,.18);}
+#list-act .item.is-ng:hover,
+#list-wait .item.is-ng:hover,
+#list-done .item.is-ng:hover{box-shadow:inset 0 0 0 1px rgba(199,54,42,.26), var(--shadow);}
+#list-act .item.is-ng .i-tile,
+#list-wait .item.is-ng .i-tile,
+#list-done .item.is-ng .i-tile{background:linear-gradient(155deg,#FDF4F2 0%,#F7DED9 100%);}
+#list-act .item.is-ng .i-ic.big,
+#list-wait .item.is-ng .i-ic.big,
+#list-done .item.is-ng .i-ic.big{background:#fff;color:var(--ng);}
+#list-act .item.is-ng .i-tag,
+#list-wait .item.is-ng .i-tag,
+#list-done .item.is-ng .i-tag{background:var(--ng);color:#fff;}
+.item.is-ng .i-tx b,.item.gray.is-ng .i-tx b{color:#8E2A20;}
+.item.is-ng .i-sub{color:#A2584F;}
+.item.is-ng .i-desc.ng,.item.gray.is-ng .i-desc.ng{color:#8E2A20;}
+
 /* ---- 右がわ（えらんだ1件の中身）---- */
 .sd-hd{display:flex;align-items:flex-start;gap:14px;margin-bottom:4px;}
 /* 右がわの見出しの絵は、カードほど大きくしません */
@@ -3177,6 +3199,7 @@ body:not(.v-done) #sec-done{ display:none; }
     if(r.area)  sub.push(String(r.area));
     var hi = (String(r.status||'') === '返信済' && !!r.agentRe);
     return '<div class="item' + (needAct(r) ? '' : ' gray') +
+      (mailNg(r) ? ' is-ng' : '') +        /* 届かなかった件は、うすい赤 */
       (hi ? ' hi' : '') + (r.id === SEL ? ' on' : '') +
       '" data-id="' + esc(r.id) + '" data-nm="' + esc(nm) + '">' +
       '<div class="i-tile">' +
