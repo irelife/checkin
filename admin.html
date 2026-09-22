@@ -114,6 +114,9 @@ main{max-width:none;margin:0;padding:0;}
 /* えらぶ中身は、ブラウザが白地で出します。文字を黒に戻しておきます */
 #side .sd-f select option{background:#fff;color:var(--ink);}
 .sd-foot{padding:26px 10px 0;font-size:10.5px;color:rgba(255,255,255,.45);}
+/* いま見ている版。古いものが出ていないか、ここで分かります */
+.sd-ver{display:block;margin-top:4px;color:rgba(255,255,255,.34);}
+.login-foot .sd-ver{color:var(--ink3);}
 
 .doc-h1{font-size:31px;font-weight:700;letter-spacing:-.022em;margin:0;}
 .sec{margin-top:44px;scroll-margin-top:66px;}
@@ -517,7 +520,8 @@ body:not(.v-done) #sec-done{ display:none; }
 /* 送らない分の欄は、うすくして「送りません」とお伝えします */
 .off-note{display:none;font-size:12.5px;color:var(--ng);margin:6px 0 0;line-height:1.6;}
 .is-off .off-note{display:block;}
-.is-off #cl-list,.is-off #pick-list,.is-off .row,.is-off .file-row{opacity:.4;}
+.is-off #cl-list,.is-off #pick-list,.is-off .row,.is-off .file-row,
+.is-off .fr{opacity:.4;}
 
 /* ---- つくったあとの控え ---- */
 .made{background:var(--fill);border:0;border-radius:18px;padding:20px;margin-top:18px;}
@@ -1052,7 +1056,8 @@ body:not(.v-done) #sec-done{ display:none; }
         <button class="btn" type="submit" id="key-go">ログイン</button>
       </form>
       <div class="err" id="key-err"></div>
-      <div class="login-foot">IREライフ株式会社</div>
+      <div class="login-foot">IREライフ株式会社
+        <span class="sd-ver" id="sd-ver2"></span></div>
     </div>
   </section>
 
@@ -1081,7 +1086,8 @@ body:not(.v-done) #sec-done{ display:none; }
         <select id="f-mo" aria-label="月"></select>
         <select id="f-far" aria-label="エリア"></select>
       </div>
-      <div class="sd-foot">IREライフ株式会社</div>
+      <div class="sd-foot">IREライフ株式会社
+        <span class="sd-ver" id="sd-ver"></span></div>
     </aside>
 
     <!-- ★ 右は1本の縦スクロール。タブはありません -->
@@ -1206,24 +1212,29 @@ body:not(.v-done) #sec-done{ display:none; }
             <p class="fe"></p>
           </div>
 
-          <div class="fr fr2">
-            <div>
-              <label class="f" for="f-agco">仲介業者<span class="req">必須</span></label>
-              <input type="text" id="f-agco" placeholder="例: ○○不動産" autocomplete="off" data-need>
-              <p class="fe"></p>
-            </div>
-            <div>
-              <label class="f" for="f-agnm">担当者</label>
-              <input type="text" id="f-agnm" placeholder="例: 山田" autocomplete="off">
-              <p class="fe"></p>
-            </div>
-          </div>
+          <div id="ag-fields">
+            <p class="off-note" style="margin-top:22px;">「重要事項」に印が付いていないため、
+              仲介業者の欄は使いません（「説明を受けていない」とのご回答が出ないためです）。</p>
 
-          <div class="fr">
-            <label class="f" for="f-agml">業者メールアドレス<span class="req">必須</span></label>
-            <p class="hint">「説明を受けていない」との回答時の連絡先です</p>
-            <input type="email" id="f-agml" inputmode="email" autocomplete="off" data-need>
-            <p class="fe"></p>
+            <div class="fr fr2">
+              <div>
+                <label class="f" for="f-agco">仲介業者<span class="req">必須</span></label>
+                <input type="text" id="f-agco" placeholder="例: ○○不動産" autocomplete="off" data-need>
+                <p class="fe"></p>
+              </div>
+              <div>
+                <label class="f" for="f-agnm">担当者</label>
+                <input type="text" id="f-agnm" placeholder="例: 山田" autocomplete="off">
+                <p class="fe"></p>
+              </div>
+            </div>
+
+            <div class="fr">
+              <label class="f" for="f-agml">業者メールアドレス<span class="req">必須</span></label>
+              <p class="hint">「説明を受けていない」との回答時の連絡先です</p>
+              <input type="email" id="f-agml" inputmode="email" autocomplete="off" data-need>
+              <p class="fe"></p>
+            </div>
           </div>
         </div>
       </div>
@@ -1361,6 +1372,9 @@ body:not(.v-done) #sec-done{ display:none; }
 (function(){
   'use strict';
   var CFG = window.APP_CONFIG || {};
+  /* ★ 画面の版。手直しをするたび、ここを1つ上げてください。
+       左下に出ますので、古いものが出ていないか、その場で分かります。 */
+  var APPV = '2026/09/22 ③';
   var KEY = '';
   /* ★ v2.9）いま操作している人のお名前。
        完了・取り消し・督促・仲介への連絡のたびに、サーバーへ一緒に送り、
@@ -1372,6 +1386,10 @@ body:not(.v-done) #sec-done{ display:none; }
 
   function $(s){ return document.querySelector(s); }
   function $$(s){ return Array.prototype.slice.call(document.querySelectorAll(s)); }
+  try{
+    document.getElementById('sd-ver').textContent  = '版 ' + APPV;
+    document.getElementById('sd-ver2').textContent = '版 ' + APPV;
+  }catch(e){}
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){
     return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
   /* ★ 待ちの幕。文言を渡すと、そこに出します（2026/9/17）
@@ -1861,6 +1879,19 @@ body:not(.v-done) #sec-done{ display:none; }
          （送らないものを、そのまま持っておかないためです） */
       if(!on.room && planData) planReset();
     }
+    /* 仲介業者の欄は「重要事項」の画面のためのものです
+       （「説明を受けていない」とのご回答があったときの、ご連絡先）。
+       印が付いていないあいだは、書けないようにします。 */
+    var agf = $('#ag-fields');
+    if(agf){
+      agf.classList.toggle('is-off', !on.terms);
+      ['#f-agco','#f-agnm','#f-agml'].forEach(function(k){
+        var el = $(k);
+        if(!el) return;
+        el.disabled = !on.terms;
+        if(!on.terms) feClear(el);   /* 赤字が残らないようにします */
+      });
+    }
   }
 
   /* 最初の状態（3つとも送る）に戻します */
@@ -2128,7 +2159,11 @@ body:not(.v-done) #sec-done{ display:none; }
 
     /* 「必須」の欄を、1つずつ見ます。だめなところは、その場に赤字で出します */
     var first = null, allOk = true;
-    NEED.forEach(function(el){ if(!feOk(el)){ allOk = false; if(!first) first = el; } });
+    NEED.forEach(function(el){
+      /* 書けないようにしている欄（印の付いていない分）は、見ません */
+      if(el.disabled){ feClear(el); return; }
+      if(!feOk(el)){ allOk = false; if(!first) first = el; }
+    });
 
     /* 送る内容が1つも選ばれていないと、入居者様には何も出ません */
     if(!PT.length){
