@@ -1375,7 +1375,7 @@ body:not(.v-done) #sec-done{ display:none; }
   var CFG = window.APP_CONFIG || {};
   /* ★ 画面の版。手直しをするたび、ここを1つ上げてください。
        左下に出ますので、古いものが出ていないか、その場で分かります。 */
-  var APPV = '2026/09/22 ④';
+  var APPV = '2026/09/22 ⑤';
   var KEY = '';
   /* ★ v2.9）いま操作している人のお名前。
        完了・取り消し・督促・仲介への連絡のたびに、サーバーへ一緒に送り、
@@ -2267,7 +2267,7 @@ body:not(.v-done) #sec-done{ display:none; }
               esc(body.bldg) + ' ' + esc(body.room) + '　' + esc(body.name) + ' 様<br>' +
               esc(String(res.mailWarn)) + '<br>' +
               '<b>入居者様には、まだ届いていません。</b>' +
-              'その1件を開いて「案内文をコピー」から、お手元のメールでお送りください。');
+              'メールアドレスをご確認のうえ、もう一度お作りください。');
       }else{
         flash('<b>✅ 作成しました。入居者へメールを送信しました。</b><br>' +
               esc(body.bldg) + ' ' + esc(body.room) + '　' + esc(body.name) + ' 様<br>' +
@@ -3489,13 +3489,11 @@ body:not(.v-done) #sec-done{ display:none; }
     }
     if(guideOnly(r)){
       /* しおりだけの件は、督促をいたしません */
-      acts.push('<button class="btn sm ghost act-copy">案内文をコピー</button>');
       if(!mailNg(r)){
         acts.push('<button class="btn sm ghost act-mail">宛先を直して送り直す</button>');
       }
     }else if(!done){
       acts.push('<button class="btn sm ghost act-remind">督促メールを送る</button>');
-      acts.push('<button class="btn sm ghost act-copy">案内文をコピー</button>');
       if(!mailNg(r)){
         acts.push('<button class="btn sm ghost act-mail">宛先を直して送り直す</button>');
       }
@@ -3850,8 +3848,8 @@ body:not(.v-done) #sec-done{ display:none; }
           if(/不明な操作|不明な|unknown/i.test(e)){
             $('#mf-err').innerHTML =
               'サーバー（GAS）側に「送り直し」の受け口が、まだありません。<br>' +
-              'いまは、この箱を閉じて<b>「案内文をコピー」</b>から、' +
-              'お手元のメールで正しい宛先へお送りください。<br>' +
+              'いまは、この件を「一覧から消す」で下げてから、' +
+              '<b>新規登録で、正しい宛先でもう一度お作りください</b>。<br>' +
               '（受け口の作り方は「サーバー側のお願い.md」に書いています）';
           }else{
             $('#mf-err').textContent = e ||
@@ -3887,14 +3885,6 @@ body:not(.v-done) #sec-done{ display:none; }
       patchRow(id, { remind: Number(r && r.remind || 0) + 1, lastRemind: nowJp().slice(0,10) });
     }).catch(function(){ veil(false); alert('通信できませんでした。'); });
   }
-  function actCopy(id, btn){
-    var r = rowById(id);
-    if(!r) return;
-    var url = location.href.replace(/admin\.html.*$/,'') + '?id=' + r.id;
-    navigator.clipboard.writeText(r.name + ' 様\n\n▼ 入力ページ\n' + url + '\n')
-      .then(function(){ btn.textContent = 'コピーしました'; });
-  }
-
   /* ================================================================
      ★ v2.12）前の方の記録を消します
 
@@ -4071,7 +4061,6 @@ body:not(.v-done) #sec-done{ display:none; }
       if(b.classList.contains('act-agent')){ ev.stopPropagation(); openAgent(id); return; }
       if(b.classList.contains('act-mail')){ ev.stopPropagation(); askMail(id); return; }
       if(b.classList.contains('act-remind')){ ev.stopPropagation(); actRemind(id); return; }
-      if(b.classList.contains('act-copy')){ ev.stopPropagation(); actCopy(id, b); return; }
       if(b.classList.contains('act-reload')){
         ev.stopPropagation(); delete DERR[id]; paint(); fetchDetail(id); return;
       }
