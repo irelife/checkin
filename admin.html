@@ -1375,7 +1375,7 @@ body:not(.v-done) #sec-done{ display:none; }
   var CFG = window.APP_CONFIG || {};
   /* ★ 画面の版。手直しをするたび、ここを1つ上げてください。
        左下に出ますので、古いものが出ていないか、その場で分かります。 */
-  var APPV = '2026/09/22 ⑤';
+  var APPV = '2026/09/22 ⑥';
   var KEY = '';
   /* ★ v2.9）いま操作している人のお名前。
        完了・取り消し・督促・仲介への連絡のたびに、サーバーへ一緒に送り、
@@ -2251,7 +2251,9 @@ body:not(.v-done) #sec-done{ display:none; }
 
       /* つくったら、その件が入るところまで動きます */
       FILT = '';
-      if(only && res.id){
+      if(only && res.id && !res.done){
+        /* 古いサーバーのときだけ、こちらから完了にします
+           （新しいサーバーは、作った時点で完了にしてくれます） */
         post({ action:'done', key:KEY, id:res.id })
           .then(function(){ reload(true); })
           .catch(function(){ reload(true); });
@@ -2906,7 +2908,11 @@ body:not(.v-done) #sec-done{ display:none; }
           いただく必要があります（「サーバー側のお願い.md」をご覧ください）*/
   function guideOnly(r){
     var o = partsOf(r, null);
-    return !!(o && o.guide && !o.room && !o.terms);
+    if(!(o && o.guide && !o.room && !o.terms)) return false;
+    /* ご返信をいただいて、印の付かなかったものがあるときは、
+       ふつうの件と同じように「要対応」でお見せします */
+    if(String(r.status||'') === '返信済' && Number(r.noCheck||0) > 0) return false;
+    return true;
   }
 
   /* ★ メールが届かなかった件（宛先のまちがい）------------------------------
