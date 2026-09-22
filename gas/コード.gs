@@ -106,6 +106,9 @@ var CFG = {
   COMPANY   : 'IREライフ株式会社',
   // 入居者が開くページのURL（GitHub Pages のアドレス）
   APP_URL   : 'https://irelife.github.io/checkin/',
+  // ★ v2.14）弊社ホームページ（お問い合わせ）のアドレス。
+  //   ご案内メールの、いちばん下に入ります。空にすると、その行ごと出ません
+  HP_URL    : 'https://www.ire-life.net/',
   // 返事の期限（日）
   DUE_DAYS  : 7,
   // 督促は何日おきに出すか
@@ -1852,7 +1855,17 @@ function sendInviteGuide_(x){
   t.push('※ このメールは削除せず、保管してください。');
   t.push('　 上記のページは、ご入居後もいつでもご覧いただけます。');
   t.push('');
-  t.push('ご不明な点がございましたら、弊社までご連絡ください。');
+
+  /* ご質問・お問い合わせ。アドレスを入れていないときは、行ごと出しません */
+  var hp = '';
+  try{ hp = String(CFG.HP_URL || '').trim(); }catch(e){}
+  if(hp){
+    t.push('■ ご質問・お問い合わせ');
+    t.push('　　ご不明な点は、弊社ホームページのお問い合わせよりご連絡ください。');
+    t.push('　　' + hp);
+  }else{
+    t.push('ご不明な点がございましたら、弊社までご連絡ください。');
+  }
   t.push('');
   t.push('--');
   t.push(CFG.COMPANY);

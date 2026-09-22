@@ -51,6 +51,8 @@ ok(m.body.indexOf('■ 駐車場の区画')>=0 && m.body.indexOf('■ 集合ポ�
    '★しおりだけ → 区画とダイヤルが、いちばん上に出る');
 ok(m.body.indexOf('■ 駐車場の区画') < m.body.indexOf('▼ 入居のしおり'),
    '★しおりだけ → 番号のほうが、リンクより先に出る');
+ok(m.body.indexOf('■ ご質問・お問い合わせ')>=0 && m.body.indexOf(ctx.CFG.HP_URL)>=0,
+   '★しおりだけ → お問い合わせのアドレスが入る');
 ok(m.body.indexOf('キズ')<0, 'しおりだけ → お部屋の確認のお願いが入っていない');
 ok(m.body.indexOf('ご返信の期限')<0, 'しおりだけ → 返信の期限が入っていない');
 ok(m.body.indexOf('駐車場の区画')>=0, 'しおりだけ → 駐車場の区画は入っている');
