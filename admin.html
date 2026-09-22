@@ -2302,14 +2302,19 @@ body:not(.v-done) #sec-done{ display:none; }
   function findIsOpen(){ return true; }
 
   function drawTabs(){
-    var rows = ROWS.filter(inPeriod);
     var n = { act:0, wait:0, done:0 };
-    rows.forEach(function(r){
+    ROWS.forEach(function(r){
       var st = String(r.status||'');
       if(st === '取消') return;
-      if(st === '完了')   n.done++;
-      else if(needAct(r)) n.act++;
-      else                n.wait++;
+      if(st === '完了'){
+        /* ★完了の件数は、一覧と同じ「その年の分」で数えます。
+             （探している言葉には左右されません） */
+        if(doneInYear(r)) n.done++;
+        return;
+      }
+      if(!inPeriod(r)) return;
+      if(needAct(r)) n.act++;
+      else           n.wait++;
     });
     $$('#tabs3 .sd-i').forEach(function(b){
       var k = b.getAttribute('data-t');
@@ -2369,12 +2374,24 @@ body:not(.v-done) #sec-done{ display:none; }
        （2027/1/1 になったら、2026年に完了した分は出なくなります）
        過去の分は、絞り込みで年を選べば出ます。物件名の検索もそのまま効きます。
        ※要対応・未返信は、年をまたいでも消えません。仕事が残っているためです。 */
-  function inDonePeriod(r){
+  /* 年だけで見た「この年の完了分か」。件数の数えかたに使います */
+  function doneInYear(r){
     if(!inPeriod(r)) return false;
     var y = doneYearOf(r);
     var pick = $('#f-fy').value;
     if(pick) return String(y) === pick;   /* 年を選んでいるなら、その年の完了分 */
     return y === thisYear();              /* 選んでいないときは、今年の完了分だけ */
+  }
+
+  /* 一覧に出すかどうか。
+     ★物件名を探しているときは、年で切りません。
+       「過去の分は探せば出てくる」ようにするためです。
+       年を選んでいるときは、その年の中から探します。 */
+  function inDonePeriod(r){
+    if(doneInYear(r)) return true;
+    if($('#f-fy').value) return false;          /* 年を選んでいるなら、その年だけ */
+    if(!String($('#q').value || '').trim()) return false;
+    return inPeriod(r);                         /* 探しているので、どの年でも出します */
   }
 
   /* 年度の選択を、蓄積されている分から作ります */
@@ -2408,7 +2425,8 @@ body:not(.v-done) #sec-done{ display:none; }
     var pick = $('#f-fy').value;
     el.textContent = pick
       ? '　いまは ' + pick + '年 に完了した分を出しています。'
-      : '　いまは ' + thisYear() + '年 に完了した分を出しています。過去の年は［絞り込み］から選べます。';
+      : '　いまは ' + thisYear() + '年 に完了した分を出しています。'
+        + '過去の年は、物件名で検索するか、［絞り込み］から年を選ぶと出ます。';
   }
 
   function inPeriod(r){
