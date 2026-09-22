@@ -52,5 +52,35 @@ ok(box.hitFind(R, '   ') === true,                '空白だけなら、ぜん�
   ok(ids('アイレニック', '') === '',       '号室が空なら、おうかがいしない');
 }
 
+/* ── 同じ号室が重なったら、新しい1件だけ出す（古いほうは消さない）── */
+{
+  const a3 = src.indexOf('  function newestOnly(rows){');
+  const b3 = src.indexOf('\n  }', a3) + 4;
+  const rKey   = (r) => String(r.bldg || '').trim() + '｜' + String(r.room || '').trim();
+  const newKey = (r) => String(r.doneAt || '');
+  const only = new Function('rKey', 'newKey', src.slice(a3, b3) + '; return newestOnly;')(rKey, newKey);
+
+  const rows = [
+    { id:'古', bldg:'アイレニック', room:'201', doneAt:'2026-03-01' },
+    { id:'新', bldg:'アイレニック', room:'201', doneAt:'2026-09-18' },
+    { id:'別', bldg:'アイレニック', room:'202', doneAt:'2026-05-01' },
+    { id:'他', bldg:'マーベラス',   room:'201', doneAt:'2026-01-01' },
+  ];
+  const got = only(rows).map(x => x.id);
+  ok(got.join(',') === '新,別,他', '★同じ号室は、いちばん新しい1件だけ残る');
+  ok(got.indexOf('古') < 0,        '★古いほうは一覧から下がる');
+  ok(rows.length === 4,            '★元のデータは減っていない（消していない）');
+
+  ok(only([]).length === 0, '0件でも落ちない');
+  ok(only([rows[0]]).length === 1, '1件だけなら、そのまま出る');
+
+  /* 完了日が同じときは、片方だけ残る（どちらでも構いませんが、増えないこと） */
+  const same = [
+    { id:'a', bldg:'X', room:'1', doneAt:'2026-09-18' },
+    { id:'b', bldg:'X', room:'1', doneAt:'2026-09-18' },
+  ];
+  ok(only(same).length === 1, '完了日が同じでも、1件だけになる');
+}
+
 console.log('PASS=' + pass + ' FAIL=' + fail);
 process.exit(fail === 0 ? 0 : 1);

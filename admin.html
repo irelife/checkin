@@ -1062,7 +1062,7 @@ body:not(.v-done) #sec-done{ display:none; }
         <h2 class="sec-h">完了
           <button type="button" id="done-back" class="done-back">← 戻る</button>
         </h2>
-        <p class="sec-lead">処理済みの案件です。通常画面には表示しません。同一物件が2件以上の場合は1枚に集約し、クリックで部屋別に展開します。退去精算時の証跡となります。<span id="done-year-note"></span></p>
+        <p class="sec-lead">処理済みの案件です。通常画面には表示しません。同一物件が2件以上の場合は1枚に集約し、クリックで部屋別に展開します。退去精算時の証跡となります。<span id="done-year-note"></span><span id="done-dup-note"></span></p>
         <div id="list-done" class="listbox"></div>
       </section>
 
@@ -1509,7 +1509,6 @@ body:not(.v-done) #sec-done{ display:none; }
       applyList(res); cacheSave(res, '');
       $('#s-key').classList.add('hide');
       show('list');
-      setTimeout(dropCheck, 700);   /* ★開いた直後にも、一度見にいきます */
     }).catch(function(){
       veil(false); syncing(false);
       if(c){
@@ -1596,7 +1595,6 @@ body:not(.v-done) #sec-done{ display:none; }
       catch(e){ el.scrollIntoView(); }
     }
     if(k === 'new') draftBar();     /* 下書きが残っていれば、上でお知らせします */
-    if(k === 'done') setTimeout(dropCheck, 400);
   }
 
   /* 完了の画面から、ふだんの画面へ戻ります */
@@ -2019,14 +2017,15 @@ body:not(.v-done) #sec-done{ display:none; }
     });
   }
 
-  /* ★ 同じ号室の記録が見つかったときの、おうかがい。
-       go(消すもの) … 「残して作る」なら null、「消して作る」なら その一覧 */
+  /* ★ 同じ号室の記録が見つかったときの、お知らせ。
+       ここでは消しません。二重に登録していないか、気づいていただくためです。
+       （古い記録は、完了したあと自動で一覧から下がります。消えません） */
   function askDup(list, bldg, room, go){
     var h = [];
     h.push('<div class="dp-card">');
     h.push('<h3>この号室には、すでに記録があります</h3>');
     h.push('<p class="dp-lead"><b>' + esc(bldg) + '　' + esc(room) + '</b> の記録が ' +
-           list.length + ' 件 見つかりました。前の記録を、どうしますか。</p>');
+           list.length + ' 件 見つかりました。二重の登録ではありませんか。</p>');
     h.push('<div class="dp-list">' + list.map(function(r){
       var st = String(r.status || '') || '（状況なし）';
       var d  = r.doneAt || r.replied || r.created || '';
@@ -2034,25 +2033,22 @@ body:not(.v-done) #sec-done{ display:none; }
              '<span>' + (d ? jpDate(String(d).slice(0, 10)) : '') + '</span></div>';
     }).join('') + '</div>');
     h.push('<p class="dp-note">' +
-           '・「消して作る」を選ぶと、上の記録はまるごと消えます。<b>元にはもどせません。</b><br>' +
-           '・スプレッドシートの「一覧」と「回答」の行も消えます<br>' +
-           '・写真と間取り図は、ドライブのごみ箱に入ります<br>' +
-           '・前の入居者様の証跡として残すなら、「残して作る」をお選びください</p>');
+           '・前の記録は<b>消えません</b>。証跡として残ります<br>' +
+           '・新しい分が完了すると、前の分は一覧から下がります<br>' +
+           '・下がった分は、物件名か号室で検索すると出てきます</p>');
     h.push('<div class="dp-a">' +
            '<button type="button" class="btn sm ghost" id="du-no">やめる</button>' +
-           '<button type="button" class="btn sm ghost" id="du-keep">残して作る</button>' +
-           '<button type="button" class="btn sm ng" id="du-drop">消して作る</button></div>');
+           '<button type="button" class="btn sm" id="du-keep">このまま作る</button></div>');
     h.push('</div>');
     $('#drop').innerHTML = h.join('');
     $('#drop').classList.add('on');
     $('#du-no').addEventListener('click', dropClose);
     $('#du-keep').addEventListener('click', function(){ dropClose(); go(null); });
-    $('#du-drop').addEventListener('click', function(){ dropClose(); go(list); });
   }
 
   /* ---- 作る ----
-       dup … おうかがいの答え。undefined のときだけ、おうかがいします。
-             null＝前の記録は残す ／ 一覧＝作ったあとに、それを消す */
+       dup … お知らせを見たあとかどうか。undefined のときだけ、お知らせを出します。
+             （前の記録は、ここでは消しません） */
   function create(sendMail, dup){
     var body = {
       action:'create', key:KEY,
@@ -2163,9 +2159,6 @@ body:not(.v-done) #sec-done{ display:none; }
               esc(body.bldg) + ' ' + esc(body.room) + '　' + esc(body.name) + ' 様<br>' +
               'パスワードは、下のカードを押すとご確認いただけます。');
       }
-      /* ★ 前の記録を消すのは、作れたあとです。
-           先に消すと、作れなかったときに、どちらも無くなってしまいます。 */
-      if(dup && dup.length) doDrop(dup, '前の記録');
     }).catch(function(){ veil(false); $('#new-err').textContent = '通信できませんでした。'; });
   }
   $('#new-go').addEventListener('click', function(){ create(true); });
@@ -2201,7 +2194,6 @@ body:not(.v-done) #sec-done{ display:none; }
       end();
       if(!res.ok) return;
       applyList(res); cacheSave(res, fy);
-      setTimeout(dropCheck, 400);   /* ★読み込んで気づいたら、その時点でおうかがい */
     }).catch(end);
   }
 
@@ -2900,6 +2892,17 @@ body:not(.v-done) #sec-done{ display:none; }
       .replace(/\s+/g, ' ')
       .trim().toLowerCase();
   }
+  /* ★ 同じ物件・同じ号室で重なったとき、いちばん新しい1件だけを返します。
+       古いほうは消しません。一覧から下げるだけです。 */
+  function newestOnly(rows){
+    var best = {};
+    rows.forEach(function(r){
+      var key = rKey(r), cur = best[key];
+      if(!cur || newKey(r) > newKey(cur)) best[key] = r;
+    });
+    return rows.filter(function(r){ return best[rKey(r)] === r; });
+  }
+
   function hitFind(r, q){
     if(!q) return true;
     var hay = findKey(String(r.bldg || '') + ' ' + String(r.room || ''));
@@ -2934,6 +2937,28 @@ body:not(.v-done) #sec-done{ display:none; }
       if(!matchFilt(r)) return false;
       return hitFind(r, q);
     });
+
+    /* ★ 完了は、同じ物件・同じ号室で重なったとき、
+         いちばん新しい1件だけを出します。おうかがいは出しません。
+         古いほうは「消していません」。一覧から下げているだけです。
+         ・スプレッドシートの行も、写真も、そのまま残ります
+         ・物件名か号室で検索すれば、古いほうも出てきます
+         ・本当に消したいときは、まとめカードの［消す］から消せます */
+    var hidden = 0;
+    if(k === 'done' && !q){
+      var keep = newestOnly(rows);
+      hidden = rows.length - keep.length;
+      rows = keep;
+    }
+    if(k === 'done'){
+      var note = $('#done-dup-note');
+      if(note){
+        note.textContent = hidden
+          ? ('　同じ号室で重なった古い記録 ' + hidden + ' 件は、一覧から下げています'
+             + '（消えてはいません。物件名か号室で検索すると出ます）。')
+          : '';
+      }
+    }
 
     /* 「対応が必要」の中は、急ぐ順に並べます。
        仲介から返事あり → 仲介へ連絡 → お部屋の報告 → そのほか */
@@ -3700,30 +3725,10 @@ body:not(.v-done) #sec-done{ display:none; }
   }
 
   /* 完了のところへ来たら、重なっているお部屋がないか見ます */
-  /* ★ 同じ号室の記録が重なったら、その時点でおうかがいします。
-       ［完了］を開いていなくても出ます。
-       完了は、督促のあと サーバー側で自動でもなります。そのときは
-       誰も画面を見ていないので、「なった瞬間」には出せません。
-       代わりに、この画面が新しい中身を読み込んで気づいた時点で出します。
-       （読み込みは、開いているあいだ ひとりでに行われます）
-
-       ただし、次のときは邪魔しません。
-         ・新規の入力中（書きかけが消えたように見えるため）
-         ・1件を開いているとき
-         ・ほかのおうかがいが出ているとき */
-  function dropCheck(){
-    if(NOW === 'new') return;
-    if($('#detail').classList.contains('on')) return;
-    if($('#drop').classList.contains('on')) return;
-    var rows = ROWS.filter(function(r){
-      return String(r.status||'') === '完了' && inDonePeriod(r); });
-    var byB = {};
-    dupsIn(rows).forEach(function(d){ byB[String(d.bldg||'')] = 1; });
-    var names = Object.keys(byB).filter(function(k){ return !_dropped[k]; });
-    if(!names.length) return;
-    /* 1つずつ、順にうかがいます（まとめて出すと、何を消すのか分からなくなるため） */
-    askDrop(names[0]);
-  }
+  /* ★ 重なりのおうかがい（dropCheck）は、やめました。
+       いまは、同じ号室が重なったら、いちばん新しい1件だけを一覧に出し、
+       古いほうは黙って下げます（消しません）。drawSec をご覧ください。
+       手で消したいときは、まとめカードの［消す］から askDrop を呼びます。 */
 
   document.addEventListener('click', function(ev){
     var t = ev.target;
