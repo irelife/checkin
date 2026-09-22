@@ -760,7 +760,8 @@ body:not(.v-done) #sec-done{ display:none; }
   border-bottom:1px solid #D9D9DF;padding:11px 2px;font-size:15.5px;}
 .dp-card input[type=email]:focus{outline:none;border-bottom-color:var(--ink);box-shadow:none;}
 .dp-card input[type=email].bad{border-bottom-color:var(--ng);}
-.dp-card .fe{font-size:12px;color:var(--ng);margin:5px 0 0;min-height:1em;line-height:1.4;}
+.dp-card .fe{font-size:12.5px;color:var(--ng);margin:8px 0 0;min-height:1em;line-height:1.7;}
+.dp-card .fe b{font-weight:600;}
 .dp-a{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px;}
 .dp-a .btn{min-width:8.5em;}
 .dp-a .btn{flex:1 1 0;margin:0;}
@@ -1374,7 +1375,7 @@ body:not(.v-done) #sec-done{ display:none; }
   var CFG = window.APP_CONFIG || {};
   /* ★ 画面の版。手直しをするたび、ここを1つ上げてください。
        左下に出ますので、古いものが出ていないか、その場で分かります。 */
-  var APPV = '2026/09/22 ③';
+  var APPV = '2026/09/22 ④';
   var KEY = '';
   /* ★ v2.9）いま操作している人のお名前。
        完了・取り消し・督促・仲介への連絡のたびに、サーバーへ一緒に送り、
@@ -3843,8 +3844,19 @@ body:not(.v-done) #sec-done{ display:none; }
         veil(false);
         $('#mf-go').disabled = false;
         if(!res || !res.ok){
-          $('#mf-err').textContent = (res && res.err) ||
-            '送信できませんでした。しばらく待って、もう一度お試しください。';
+          var e = String((res && res.err) || '');
+          /* サーバー側に、まだ「送り直し」の受け口が無いとき。
+             どうすればよいかを、その場に書きます。 */
+          if(/不明な操作|不明な|unknown/i.test(e)){
+            $('#mf-err').innerHTML =
+              'サーバー（GAS）側に「送り直し」の受け口が、まだありません。<br>' +
+              'いまは、この箱を閉じて<b>「案内文をコピー」</b>から、' +
+              'お手元のメールで正しい宛先へお送りください。<br>' +
+              '（受け口の作り方は「サーバー側のお願い.md」に書いています）';
+          }else{
+            $('#mf-err').textContent = e ||
+              '送信できませんでした。しばらく待って、もう一度お試しください。';
+          }
           return;
         }
         dropClose();
