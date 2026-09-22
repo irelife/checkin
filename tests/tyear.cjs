@@ -13,10 +13,13 @@ const end = src.indexOf('\n  }', b) + 4;
 const code = src.slice(a, end);
 
 let PICK = '';                                   /* 絞り込みで選んだ年 */
-const $ = () => ({ get value(){ return PICK; } });
+let WORD = '';                                   /* 検索の言葉 */
+const $ = (sel) => (sel === '#q') ? { get value(){ return WORD; } }
+                                  : { get value(){ return PICK; } };
 const inPeriod = () => true;                     /* 月・エリアの絞り込みは別の検査で見ます */
 const NOW = new Date();
-const box = new Function('$', 'inPeriod', code + '; return { ymOf, fyOf, doneYearOf, thisYear, inDonePeriod };')($, inPeriod);
+const box = new Function('$', 'inPeriod',
+  code + '; return { ymOf, fyOf, doneYearOf, thisYear, doneInYear, inDonePeriod };')($, inPeriod);
 
 let pass = 0, fail = 0;
 const ok = (c, m) => { if (c) { pass++; console.log('  ✅ ' + m); } else { fail++; console.log('  ❌ ' + m); } };
@@ -48,6 +51,30 @@ ok(box.inDonePeriod({ created:'2020/05/05', doneAt: Y + '-06-01' }) === false, '
 /* ⑤ 要対応・未返信は年で切らない（inPeriod のまま＝年を見ない） */
 PICK = String(Y - 5);
 ok(inPeriod({ created:(Y - 1) + '/12/20' }) === true, '要対応・未返信は、年をまたいでも消えない');
+
+/* ⑥ 物件名で探しているときは、年で切らない（過去の分も出る） */
+{
+  const old = { created:'2020/05/05', doneAt:(Y - 1) + '-12-28' };   /* 去年 完了 */
+  const now = { created:'2020/05/05', doneAt: Y + '-06-01' };        /* 今年 完了 */
+
+  PICK = ''; WORD = '';
+  ok(box.inDonePeriod(old) === false, '探していないときは、去年の分は出ない');
+  ok(box.inDonePeriod(now) === true,  '探していないときも、今年の分は出る');
+
+  PICK = ''; WORD = 'アイレニック';
+  ok(box.inDonePeriod(old) === true,  '★探しているときは、去年の分も出る');
+  ok(box.inDonePeriod(now) === true,  '探しているときも、今年の分は出る');
+
+  PICK = String(Y - 1); WORD = 'アイレニック';
+  ok(box.inDonePeriod(old) === true,  '年を選んでいれば、その年の分は出る');
+  ok(box.inDonePeriod(now) === false, '年を選んでいれば、探していても別の年は出ない');
+
+  /* 件数の数えかたは、探す言葉に左右されない */
+  PICK = ''; WORD = 'アイレニック';
+  ok(box.doneInYear(old) === false, '件数は、探していても去年の分を数えない');
+  ok(box.doneInYear(now) === true,  '件数は、今年の分だけ数える');
+  WORD = '';
+}
 
 console.log('PASS=' + pass + ' FAIL=' + fail);
 process.exit(fail === 0 ? 0 : 1);
