@@ -103,10 +103,16 @@ main{max-width:none;margin:0;padding:0;}
 .sd-i i.hot{background:var(--warn);color:#3a2d00;}
 .sd-i.on i.hot{background:var(--warn);color:#3a2d00;}
 .sd-f{display:grid;gap:6px;padding:0 4px;}
-.sd-f select{width:100%;padding:8px 10px;border:0;border-radius:9px;
+#side .sd-f select{width:100%;padding:8px 10px;border:0;border-radius:9px;
   background:rgba(255,255,255,.12);font-size:12.5px;color:#fff;}
+/* ★押したときに白地へ変わると、白文字と重なって読めなくなります。
+     共通の決まり（select:focus{background:#fff}）が同じ強さで
+     あとに書いてあるため、#side を付けて打ち消します。 */
+#side .sd-f select:hover{background:rgba(255,255,255,.18);}
+#side .sd-f select:focus{background:rgba(255,255,255,.22);color:#fff;
+  outline:2px solid rgba(255,255,255,.55);outline-offset:-2px;box-shadow:none;}
 /* えらぶ中身は、ブラウザが白地で出します。文字を黒に戻しておきます */
-.sd-f select option{background:#fff;color:var(--ink);}
+#side .sd-f select option{background:#fff;color:var(--ink);}
 .sd-foot{padding:26px 10px 0;font-size:10.5px;color:rgba(255,255,255,.45);}
 
 .doc-h1{font-size:31px;font-weight:700;letter-spacing:-.022em;margin:0;}
@@ -736,7 +742,8 @@ body:not(.v-done) #sec-done{ display:none; }
 .dp-row b{display:block;font-size:15px;font-weight:600;}
 .dp-row span{display:block;margin-top:2px;font-size:12.5px;color:var(--ink2);}
 .dp-note{margin:16px 0 0;font-size:12.5px;line-height:1.85;color:var(--ink3);}
-.dp-a{display:flex;gap:10px;margin-top:22px;}
+.dp-a{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px;}
+.dp-a .btn{min-width:8.5em;}
 .dp-a .btn{flex:1 1 0;margin:0;}
 @media (max-width:560px){ .dp-card{padding:22px 18px;} }
 
@@ -1013,7 +1020,7 @@ body:not(.v-done) #sec-done{ display:none; }
         <svg class="sd-mag" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
           <circle cx="11" cy="11" r="7"></circle><path d="M16.6 16.6 L21 21"></path>
         </svg>
-        <input type="text" id="q" placeholder="検索（物件名）">
+        <input type="text" id="q" placeholder="検索（物件名・号室）">
       </div>
       <nav class="sd-nav" id="tabs3">
         <div class="sd-h">対応</div>
@@ -1055,7 +1062,7 @@ body:not(.v-done) #sec-done{ display:none; }
         <h2 class="sec-h">完了
           <button type="button" id="done-back" class="done-back">← 戻る</button>
         </h2>
-        <p class="sec-lead">処理済みの案件です。通常画面には表示しません。同一物件が2件以上の場合は1枚に集約し、クリックで部屋別に展開します。退去精算時の証跡となります。<span id="done-year-note"></span></p>
+        <p class="sec-lead">処理済みの案件です。通常画面には表示しません。同一物件が2件以上の場合は1枚に集約し、クリックで部屋別に展開します。退去精算時の証跡となります。<span id="done-year-note"></span><span id="done-dup-note"></span></p>
         <div id="list-done" class="listbox"></div>
       </section>
 
@@ -1588,7 +1595,6 @@ body:not(.v-done) #sec-done{ display:none; }
       catch(e){ el.scrollIntoView(); }
     }
     if(k === 'new') draftBar();     /* 下書きが残っていれば、上でお知らせします */
-    if(k === 'done') setTimeout(dropCheck, 400);
   }
 
   /* 完了の画面から、ふだんの画面へ戻ります */
@@ -2000,8 +2006,50 @@ body:not(.v-done) #sec-done{ display:none; }
     $('#dr-bar').classList.remove('hide');
   });
 
-  /* ---- 作る ---- */
-  function create(sendMail){
+  /* ★ 同じ物件・同じ号室の記録をさがします（取り消したものは除きます）。
+       登録のたびに見て、あれば先におうかがいします。 */
+  function sameRoomRows(bldg, room){
+    var b = findKey(bldg), m = findKey(room);
+    if(!b || !m) return [];
+    return ROWS.filter(function(r){
+      if(String(r.status || '') === '取消') return false;
+      return findKey(r.bldg) === b && findKey(r.room) === m;
+    });
+  }
+
+  /* ★ 同じ号室の記録が見つかったときの、お知らせ。
+       ここでは消しません。二重に登録していないか、気づいていただくためです。
+       （古い記録は、完了したあと自動で一覧から下がります。消えません） */
+  function askDup(list, bldg, room, go){
+    var h = [];
+    h.push('<div class="dp-card">');
+    h.push('<h3>この号室には、すでに記録があります</h3>');
+    h.push('<p class="dp-lead"><b>' + esc(bldg) + '　' + esc(room) + '</b> の記録が ' +
+           list.length + ' 件 見つかりました。二重の登録ではありませんか。</p>');
+    h.push('<div class="dp-list">' + list.map(function(r){
+      var st = String(r.status || '') || '（状況なし）';
+      var d  = r.doneAt || r.replied || r.created || '';
+      return '<div class="dp-row"><b>' + esc(st) + '　' + esc(r.name || '') + ' 様</b>' +
+             '<span>' + (d ? jpDate(String(d).slice(0, 10)) : '') + '</span></div>';
+    }).join('') + '</div>');
+    h.push('<p class="dp-note">' +
+           '・前の記録は<b>消えません</b>。証跡として残ります<br>' +
+           '・新しい分が完了すると、前の分は一覧から下がります<br>' +
+           '・下がった分は、物件名か号室で検索すると出てきます</p>');
+    h.push('<div class="dp-a">' +
+           '<button type="button" class="btn sm ghost" id="du-no">やめる</button>' +
+           '<button type="button" class="btn sm" id="du-keep">このまま作る</button></div>');
+    h.push('</div>');
+    $('#drop').innerHTML = h.join('');
+    $('#drop').classList.add('on');
+    $('#du-no').addEventListener('click', dropClose);
+    $('#du-keep').addEventListener('click', function(){ dropClose(); go(null); });
+  }
+
+  /* ---- 作る ----
+       dup … お知らせを見たあとかどうか。undefined のときだけ、お知らせを出します。
+             （前の記録は、ここでは消しません） */
+  function create(sendMail, dup){
     var body = {
       action:'create', key:KEY,
       bldg:$('#f-bldg').value.trim(), room:$('#f-room').value.trim(),
@@ -2066,6 +2114,16 @@ body:not(.v-done) #sec-done{ display:none; }
       try{ first.scrollIntoView({ behavior:'smooth', block:'center' }); }catch(e){}
       return;
     }
+    /* ★ 同じ物件・同じ号室の記録があれば、作る前におうかがいします */
+    if(dup === undefined){
+      var same = sameRoomRows(body.bldg, body.room);
+      if(same.length){
+        askDup(same, body.bldg, body.room, function(drop){ create(sendMail, drop); });
+        return;
+      }
+      dup = null;
+    }
+
     $('#new-err').textContent = '';
     veil(true);
     post(body).then(function(res){
@@ -2820,6 +2878,41 @@ body:not(.v-done) #sec-done{ display:none; }
     }).join('') + '</div>';
   }
 
+  /* ★探すための道具。物件名と号室の両方から探します。
+       ・「アイレニック 201」のように分けて書いても当たります
+       ・「201」だけでも当たります
+       ・全角の数字・英字・空白は、半角と同じに見なします
+       お名前やエリアでは探しません（そこは［絞り込み］の役目です） */
+  function findKey(v){
+    return String(v == null ? '' : v)
+      .replace(/[０-９Ａ-Ｚａ-ｚ]/g, function(c){
+        return String.fromCharCode(c.charCodeAt(0) - 0xFEE0);
+      })
+      .replace(/　/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim().toLowerCase();
+  }
+  /* ★ 同じ物件・同じ号室で重なったとき、いちばん新しい1件だけを返します。
+       古いほうは消しません。一覧から下げるだけです。 */
+  function newestOnly(rows){
+    var best = {};
+    rows.forEach(function(r){
+      var key = rKey(r), cur = best[key];
+      if(!cur || newKey(r) > newKey(cur)) best[key] = r;
+    });
+    return rows.filter(function(r){ return best[rKey(r)] === r; });
+  }
+
+  function hitFind(r, q){
+    if(!q) return true;
+    var hay = findKey(String(r.bldg || '') + ' ' + String(r.room || ''));
+    var ws  = findKey(q).split(' ');
+    for(var i = 0; i < ws.length; i++){
+      if(ws[i] && hay.indexOf(ws[i]) < 0) return false;
+    }
+    return true;
+  }
+
   /* 3つの場所を、それぞれ描きます。タブではないので、いつも全部描きます */
   function drawList(){
     var seen = { act:false, wait:false, done:false };
@@ -2842,10 +2935,30 @@ body:not(.v-done) #sec-done{ display:none; }
       if(!(k === 'done' ? inDonePeriod(r) : inPeriod(r))) return false;
       if(!inSec(r, k)) return false;
       if(!matchFilt(r)) return false;
-      if(!q) return true;
-      /* 探すのは物件名だけです。お名前やエリアでは探しません */
-      return String(r.bldg || '').indexOf(q) >= 0;
+      return hitFind(r, q);
     });
+
+    /* ★ 完了は、同じ物件・同じ号室で重なったとき、
+         いちばん新しい1件だけを出します。おうかがいは出しません。
+         古いほうは「消していません」。一覧から下げているだけです。
+         ・スプレッドシートの行も、写真も、そのまま残ります
+         ・物件名か号室で検索すれば、古いほうも出てきます
+         ・本当に消したいときは、まとめカードの［消す］から消せます */
+    var hidden = 0;
+    if(k === 'done' && !q){
+      var keep = newestOnly(rows);
+      hidden = rows.length - keep.length;
+      rows = keep;
+    }
+    if(k === 'done'){
+      var note = $('#done-dup-note');
+      if(note){
+        note.textContent = hidden
+          ? ('　同じ号室で重なった古い記録 ' + hidden + ' 件は、一覧から下げています'
+             + '（消えてはいません。物件名か号室で検索すると出ます）。')
+          : '';
+      }
+    }
 
     /* 「対応が必要」の中は、急ぐ順に並べます。
        仲介から返事あり → 仲介へ連絡 → お部屋の報告 → そのほか */
@@ -3503,8 +3616,8 @@ body:not(.v-done) #sec-done{ display:none; }
     if(!list.length){ flash('消す記録はありませんでした。'); return; }
     var h = [];
     h.push('<div class="dp-card">');
-    h.push('<h3>前の方の記録を消します</h3>');
-    h.push('<p class="dp-lead">下の ' + list.length + ' 件を、まるごと消します。' +
+    h.push('<h3>同じ号室の記録が、重なっています</h3>');
+    h.push('<p class="dp-lead">下の ' + list.length + ' 件（古いほう）を、まるごと消します。' +
            '<b>元にはもどせません。</b></p>');
     h.push('<div class="dp-list">' + list.map(function(r){
       return '<div class="dp-row"><b>' + esc(r.bldg) + '　' + esc(r.room) + '</b>' +
@@ -3612,19 +3725,10 @@ body:not(.v-done) #sec-done{ display:none; }
   }
 
   /* 完了のところへ来たら、重なっているお部屋がないか見ます */
-  function dropCheck(){
-    if(NOW !== 'done') return;
-    if($('#detail').classList.contains('on')) return;
-    if($('#drop').classList.contains('on')) return;
-    var rows = ROWS.filter(function(r){
-      return String(r.status||'') === '完了' && inDonePeriod(r); });
-    var byB = {};
-    dupsIn(rows).forEach(function(d){ byB[String(d.bldg||'')] = 1; });
-    var names = Object.keys(byB).filter(function(k){ return !_dropped[k]; });
-    if(!names.length) return;
-    /* 1つずつ、順にうかがいます（まとめて出すと、何を消すのか分からなくなるため） */
-    askDrop(names[0]);
-  }
+  /* ★ 重なりのおうかがい（dropCheck）は、やめました。
+       いまは、同じ号室が重なったら、いちばん新しい1件だけを一覧に出し、
+       古いほうは黙って下げます（消しません）。drawSec をご覧ください。
+       手で消したいときは、まとめカードの［消す］から askDrop を呼びます。 */
 
   document.addEventListener('click', function(ev){
     var t = ev.target;
