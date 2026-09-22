@@ -114,6 +114,9 @@ main{max-width:none;margin:0;padding:0;}
 /* えらぶ中身は、ブラウザが白地で出します。文字を黒に戻しておきます */
 #side .sd-f select option{background:#fff;color:var(--ink);}
 .sd-foot{padding:26px 10px 0;font-size:10.5px;color:rgba(255,255,255,.45);}
+/* いま見ている版。古いものが出ていないか、ここで分かります */
+.sd-ver{display:block;margin-top:4px;color:rgba(255,255,255,.34);}
+.login-foot .sd-ver{color:var(--ink3);}
 
 .doc-h1{font-size:31px;font-weight:700;letter-spacing:-.022em;margin:0;}
 .sec{margin-top:44px;scroll-margin-top:66px;}
@@ -425,12 +428,6 @@ body:not(.v-done) #sec-done{ display:none; }
 #s-new .thumb-b img{width:100%;height:100%;object-fit:contain;display:block;}
 #s-new .note{font-size:12.5px;color:var(--ink3);margin:9px 0 0;}
 
-/* 下書きのお知らせ */
-.dr{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
-  background:var(--fill);border-radius:12px;padding:11px 15px;margin-bottom:22px;
-  font-size:13.5px;color:var(--ink2);}
-.dr b{font-weight:600;color:var(--ink);}
-.dr .sp{margin-left:auto;display:flex;gap:8px;}
 
 /* いちばん下のボタン */
 #s-new .acts{display:flex;justify-content:flex-end;gap:12px;
@@ -510,6 +507,21 @@ body:not(.v-done) #sec-done{ display:none; }
      border:0;border-radius:11px;padding:12px 14px;background:var(--fill);margin:0;}
 .cl .m{font-size:11.5px;font-weight:500;background:var(--fill2);color:var(--ink2);
   border-radius:100px;padding:2px 9px;margin-left:7px;}
+
+/* ---- 送る内容（3つのうち、送るものを選びます） ---- */
+#pt-list{display:grid;gap:8px;}
+.pt{display:block;border-radius:13px;padding:13px 15px;cursor:pointer;
+  background:var(--fill);transition:background .15s;}
+.pt:hover{background:var(--fill2);}
+.pt input{width:20px;height:20px;margin-right:11px;vertical-align:-4px;accent-color:var(--ink);}
+.pt b{font-size:15px;font-weight:500;color:var(--ink3);transition:color .15s;}
+.pt.on b{color:var(--ink);font-weight:600;}
+.pt .pt-l{margin:6px 0 0 31px;font-size:12.5px;color:var(--ink3);line-height:1.6;}
+/* 送らない分の欄は、うすくして「送りません」とお伝えします */
+.off-note{display:none;font-size:12.5px;color:var(--ng);margin:6px 0 0;line-height:1.6;}
+.is-off .off-note{display:block;}
+.is-off #cl-list,.is-off #pick-list,.is-off .row,.is-off .file-row,
+.is-off .fr{opacity:.4;}
 
 /* ---- つくったあとの控え ---- */
 .made{background:var(--fill);border:0;border-radius:18px;padding:20px;margin-top:18px;}
@@ -742,6 +754,14 @@ body:not(.v-done) #sec-done{ display:none; }
 .dp-row b{display:block;font-size:15px;font-weight:600;}
 .dp-row span{display:block;margin-top:2px;font-size:12.5px;color:var(--ink2);}
 .dp-note{margin:16px 0 0;font-size:12.5px;line-height:1.85;color:var(--ink3);}
+/* おたずねの中の、書き込む欄 */
+.dp-card .f{display:block;margin:20px 0 4px;font-size:14.5px;font-weight:600;color:var(--ink);}
+.dp-card input[type=email]{width:100%;background:transparent;border:0;border-radius:0;
+  border-bottom:1px solid #D9D9DF;padding:11px 2px;font-size:15.5px;}
+.dp-card input[type=email]:focus{outline:none;border-bottom-color:var(--ink);box-shadow:none;}
+.dp-card input[type=email].bad{border-bottom-color:var(--ng);}
+.dp-card .fe{font-size:12.5px;color:var(--ng);margin:8px 0 0;min-height:1em;line-height:1.7;}
+.dp-card .fe b{font-weight:600;}
 .dp-a{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px;}
 .dp-a .btn{min-width:8.5em;}
 .dp-a .btn{flex:1 1 0;margin:0;}
@@ -844,6 +864,13 @@ body:not(.v-done) #sec-done{ display:none; }
 /* ★ v2.9）返事をいただけないまま完了になった件の札。
      「返事をもらって完了」と見た目で分けます */
 .i-tag.wn{background:#FFF4E2;color:#9A6212;}
+/* メールが届かなかった件は、赤い字でお伝えします */
+.i-desc.ng{color:var(--ng);font-weight:600;}
+.item.gray .i-desc.ng{color:var(--ng);}
+.sd-ng{margin:16px 0 0;padding:13px 15px;border-radius:12px;background:var(--ngbg);
+  font-size:14px;line-height:1.75;color:var(--ng);}
+.sd-ng b{display:block;font-size:15px;font-weight:600;}
+.sd-ng span{display:block;color:var(--ink2);font-weight:400;margin-top:3px;}
 .i-desc{margin:8px 0 0;font-size:13.5px;line-height:1.75;color:var(--ink2);
   word-break:auto-phrase;line-break:strict;text-wrap:pretty;}
 /* 画面が狭いときは、絵を少し小さくします（1枚が長くなりすぎないように） */
@@ -933,6 +960,28 @@ body:not(.v-done) #sec-done{ display:none; }
 .item.gray .i-tx b{color:var(--ink2);}
 .item.gray .i-desc{color:var(--ink3);}
 
+/* ---- メールが届かなかった件は、カードぜんたいを、うすい赤にします ----
+     ひと目で「このお部屋は、まだ届いていない」と分かるようにするためです */
+#list-act .item.is-ng,
+#list-wait .item.is-ng,
+#list-done .item.is-ng{background:#FBE7E3;
+  box-shadow:inset 0 0 0 1px rgba(199,54,42,.18);}
+#list-act .item.is-ng:hover,
+#list-wait .item.is-ng:hover,
+#list-done .item.is-ng:hover{box-shadow:inset 0 0 0 1px rgba(199,54,42,.26), var(--shadow);}
+#list-act .item.is-ng .i-tile,
+#list-wait .item.is-ng .i-tile,
+#list-done .item.is-ng .i-tile{background:linear-gradient(155deg,#FDF4F2 0%,#F7DED9 100%);}
+#list-act .item.is-ng .i-ic.big,
+#list-wait .item.is-ng .i-ic.big,
+#list-done .item.is-ng .i-ic.big{background:#fff;color:var(--ng);}
+#list-act .item.is-ng .i-tag,
+#list-wait .item.is-ng .i-tag,
+#list-done .item.is-ng .i-tag{background:var(--ng);color:#fff;}
+.item.is-ng .i-tx b,.item.gray.is-ng .i-tx b{color:#8E2A20;}
+.item.is-ng .i-sub{color:#A2584F;}
+.item.is-ng .i-desc.ng,.item.gray.is-ng .i-desc.ng{color:#8E2A20;}
+
 /* ---- 右がわ（えらんだ1件の中身）---- */
 .sd-hd{display:flex;align-items:flex-start;gap:14px;margin-bottom:4px;}
 /* 右がわの見出しの絵は、カードほど大きくしません */
@@ -1008,7 +1057,8 @@ body:not(.v-done) #sec-done{ display:none; }
         <button class="btn" type="submit" id="key-go">ログイン</button>
       </form>
       <div class="err" id="key-err"></div>
-      <div class="login-foot">IREライフ株式会社</div>
+      <div class="login-foot">IREライフ株式会社
+        <span class="sd-ver" id="sd-ver2"></span></div>
     </div>
   </section>
 
@@ -1037,7 +1087,8 @@ body:not(.v-done) #sec-done{ display:none; }
         <select id="f-mo" aria-label="月"></select>
         <select id="f-far" aria-label="エリア"></select>
       </div>
-      <div class="sd-foot">IREライフ株式会社</div>
+      <div class="sd-foot">IREライフ株式会社
+        <span class="sd-ver" id="sd-ver"></span></div>
     </aside>
 
     <!-- ★ 右は1本の縦スクロール。タブはありません -->
@@ -1068,10 +1119,15 @@ body:not(.v-done) #sec-done{ display:none; }
 
       <section class="sec" id="sec-new">
         <h2 class="sec-h">新規登録</h2>
-        <p class="sec-lead">入居者様へ、室内確認と重要事項の確認依頼を送付します。必須は物件名・号室・氏名・メールの4項目です。</p>
+        <p class="sec-lead">入居者様へ、入居のしおり・室内確認・重要事項の確認依頼を送付します。送る内容は、印を付けたものだけを選べます。必須は物件名・号室・氏名・メールの4項目です。</p>
         <div id="s-new">
     <div class="card">
-      <div id="dr-bar" class="dr hide"></div>
+      <div class="sec">
+        <p class="sec-t">送る内容</p>
+        <p class="hint">印を付けたものだけを、入居者様の画面に出します。<b>1つ以上</b>お選びください</p>
+        <div id="pt-list"></div>
+        <p class="fe" id="pt-err"></p>
+      </div>
 
       <div class="cols">
         <div class="sec">
@@ -1157,30 +1213,37 @@ body:not(.v-done) #sec-done{ display:none; }
             <p class="fe"></p>
           </div>
 
-          <div class="fr fr2">
-            <div>
-              <label class="f" for="f-agco">仲介業者<span class="req">必須</span></label>
-              <input type="text" id="f-agco" placeholder="例: ○○不動産" autocomplete="off" data-need>
-              <p class="fe"></p>
-            </div>
-            <div>
-              <label class="f" for="f-agnm">担当者</label>
-              <input type="text" id="f-agnm" placeholder="例: 山田" autocomplete="off">
-              <p class="fe"></p>
-            </div>
-          </div>
+          <div id="ag-fields">
+            <p class="off-note" style="margin-top:22px;">「重要事項」に印が付いていないため、
+              仲介業者の欄は使いません（「説明を受けていない」とのご回答が出ないためです）。</p>
 
-          <div class="fr">
-            <label class="f" for="f-agml">業者メールアドレス<span class="req">必須</span></label>
-            <p class="hint">「説明を受けていない」との回答時の連絡先です</p>
-            <input type="email" id="f-agml" inputmode="email" autocomplete="off" data-need>
-            <p class="fe"></p>
+            <div class="fr fr2">
+              <div>
+                <label class="f" for="f-agco">仲介業者<span class="req">必須</span></label>
+                <input type="text" id="f-agco" placeholder="例: ○○不動産" autocomplete="off" data-need>
+                <p class="fe"></p>
+              </div>
+              <div>
+                <label class="f" for="f-agnm">担当者</label>
+                <input type="text" id="f-agnm" placeholder="例: 山田" autocomplete="off">
+                <p class="fe"></p>
+              </div>
+            </div>
+
+            <div class="fr">
+              <label class="f" for="f-agml">業者メールアドレス<span class="req">必須</span></label>
+              <p class="hint">「説明を受けていない」との回答時の連絡先です</p>
+              <input type="email" id="f-agml" inputmode="email" autocomplete="off" data-need>
+              <p class="fe"></p>
+            </div>
           </div>
         </div>
       </div>
 
-      <div class="sec">
+      <div class="sec" id="sec-plan">
         <p class="sec-t">間取り図</p>
+        <p class="hint">入居者様の「室内チェック」の画面に出ます</p>
+        <p class="off-note">「室内チェック」に印が付いていないため、間取り図はお送りできません。</p>
         <div class="file-row">
           <div class="thumb-b" id="plan-box">
             <img id="plan-th" class="hide" alt="">
@@ -1193,15 +1256,17 @@ body:not(.v-done) #sec-done{ display:none; }
         </div>
       </div>
 
-      <div class="sec">
+      <div class="sec" id="sec-pick">
         <p class="sec-t">この物件の設定</p>
         <p class="hint">該当項目を選択してください（該当なしの場合は未選択のまま）</p>
+        <p class="off-note">「入居のしおり」に印が付いていないため、この内容は入居者様には出ません。</p>
         <div id="pick-list"></div>
       </div>
 
-      <div class="sec">
+      <div class="sec" id="sec-cl">
         <p class="sec-t">この契約に該当する特約</p>
         <p class="hint">チェックしたものだけ入居者に表示されます／<b>タイトルを押すと文面が開きます</b></p>
+        <p class="off-note">「重要事項」に印が付いていないため、この内容は入居者様には出ません。</p>
         <div class="row" style="margin:12px 0 10px;">
           <button type="button" class="btn ghost sm" id="cl-all">全選択</button>
           <button type="button" class="btn ghost sm" id="cl-none">全解除</button>
@@ -1228,7 +1293,6 @@ body:not(.v-done) #sec-done{ display:none; }
       <!-- ★ きょう、あと何通メールを送れるか -->
       <div class="mail-left hide" id="mail-left"></div>
       <div class="acts">
-        <button type="button" class="abtn" id="new-draft">下書き保存</button>
         <button type="button" class="abtn primary" id="new-go">依頼を送る</button>
       </div>
       <div id="made" class="made hide"></div>
@@ -1303,12 +1367,15 @@ body:not(.v-done) #sec-done{ display:none; }
   <img alt="">
 </div>
 
-<script src="clauses.js?v=7"></script>
+<script src="clauses.js?v=8"></script>
 <script src="config.js?v=3"></script>
 <script>
 (function(){
   'use strict';
   var CFG = window.APP_CONFIG || {};
+  /* ★ 画面の版。手直しをするたび、ここを1つ上げてください。
+       左下に出ますので、古いものが出ていないか、その場で分かります。 */
+  var APPV = '2026/09/22 ⑥';
   var KEY = '';
   /* ★ v2.9）いま操作している人のお名前。
        完了・取り消し・督促・仲介への連絡のたびに、サーバーへ一緒に送り、
@@ -1320,6 +1387,10 @@ body:not(.v-done) #sec-done{ display:none; }
 
   function $(s){ return document.querySelector(s); }
   function $$(s){ return Array.prototype.slice.call(document.querySelectorAll(s)); }
+  try{
+    document.getElementById('sd-ver').textContent  = '版 ' + APPV;
+    document.getElementById('sd-ver2').textContent = '版 ' + APPV;
+  }catch(e){}
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){
     return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
   /* ★ 待ちの幕。文言を渡すと、そこに出します（2026/9/17）
@@ -1594,7 +1665,6 @@ body:not(.v-done) #sec-done{ display:none; }
       try{ el.scrollIntoView({ behavior: (jump ? 'auto' : 'smooth'), block:'start' }); }
       catch(e){ el.scrollIntoView(); }
     }
-    if(k === 'new') draftBar();     /* 下書きが残っていれば、上でお知らせします */
   }
 
   /* 完了の画面から、ふだんの画面へ戻ります */
@@ -1765,6 +1835,86 @@ body:not(.v-done) #sec-done{ display:none; }
              .filter(function(v){ return v; });
   }
 
+  /* ---- 送る内容（入居のしおり・室内チェック・重要事項）----------------
+       印を付けたものだけを、入居者様の画面に出します。
+       何を送ったかは、特約の一覧のいちばん後ろに1行で残します
+       （clauses.js の partsMark / partsRead が、その1行の書き手と読み手です）。
+     ---------------------------------------------------------------------- */
+  function drawParts(){
+    $('#pt-list').innerHTML = (window.PARTS || []).map(function(p){
+      return '<label class="pt on" data-k="' + esc(p.key) + '">' +
+        '<input type="checkbox" checked><b>' + esc(p.t) + '</b>' +
+        '<p class="pt-l">' + esc(p.lead || '') + '</p></label>';
+    }).join('');
+    $$('#pt-list .pt').forEach(function(el){
+      var box = el.querySelector('input');
+      box.addEventListener('change', function(){
+        el.classList.toggle('on', box.checked);
+        $('#pt-err').textContent = '';
+        partPaint();
+      });
+    });
+    partPaint();
+  }
+
+  /* 印の付いているものの名前（['guide','room','terms'] の形）*/
+  function partKeys(){
+    return $$('#pt-list .pt').filter(function(e){ return e.querySelector('input').checked; })
+             .map(function(e){ return e.getAttribute('data-k'); });
+  }
+
+  /* 送らない分の欄を、うすくします（入れても出ない、と分かるように）。
+     間取り図は「室内チェック」の画面に出るものですので、
+     印が付いていないあいだは、選べないようにします。 */
+  function partPaint(){
+    var on = {};
+    partKeys().forEach(function(k){ on[k] = 1; });
+    var pick = $('#sec-pick'), cl = $('#sec-cl'), pl = $('#sec-plan');
+    if(pick) pick.classList.toggle('is-off', !on.guide);
+    if(cl)   cl.classList.toggle('is-off', !on.terms);
+    if(pl)   pl.classList.toggle('is-off', !on.room);
+    var f = $('#f-plan');
+    if(f){
+      f.disabled = !on.room;
+      /* 印を外したときは、選んでいただいた間取り図も片づけます
+         （送らないものを、そのまま持っておかないためです） */
+      if(!on.room && planData) planReset();
+    }
+    /* 仲介業者の欄は「重要事項」の画面のためのものです
+       （「説明を受けていない」とのご回答があったときの、ご連絡先）。
+       印が付いていないあいだは、書けないようにします。 */
+    var agf = $('#ag-fields');
+    if(agf){
+      agf.classList.toggle('is-off', !on.terms);
+      ['#f-agco','#f-agnm','#f-agml'].forEach(function(k){
+        var el = $(k);
+        if(!el) return;
+        el.disabled = !on.terms;
+        if(!on.terms) feClear(el);   /* 赤字が残らないようにします */
+      });
+    }
+  }
+
+  /* 最初の状態（3つとも送る）に戻します */
+  function resetParts(){
+    $$('#pt-list .pt').forEach(function(e){
+      e.querySelector('input').checked = true;
+      e.classList.add('on');
+    });
+    $('#pt-err').textContent = '';
+    partPaint();
+  }
+
+  /* 選んだものの名前を、つなげて出します（「入居のしおり・室内チェック」）*/
+  function partLabel(keys){
+    var on = {};
+    (keys || []).forEach(function(k){ on[k] = 1; });
+    return (window.PARTS || []).filter(function(p){ return on[p.key]; })
+             .map(function(p){ return p.t; }).join('・');
+  }
+
+  drawParts();
+
   function drawClauses(){
     /* プルダウンで出すものは、チェックの一覧には出しません */
     $('#cl-list').innerHTML = (window.CLAUSES||[]).filter(function(c){ return !isPick(c); }).map(function(c){
@@ -1806,8 +1956,11 @@ body:not(.v-done) #sec-done{ display:none; }
     });
   }
 
-  /* 前に画面で直した文面の控えが残っていれば、片づけます（もう使いません） */
+  /* 前にこの端末へ残していたものが残っていれば、片づけます（もう使いません）
+       checkin_clause_edit … 画面で直した文面の控え
+       ire_check_draft    … 下書き（「下書き保存」は、やめました） */
   try{ localStorage.removeItem('checkin_clause_edit'); }catch(e){}
+  try{ localStorage.removeItem('ire_check_draft'); }catch(e){}
 
   $('#cl-all').addEventListener('click', function(){
     $$('#cl-list .cl').forEach(function(e){ e.querySelector('input').checked = true; e.classList.add('on'); }); });
@@ -1935,77 +2088,6 @@ body:not(.v-done) #sec-done{ display:none; }
   });
   function feAllClear(){ NEED.forEach(feClear); }
 
-  /* ---- 下書き（この端末にだけ残します。サーバーへは送りません）--------- */
-  var DKEY = 'ire_check_draft';
-  var DFLD = ['#f-bldg','#f-room','#f-name','#f-mail','#f-move','#f-area',
-              '#f-park','#f-parkt','#f-park2','#f-park2t',
-              '#f-dir1','#f-post-r','#f-dir2','#f-post-l',
-              '#f-agco','#f-agnm','#f-agml','#f-extra','#f-memo'];
-
-  function draftSave(){
-    var d = { at: nowLabel(), v:{} };
-    DFLD.forEach(function(k){ d.v[k] = $(k).value; });
-    d.picks = $$('#pick-list select').map(function(sl){ return sl.value; });
-    d.cl = $$('#cl-list .cl').filter(function(e){ return e.querySelector('input').checked; })
-             .map(function(e){ return e.getAttribute('data-t'); });
-    try{ localStorage.setItem(DKEY, JSON.stringify(d)); }catch(e){}
-  }
-  function draftGet(){
-    try{ return JSON.parse(localStorage.getItem(DKEY) || 'null'); }catch(e){ return null; }
-  }
-  function draftDrop(){ try{ localStorage.removeItem(DKEY); }catch(e){} $('#dr-bar').classList.add('hide'); }
-
-  function draftPut(d){
-    if(!d) return;
-    DFLD.forEach(function(k){ if(typeof d.v[k] === 'string') $(k).value = d.v[k]; });
-    park2Able();
-    ['#f-parkt','#f-park2','#f-park2t'].forEach(function(k){
-      if(typeof d.v[k] === 'string' && !$(k).disabled){ $(k).value = d.v[k]; park2Able(); }
-    });
-    var sl = $$('#pick-list select');
-    (d.picks || []).forEach(function(v, i){ if(sl[i]) sl[i].value = v || ''; });
-    if(d.cl){
-      var on = {}; d.cl.forEach(function(t){ on[t] = 1; });
-      $$('#cl-list .cl').forEach(function(e){
-        var y = !!on[e.getAttribute('data-t')];
-        e.querySelector('input').checked = y;
-        e.classList.toggle('on', y);
-      });
-    }
-    feAllClear();
-    $('#dr-bar').classList.add('hide');
-  }
-
-  function nowLabel(){
-    var d = new Date();
-    return (d.getMonth()+1) + '月' + d.getDate() + '日 ' +
-           ('0'+d.getHours()).slice(-2) + ':' + ('0'+d.getMinutes()).slice(-2);
-  }
-
-  /* 新規の画面を開いたとき、下書きがあればお知らせします */
-  function draftBar(){
-    var d = draftGet();
-    if(!d){ $('#dr-bar').classList.add('hide'); return; }
-    var who = (d.v && (d.v['#f-bldg'] || '')) + ' ' + (d.v && (d.v['#f-room'] || ''));
-    $('#dr-bar').innerHTML =
-      '<span><b>下書きがあります</b>　' + esc(who.trim() || '（物件名なし）') +
-        '　' + esc(d.at || '') + '</span>' +
-      '<span class="sp">' +
-        '<button type="button" class="btn ghost sm" id="dr-use">読み込む</button>' +
-        '<button type="button" class="btn ghost sm" id="dr-del">削除</button></span>';
-    $('#dr-bar').classList.remove('hide');
-    $('#dr-use').addEventListener('click', function(){ draftPut(draftGet()); });
-    $('#dr-del').addEventListener('click', function(){ draftDrop(); });
-  }
-
-  $('#new-draft').addEventListener('click', function(){
-    draftSave();
-    $('#new-err').textContent = '';
-    $('#dr-bar').innerHTML = '<span><b>下書きを保存しました。</b>この端末にのみ保存されます。' +
-      '次回「新規」を開いた際に、読み込めます。</span>';
-    $('#dr-bar').classList.remove('hide');
-  });
-
   /* ★ 同じ物件・同じ号室の記録をさがします（取り消したものは除きます）。
        登録のたびに見て、あれば先におうかがいします。 */
   function sameRoomRows(bldg, room){
@@ -2050,6 +2132,10 @@ body:not(.v-done) #sec-done{ display:none; }
        dup … お知らせを見たあとかどうか。undefined のときだけ、お知らせを出します。
              （前の記録は、ここでは消しません） */
   function create(sendMail, dup){
+    /* 送る内容（印を付けたものだけ）。
+       サーバーには parts として渡し、あわせて特約の一覧のいちばん後ろにも
+       1行で残します。入居者の画面は、どちらからでも読み取れます。 */
+    var PT = partKeys();
     var body = {
       action:'create', key:KEY,
       bldg:$('#f-bldg').value.trim(), room:$('#f-room').value.trim(),
@@ -2064,14 +2150,30 @@ body:not(.v-done) #sec-done{ display:none; }
                 .concat(pickedClauses())
                 .concat(($('#f-extra').value || '').split(/\r?\n/)
                   .map(function(x){ return x.trim(); })
-                  .filter(function(x){ return x; })),
+                  .filter(function(x){ return x; }))
+                .concat([window.partsMark(PT)]),
+      parts: PT,
       sendMail: !!sendMail
     };
-    if(planData) body.plan = { data:planData, name:'madori.jpg' };
+    /* 間取り図は「室内チェック」をお送りするときだけ付けます */
+    if(planData && PT.indexOf('room') >= 0) body.plan = { data:planData, name:'madori.jpg' };
 
     /* 「必須」の欄を、1つずつ見ます。だめなところは、その場に赤字で出します */
     var first = null, allOk = true;
-    NEED.forEach(function(el){ if(!feOk(el)){ allOk = false; if(!first) first = el; } });
+    NEED.forEach(function(el){
+      /* 書けないようにしている欄（印の付いていない分）は、見ません */
+      if(el.disabled){ feClear(el); return; }
+      if(!feOk(el)){ allOk = false; if(!first) first = el; }
+    });
+
+    /* 送る内容が1つも選ばれていないと、入居者様には何も出ません */
+    if(!PT.length){
+      $('#pt-err').textContent = '送る内容を、1つ以上お選びください。';
+      allOk = false;
+      if(!first) first = $('#pt-list input');
+    }else{
+      $('#pt-err').textContent = '';
+    }
 
     /* 番号を選んだのに、区画の種類が空のまま */
     var kindMiss = null;
@@ -2136,15 +2238,29 @@ body:not(.v-done) #sec-done{ display:none; }
       parkClear();
       dialClear();
       resetClauses();
+      resetParts();
       feAllClear();
-      draftDrop();
       planReset();
       $('#made').classList.add('hide'); $('#made').innerHTML = '';
 
-      /* つくったら、その件が入る「返事を待っている」まで動きます */
+      /* ★ 入居のしおりだけをお送りした件は、ご返信をお待ちするものが
+           ありません。送った時点で「完了」に入れます。
+           サーバーが、その件の id を返してくれたときは、あちらの記録も
+           「完了」にします（自動の督促メールを止めるためです）。 */
+      var only = (PT.length === 1 && PT[0] === 'guide');
+
+      /* つくったら、その件が入るところまで動きます */
       FILT = '';
-      reload(true);
-      goSec('wait');
+      if(only && res.id && !res.done){
+        /* 古いサーバーのときだけ、こちらから完了にします
+           （新しいサーバーは、作った時点で完了にしてくれます） */
+        post({ action:'done', key:KEY, id:res.id })
+          .then(function(){ reload(true); })
+          .catch(function(){ reload(true); });
+      }else{
+        reload(true);
+      }
+      goSec(only ? 'done' : 'wait');
       if(res.mailLeft !== undefined){ MAIL_LEFT = Number(res.mailLeft); mailPaint(); }
       if(res.mailWarn){
         /* ★ v2.13）依頼はできたけれど、メールだけ送れなかったとき。
@@ -2153,11 +2269,14 @@ body:not(.v-done) #sec-done{ display:none; }
               esc(body.bldg) + ' ' + esc(body.room) + '　' + esc(body.name) + ' 様<br>' +
               esc(String(res.mailWarn)) + '<br>' +
               '<b>入居者様には、まだ届いていません。</b>' +
-              'その1件を開いて「案内文をコピー」から、お手元のメールでお送りください。');
+              'メールアドレスをご確認のうえ、もう一度お作りください。');
       }else{
         flash('<b>✅ 作成しました。入居者へメールを送信しました。</b><br>' +
               esc(body.bldg) + ' ' + esc(body.room) + '　' + esc(body.name) + ' 様<br>' +
-              'パスワードは、下のカードを押すとご確認いただけます。');
+              '送った内容：' + esc(partLabel(PT)) + '<br>' +
+              (only
+                ? 'ご返信をお待ちするものがありませんので、この件は「完了」に入れました。'
+                : 'パスワードは、下のカードを押すとご確認いただけます。'));
       }
     }).catch(function(){ veil(false); $('#new-err').textContent = '通信できませんでした。'; });
   }
@@ -2364,7 +2483,7 @@ body:not(.v-done) #sec-done{ display:none; }
     ROWS.forEach(function(r){
       var st = String(r.status||'');
       if(st === '取消') return;
-      if(st === '完了'){
+      if(st === '完了' || (guideOnly(r) && !mailNg(r))){
         /* ★完了の件数は、一覧と同じ「その年の分」で数えます。
              （探している言葉には左右されません） */
         if(doneInYear(r)) n.done++;
@@ -2524,6 +2643,9 @@ body:not(.v-done) #sec-done{ display:none; }
   function inSec(r, k){
     var st = String(r.status||'');
     if(st === '取消') return false;
+    /* しおりだけの件は、送った時点で完了です。
+       （メールが届かなかった件だけは、お手当てが要りますので外します） */
+    if(guideOnly(r) && !mailNg(r)) return k === 'done';
     if(k === 'done') return st === '完了';
     if(k === 'act')  return needAct(r);
     return st !== '完了' && !needAct(r);      /* 待ち */
@@ -2569,6 +2691,19 @@ body:not(.v-done) #sec-done{ display:none; }
   function stLine(r){
     var st = String(r.status || '');
     var chk = Number(r.noCheck || 0);
+
+    /* 届かなかった件は、いちばんに、そのことをお伝えします */
+    if(mailNg(r)){
+      var bw = mailNgWhy(r);
+      return ['アドレス相違による未送信',
+              'ご案内のメールが届いていません' + (bw ? ('（' + bw + '）') : '') +
+              '。この件を開いて「宛先を直して送り直す」からお送りください'];
+    }
+    /* しおりだけの件は、ご返信をお待ちするものがありません */
+    if(guideOnly(r)){
+      return ['入居のしおりをお送りしました',
+              'ご返信をいただくものはありません。記録として残しています'];
+    }
 
     if(st === '完了'){
       var day = r.doneAt ? (jpDate(String(r.doneAt).slice(0,10)) + ' に完了') : '';
@@ -2741,9 +2876,70 @@ body:not(.v-done) #sec-done{ display:none; }
     return out;
   }
 
+  /* ★ その1件で、何をお送りしたか（入居のしおり・室内チェック・重要事項）。
+       サーバーが parts をそのまま返してくれれば、それを読みます。
+       返してくれないときは、特約の一覧のいちばん後ろに入れてある
+       「【送付内容】…」の1行から読み取ります。
+       どちらも無いとき（この仕組みより前の分）は、null を返します。 */
+  function partsOf(r, d){
+    var src = [r && r.parts, d && d.parts, r && r.clauses, d && d.clauses];
+    for(var i = 0; i < src.length; i++){
+      var v = src[i];
+      if(!v || !v.length) continue;
+      /* 特約の一覧のときは、【送付内容】の1行が入っているときだけ読みます */
+      var isCl = (i >= 2);
+      if(isCl && !v.some(function(t){ return window.isPartsMark && window.isPartsMark(t); })) continue;
+      return window.partsRead(v);
+    }
+    return null;
+  }
+  /* 「入居のしおり・室内チェック」の形にします */
+  function partsText(o){
+    if(!o) return '';
+    var t = (window.PARTS || []).filter(function(p){ return o[p.key]; })
+              .map(function(p){ return p.t; });
+    return t.length ? t.join('・') : 'なし';
+  }
+
+  /* ★ 入居のしおりだけをお送りした件 --------------------------------------
+       ご返信をいただくものがありませんので、お送りした時点で「完了」として
+       あつかいます。「未返信」には出さず、督促もいたしません。
+       ※ 期限が来たときの自動の督促メールは、サーバー（GAS）側で止めて
+          いただく必要があります（「サーバー側のお願い.md」をご覧ください）*/
+  function guideOnly(r){
+    var o = partsOf(r, null);
+    if(!(o && o.guide && !o.room && !o.terms)) return false;
+    /* ご返信をいただいて、印の付かなかったものがあるときは、
+       ふつうの件と同じように「要対応」でお見せします */
+    if(String(r.status||'') === '返信済' && Number(r.noCheck||0) > 0) return false;
+    return true;
+  }
+
+  /* ★ メールが届かなかった件（宛先のまちがい）------------------------------
+       送ったあとに戻ってきた「不達のお知らせ」を、サーバー（GAS）が
+       その1件に印として付けて返してくれたときに、赤字でお出しします。
+       印の名前は、どれで返ってきても読めるようにしています。
+       （サーバー側でまだ印を付けていないあいだは、何も出ません）  */
+  function mailNg(r){
+    if(!r) return false;
+    if(String(r.status || '') === '完了') return false;   /* 済んだ件は出しません */
+    if(r.bounce === true || r.mailNg === true) return true;
+    var v = String(r.bounce || r.mailNg || r.mailErr || '').trim();
+    if(v && v !== 'false' && v !== '0') return true;
+    return /未送信|不達|届かな|エラー|失敗/.test(String(r.mailStatus || ''));
+  }
+  /* 印の中に、日付や理由が入っていれば、それもお出しします */
+  function mailNgWhy(r){
+    var v = String((r && (r.bounce || r.mailNg || r.mailErr || r.mailStatus)) || '').trim();
+    return (v === 'true' || v === '1') ? '' : v;
+  }
+
   function stTag(r){
     var st  = String(r.status || '');
     var chk = Number(r.noCheck || 0);
+    /* 届かなかった件は、何よりもさきにお伝えします */
+    if(mailNg(r))  return ['mail', 'ng', 'アドレス相違による未送信', 'ng'];
+    if(guideOnly(r)) return ['check', 'ok', 'しおりの送付ずみ', ''];
     if(st === '完了'){
       var w = whyTag(r);
       return ['check', 'ok', w[0], w[1]];
@@ -3045,6 +3241,7 @@ body:not(.v-done) #sec-done{ display:none; }
     if(r.area)  sub.push(String(r.area));
     var hi = (String(r.status||'') === '返信済' && !!r.agentRe);
     return '<div class="item' + (needAct(r) ? '' : ' gray') +
+      (mailNg(r) ? ' is-ng' : '') +        /* 届かなかった件は、うすい赤 */
       (hi ? ' hi' : '') + (r.id === SEL ? ' on' : '') +
       '" data-id="' + esc(r.id) + '" data-nm="' + esc(nm) + '">' +
       '<div class="i-tile">' +
@@ -3060,7 +3257,8 @@ body:not(.v-done) #sec-done{ display:none; }
       '<div class="i-tx"><b>' + esc(r.bldg) + '　' + esc(r.room) + '</b>' +
         '<span class="i-sub">' + esc(sub.join(' ／ ')) + '</span>' +
         '<span class="i-tag ' + t[3] + '">' + esc(t[2]) + '</span>' +
-        (stl[1] ? ('<p class="i-desc">' + esc(stl[1]) + '</p>') : '') +
+        (stl[1] ? ('<p class="i-desc' + (mailNg(r) ? ' ng' : '') + '">' +
+                   esc(stl[1]) + '</p>') : '') +
       '</div>' +
     '</div>';
   }
@@ -3277,13 +3475,34 @@ body:not(.v-done) #sec-done{ display:none; }
     h.push('<div class="sd-hd"><span class="i-ic big ' + t[1] + '">' + svg(t[0]) + '</span>' +
            '<div style="min-width:0;"><h3>' + esc(r.bldg) + '　' + esc(r.room) +
            '<span class="who">' + esc(r.name) + ' 様</span></h3></div></div>');
+    /* 届かなかった件は、下の赤いお知らせに詳しく書きますので、ここは見出しだけ */
     h.push('<div class="sd-st">' + esc(stl[0]) +
-           (stl[1] ? ('<span>' + esc(stl[1]) + '</span>') : '') + '</div>');
+           ((stl[1] && !mailNg(r)) ? ('<span>' + esc(stl[1]) + '</span>') : '') + '</div>');
+
+    /* ★ メールが届かなかった件は、赤いお知らせを出します */
+    if(mailNg(r)){
+      var nw = mailNgWhy(r);
+      h.push('<div class="sd-ng"><b>アドレス相違による未送信</b>' +
+             '<span>' + esc(r.mail || '') + ' へお送りしましたが、届きませんでした' +
+             (nw ? ('（' + esc(nw) + '）') : '') + '。<br>' +
+             '下の「宛先を直して送り直す」から、正しいアドレスでお送りください。</span></div>');
+    }
 
     var acts = [];
-    if(!done){
+    /* 届かなかった件は、送り直しをいちばん前に、目立つ形で出します */
+    if(mailNg(r)){
+      acts.push('<button class="btn sm act-mail">宛先を直して送り直す</button>');
+    }
+    if(guideOnly(r)){
+      /* しおりだけの件は、督促をいたしません */
+      if(!mailNg(r)){
+        acts.push('<button class="btn sm ghost act-mail">宛先を直して送り直す</button>');
+      }
+    }else if(!done){
       acts.push('<button class="btn sm ghost act-remind">督促メールを送る</button>');
-      acts.push('<button class="btn sm ghost act-copy">案内文をコピー</button>');
+      if(!mailNg(r)){
+        acts.push('<button class="btn sm ghost act-mail">宛先を直して送り直す</button>');
+      }
     }else if(!fin){
       if(Number(r.noCheck||0) > 0){
         acts.push('<button class="btn sm ghost act-agent">仲介へ連絡する</button>');
@@ -3313,6 +3532,9 @@ body:not(.v-done) #sec-done{ display:none; }
     if(ag) b.push('仲介 ' + esc(ag));
     b.push('作成 ' + esc(String(r.created).slice(0,10)) +
            (r.due ? ' ／ 期限 ' + esc(r.due) : ''));
+    /* ★ 3つのうち、何をお送りしたか */
+    var po = partsOf(r, d);
+    if(po) b.push('送った内容 <b style="font-weight:600;">' + esc(partsText(po)) + '</b>');
     /* 何度かご返信をいただいている件は、そのことを書きます。
        画面に出しているのは、いちばん新しいぶんです */
     if(d && Number(d.replies || 0) > 1){
@@ -3572,6 +3794,92 @@ body:not(.v-done) #sec-done{ display:none; }
     doDrop(rows, '完了の記録');
   }
 
+  /* ★ 宛先を直して、ご案内をもう一度お送りします ------------------------
+       ・パスワードと、ご案内のリンクは、そのままです
+       ・この件の宛先も、入れていただいたものに書き替えます
+       サーバー（GAS）側で {action:'resend', id, mail} を受けていただく必要が
+       あります。受け口が無いあいだは、押しても「できませんでした」と出ます。 */
+  function askMail(id){
+    var r = rowById(id);
+    if(!r) return;
+    var h = [];
+    h.push('<div class="dp-card">');
+    h.push('<h3>宛先を直して送り直す</h3>');
+    h.push('<p class="dp-lead">' + esc(String(r.bldg||'') + '　' + String(r.room||'')) +
+           '　' + esc(r.name || '') + ' 様<br>' +
+           '正しいメールアドレスを入れてください。同じご案内を、もう一度お送りします。</p>');
+    h.push('<label class="f" for="mf-mail">メールアドレス</label>');
+    h.push('<input type="email" id="mf-mail" inputmode="email" autocomplete="off" ' +
+           'value="' + esc(r.mail || '') + '">');
+    h.push('<p class="fe" id="mf-err"></p>');
+    h.push('<p class="dp-note">' +
+           '・パスワードと、ご案内のリンクは、これまでと同じものです<br>' +
+           '・この件の宛先も、新しいものに書き替わります<br>' +
+           '・送信の記録は、対応履歴に残ります</p>');
+    h.push('<div class="dp-a">' +
+           '<button type="button" class="btn sm ghost" id="mf-no">やめる</button>' +
+           '<button type="button" class="btn sm" id="mf-go">この宛先へ送る</button></div>');
+    h.push('</div>');
+    $('#drop').innerHTML = h.join('');
+    $('#drop').classList.add('on');
+    var box = $('#mf-mail');
+    try{ box.focus(); box.select(); }catch(e){}
+    box.addEventListener('input', function(){
+      box.classList.remove('bad'); $('#mf-err').textContent = '';
+    });
+    box.addEventListener('keydown', function(ev){ if(ev.key === 'Enter') send(); });
+    $('#mf-no').addEventListener('click', dropClose);
+    $('#mf-go').addEventListener('click', send);
+
+    function send(){
+      var v = String(box.value || '').trim();
+      if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)){
+        box.classList.add('bad');
+        $('#mf-err').textContent = 'メールアドレスの形をご確認ください。';
+        box.focus();
+        return;
+      }
+      if(v === String(r.mail || '').trim() &&
+         !confirm('いまと同じアドレスです。このままお送りしますか？')) return;
+      $('#mf-go').disabled = true;
+      $('#mf-err').textContent = '';
+      veil(true, '送信しています…');
+      post({ action:'resend', key:KEY, id:id, mail:v }).then(function(res){
+        veil(false);
+        $('#mf-go').disabled = false;
+        if(!res || !res.ok){
+          var e = String((res && res.err) || '');
+          /* サーバー側に、まだ「送り直し」の受け口が無いとき。
+             どうすればよいかを、その場に書きます。 */
+          if(/不明な操作|不明な|unknown/i.test(e)){
+            $('#mf-err').innerHTML =
+              'サーバー（GAS）側に「送り直し」の受け口が、まだありません。<br>' +
+              'いまは、この件を「一覧から消す」で下げてから、' +
+              '<b>新規登録で、正しい宛先でもう一度お作りください</b>。<br>' +
+              '（受け口の作り方は「サーバー側のお願い.md」に書いています）';
+          }else{
+            $('#mf-err').textContent = e ||
+              '送信できませんでした。しばらく待って、もう一度お試しください。';
+          }
+          return;
+        }
+        dropClose();
+        /* 届かなかった印は消し、宛先を新しいものにします */
+        patchRow(id, { mail:v, bounce:'', mailNg:'', mailErr:'', mailStatus:'' });
+        try{ delete DC[id]; }catch(e){}   /* 中身を読み直します（履歴に残るため） */
+        fetchDetail(id);
+        flash('<b>✅ 送り直しました。</b><br>' +
+              esc(String(r.bldg||'') + ' ' + String(r.room||'')) + '　' +
+              esc(r.name || '') + ' 様<br>新しい宛先：' + esc(v));
+      }).catch(function(){
+        veil(false);
+        $('#mf-go').disabled = false;
+        $('#mf-err').textContent = '通信できませんでした。' +
+          '（サーバー側に「送り直し」の受け口が無い場合も、ここに出ます）';
+      });
+    }
+  }
+
   function actRemind(id){
     if(!confirm('督促メールを送信しますか？')) return;
     veil(true);
@@ -3583,14 +3891,6 @@ body:not(.v-done) #sec-done{ display:none; }
       patchRow(id, { remind: Number(r && r.remind || 0) + 1, lastRemind: nowJp().slice(0,10) });
     }).catch(function(){ veil(false); alert('通信できませんでした。'); });
   }
-  function actCopy(id, btn){
-    var r = rowById(id);
-    if(!r) return;
-    var url = location.href.replace(/admin\.html.*$/,'') + '?id=' + r.id;
-    navigator.clipboard.writeText(r.name + ' 様\n\n▼ 入力ページ\n' + url + '\n')
-      .then(function(){ btn.textContent = 'コピーしました'; });
-  }
-
   /* ================================================================
      ★ v2.12）前の方の記録を消します
 
@@ -3765,8 +4065,8 @@ body:not(.v-done) #sec-done{ display:none; }
         ev.stopPropagation(); actDel(id, host.getAttribute('data-nm') || ''); return;
       }
       if(b.classList.contains('act-agent')){ ev.stopPropagation(); openAgent(id); return; }
+      if(b.classList.contains('act-mail')){ ev.stopPropagation(); askMail(id); return; }
       if(b.classList.contains('act-remind')){ ev.stopPropagation(); actRemind(id); return; }
-      if(b.classList.contains('act-copy')){ ev.stopPropagation(); actCopy(id, b); return; }
       if(b.classList.contains('act-reload')){
         ev.stopPropagation(); delete DERR[id]; paint(); fetchDetail(id); return;
       }

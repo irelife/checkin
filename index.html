@@ -273,9 +273,9 @@ header .h-info:hover{background:rgba(255,255,255,.22);}
   <div class="h-sub"  id="h-sub">お部屋の確認と、ご説明内容の確認</div>
   <button type="button" id="btn-info" class="h-info hide">お部屋のご案内を見る</button>
   <div class="bar"><i id="bar" style="width:0"></i></div>
-  <div class="steps" id="steps">
-    <span data-s="1">① お部屋</span><span data-s="2">② ご説明</span><span data-s="3">③ 送信</span>
-  </div>
+  <!-- ①②③ は、送る内容（入居のしおり・室内チェック・重要事項）に合わせて
+       app.js が組み立てます -->
+  <div class="steps" id="steps"></div>
 </header>
 
 <main>
@@ -368,7 +368,26 @@ header .h-info:hover{background:rgba(255,255,255,.22);}
       <div id="cl-money"></div>
       <div class="sec-h">その他</div>
       <div id="cl-other"></div>
-      <div class="sec-h">暮らしのルール（すべてに印が必要です）</div>
+    </div>
+  </section>
+
+  <!-- ===== 入居のしおり（ご案内と、暮らしのルール） ===== -->
+  <section id="s-guide" class="hide">
+    <div class="card">
+      <h2>入居のしおり</h2>
+      <p class="lead">
+        ご入居後に必要となる事項を、まとめております。<br>
+        駐車場の区画・集合ポストのダイヤル・ゴミの出し方などは、
+        <b>ご入居後も、この画面からいつでもご確認いただけます。</b>
+      </p>
+    </div>
+    <div id="guide-body"></div>
+    <div class="card">
+      <h2>暮らしのルール</h2>
+      <p class="lead">
+        お住まいのあいだ、お守りいただくことです。<br>
+        お読みいただいたものに、<b>すべて印を付けて</b>ください。
+      </p>
       <div id="manners"></div>
     </div>
   </section>
@@ -409,7 +428,7 @@ header .h-info:hover{background:rgba(255,255,255,.22);}
       <p class="lead" id="done-msg">ご協力ありがとうございました。</p>
       <button class="btn" id="done-info" style="max-width:420px;margin:26px auto 0;">
         お部屋のご案内を見る</button>
-      <p class="note" style="margin-top:12px;">
+      <p class="note" id="done-info-note" style="margin-top:12px;">
         駐車場の区画・集合ポストのダイヤル・ゴミの出し方などを、まとめております。</p>
       <!-- ご返信は何度でもいただけます。あとから気づいたことがあれば、ここから -->
       <button class="btn ghost" id="done-again" style="max-width:420px;margin:22px auto 0;">
@@ -436,8 +455,8 @@ header .h-info:hover{background:rgba(255,255,255,.22);}
 <div id="veil"><div class="in"><div class="spin"></div><span id="veil-msg">送信しています…</span></div></div>
 <div id="zoom"><img alt=""></div>
 
-<script src="clauses.js?v=7"></script>
+<script src="clauses.js?v=8"></script>
 <script src="config.js?v=3"></script>
-<script src="app.js?v=14"></script>
+<script src="app.js?v=15"></script>
 </body>
 </html>
