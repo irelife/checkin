@@ -45,7 +45,12 @@ const base={id:'X',pass:'ABC123',bldg:'ハルモニア',room:'201',name:'長崎'
 function mailFor(parts){ sent.length=0; ctx.sendInvite(Object.assign({},base,{parts})); return sent[0]; }
 
 let m = mailFor({guide:true,room:false,terms:false});
-ok(m.subj.indexOf('【入居のしおり】')===0, 'しおりだけ → 件名が「入居のしおり」');
+ok(m.subj.indexOf('【ご入居のご案内】')===0, 'しおりだけ → 件名が「ご入居のご案内」');
+ok(m.subj.indexOf('駐車場・集合ポストについて')>=0, 'しおりだけ → 件名に「駐車場・集合ポスト」が入る');
+ok(m.body.indexOf('■ 駐車場の区画')>=0 && m.body.indexOf('■ 集合ポストのダイヤル')>=0,
+   '★しおりだけ → 区画とダイヤルが、いちばん上に出る');
+ok(m.body.indexOf('■ 駐車場の区画') < m.body.indexOf('▼ 入居のしおり'),
+   '★しおりだけ → 番号のほうが、リンクより先に出る');
 ok(m.body.indexOf('キズ')<0, 'しおりだけ → お部屋の確認のお願いが入っていない');
 ok(m.body.indexOf('ご返信の期限')<0, 'しおりだけ → 返信の期限が入っていない');
 ok(m.body.indexOf('駐車場の区画')>=0, 'しおりだけ → 駐車場の区画は入っている');
