@@ -750,6 +750,13 @@ body:not(.v-done) #sec-done{ display:none; }
 .dp-row b{display:block;font-size:15px;font-weight:600;}
 .dp-row span{display:block;margin-top:2px;font-size:12.5px;color:var(--ink2);}
 .dp-note{margin:16px 0 0;font-size:12.5px;line-height:1.85;color:var(--ink3);}
+/* おたずねの中の、書き込む欄 */
+.dp-card .f{display:block;margin:20px 0 4px;font-size:14.5px;font-weight:600;color:var(--ink);}
+.dp-card input[type=email]{width:100%;background:transparent;border:0;border-radius:0;
+  border-bottom:1px solid #D9D9DF;padding:11px 2px;font-size:15.5px;}
+.dp-card input[type=email]:focus{outline:none;border-bottom-color:var(--ink);box-shadow:none;}
+.dp-card input[type=email].bad{border-bottom-color:var(--ng);}
+.dp-card .fe{font-size:12px;color:var(--ng);margin:5px 0 0;min-height:1em;line-height:1.4;}
 .dp-a{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px;}
 .dp-a .btn{min-width:8.5em;}
 .dp-a .btn{flex:1 1 0;margin:0;}
@@ -852,6 +859,13 @@ body:not(.v-done) #sec-done{ display:none; }
 /* ★ v2.9）返事をいただけないまま完了になった件の札。
      「返事をもらって完了」と見た目で分けます */
 .i-tag.wn{background:#FFF4E2;color:#9A6212;}
+/* メールが届かなかった件は、赤い字でお伝えします */
+.i-desc.ng{color:var(--ng);font-weight:600;}
+.item.gray .i-desc.ng{color:var(--ng);}
+.sd-ng{margin:16px 0 0;padding:13px 15px;border-radius:12px;background:var(--ngbg);
+  font-size:14px;line-height:1.75;color:var(--ng);}
+.sd-ng b{display:block;font-size:15px;font-weight:600;}
+.sd-ng span{display:block;color:var(--ink2);font-weight:400;margin-top:3px;}
 .i-desc{margin:8px 0 0;font-size:13.5px;line-height:1.75;color:var(--ink2);
   word-break:auto-phrase;line-break:strict;text-wrap:pretty;}
 /* 画面が狭いときは、絵を少し小さくします（1枚が長くなりすぎないように） */
@@ -2171,10 +2185,22 @@ body:not(.v-done) #sec-done{ display:none; }
       planReset();
       $('#made').classList.add('hide'); $('#made').innerHTML = '';
 
-      /* つくったら、その件が入る「返事を待っている」まで動きます */
+      /* ★ 入居のしおりだけをお送りした件は、ご返信をお待ちするものが
+           ありません。送った時点で「完了」に入れます。
+           サーバーが、その件の id を返してくれたときは、あちらの記録も
+           「完了」にします（自動の督促メールを止めるためです）。 */
+      var only = (PT.length === 1 && PT[0] === 'guide');
+
+      /* つくったら、その件が入るところまで動きます */
       FILT = '';
-      reload(true);
-      goSec('wait');
+      if(only && res.id){
+        post({ action:'done', key:KEY, id:res.id })
+          .then(function(){ reload(true); })
+          .catch(function(){ reload(true); });
+      }else{
+        reload(true);
+      }
+      goSec(only ? 'done' : 'wait');
       if(res.mailLeft !== undefined){ MAIL_LEFT = Number(res.mailLeft); mailPaint(); }
       if(res.mailWarn){
         /* ★ v2.13）依頼はできたけれど、メールだけ送れなかったとき。
@@ -2188,7 +2214,9 @@ body:not(.v-done) #sec-done{ display:none; }
         flash('<b>✅ 作成しました。入居者へメールを送信しました。</b><br>' +
               esc(body.bldg) + ' ' + esc(body.room) + '　' + esc(body.name) + ' 様<br>' +
               '送った内容：' + esc(partLabel(PT)) + '<br>' +
-              'パスワードは、下のカードを押すとご確認いただけます。');
+              (only
+                ? 'ご返信をお待ちするものがありませんので、この件は「完了」に入れました。'
+                : 'パスワードは、下のカードを押すとご確認いただけます。'));
       }
     }).catch(function(){ veil(false); $('#new-err').textContent = '通信できませんでした。'; });
   }
@@ -2395,7 +2423,7 @@ body:not(.v-done) #sec-done{ display:none; }
     ROWS.forEach(function(r){
       var st = String(r.status||'');
       if(st === '取消') return;
-      if(st === '完了'){
+      if(st === '完了' || (guideOnly(r) && !mailNg(r))){
         /* ★完了の件数は、一覧と同じ「その年の分」で数えます。
              （探している言葉には左右されません） */
         if(doneInYear(r)) n.done++;
@@ -2555,6 +2583,9 @@ body:not(.v-done) #sec-done{ display:none; }
   function inSec(r, k){
     var st = String(r.status||'');
     if(st === '取消') return false;
+    /* しおりだけの件は、送った時点で完了です。
+       （メールが届かなかった件だけは、お手当てが要りますので外します） */
+    if(guideOnly(r) && !mailNg(r)) return k === 'done';
     if(k === 'done') return st === '完了';
     if(k === 'act')  return needAct(r);
     return st !== '完了' && !needAct(r);      /* 待ち */
@@ -2600,6 +2631,19 @@ body:not(.v-done) #sec-done{ display:none; }
   function stLine(r){
     var st = String(r.status || '');
     var chk = Number(r.noCheck || 0);
+
+    /* 届かなかった件は、いちばんに、そのことをお伝えします */
+    if(mailNg(r)){
+      var bw = mailNgWhy(r);
+      return ['アドレス相違による未送信',
+              'ご案内のメールが届いていません' + (bw ? ('（' + bw + '）') : '') +
+              '。この件を開いて「宛先を直して送り直す」からお送りください'];
+    }
+    /* しおりだけの件は、ご返信をお待ちするものがありません */
+    if(guideOnly(r)){
+      return ['入居のしおりをお送りしました',
+              'ご返信をいただくものはありません。記録として残しています'];
+    }
 
     if(st === '完了'){
       var day = r.doneAt ? (jpDate(String(r.doneAt).slice(0,10)) + ' に完了') : '';
@@ -2772,9 +2816,66 @@ body:not(.v-done) #sec-done{ display:none; }
     return out;
   }
 
+  /* ★ その1件で、何をお送りしたか（入居のしおり・室内チェック・重要事項）。
+       サーバーが parts をそのまま返してくれれば、それを読みます。
+       返してくれないときは、特約の一覧のいちばん後ろに入れてある
+       「【送付内容】…」の1行から読み取ります。
+       どちらも無いとき（この仕組みより前の分）は、null を返します。 */
+  function partsOf(r, d){
+    var src = [r && r.parts, d && d.parts, r && r.clauses, d && d.clauses];
+    for(var i = 0; i < src.length; i++){
+      var v = src[i];
+      if(!v || !v.length) continue;
+      /* 特約の一覧のときは、【送付内容】の1行が入っているときだけ読みます */
+      var isCl = (i >= 2);
+      if(isCl && !v.some(function(t){ return window.isPartsMark && window.isPartsMark(t); })) continue;
+      return window.partsRead(v);
+    }
+    return null;
+  }
+  /* 「入居のしおり・室内チェック」の形にします */
+  function partsText(o){
+    if(!o) return '';
+    var t = (window.PARTS || []).filter(function(p){ return o[p.key]; })
+              .map(function(p){ return p.t; });
+    return t.length ? t.join('・') : 'なし';
+  }
+
+  /* ★ 入居のしおりだけをお送りした件 --------------------------------------
+       ご返信をいただくものがありませんので、お送りした時点で「完了」として
+       あつかいます。「未返信」には出さず、督促もいたしません。
+       ※ 期限が来たときの自動の督促メールは、サーバー（GAS）側で止めて
+          いただく必要があります（「サーバー側のお願い.md」をご覧ください）*/
+  function guideOnly(r){
+    var o = partsOf(r, null);
+    return !!(o && o.guide && !o.room && !o.terms);
+  }
+
+  /* ★ メールが届かなかった件（宛先のまちがい）------------------------------
+       送ったあとに戻ってきた「不達のお知らせ」を、サーバー（GAS）が
+       その1件に印として付けて返してくれたときに、赤字でお出しします。
+       印の名前は、どれで返ってきても読めるようにしています。
+       （サーバー側でまだ印を付けていないあいだは、何も出ません）  */
+  function mailNg(r){
+    if(!r) return false;
+    if(String(r.status || '') === '完了') return false;   /* 済んだ件は出しません */
+    if(r.bounce === true || r.mailNg === true) return true;
+    var v = String(r.bounce || r.mailNg || r.mailErr || '').trim();
+    if(v && v !== 'false' && v !== '0') return true;
+    return /未送信|不達|届かな|エラー|失敗/.test(String(r.mailStatus || ''));
+  }
+  /* 印の中に、日付や理由が入っていれば、それもお出しします */
+  function mailNgWhy(r){
+    var v = String((r && (r.bounce || r.mailNg || r.mailErr || r.mailStatus)) || '').trim();
+    return (v === 'true' || v === '1') ? '' : v;
+  }
+
   function stTag(r){
     var st  = String(r.status || '');
     var chk = Number(r.noCheck || 0);
+    /* 届かなかった件は、何よりもさきにお伝えします */
+    if(mailNg(r))  return ['mail', 'ng', 'アドレス相違による未送信', 'ng'];
+    if(guideOnly(r)) return ['check', 'ok', 'しおりの送付ずみ', ''];
     if(st === '完了'){
       var w = whyTag(r);
       return ['check', 'ok', w[0], w[1]];
@@ -3091,7 +3192,8 @@ body:not(.v-done) #sec-done{ display:none; }
       '<div class="i-tx"><b>' + esc(r.bldg) + '　' + esc(r.room) + '</b>' +
         '<span class="i-sub">' + esc(sub.join(' ／ ')) + '</span>' +
         '<span class="i-tag ' + t[3] + '">' + esc(t[2]) + '</span>' +
-        (stl[1] ? ('<p class="i-desc">' + esc(stl[1]) + '</p>') : '') +
+        (stl[1] ? ('<p class="i-desc' + (mailNg(r) ? ' ng' : '') + '">' +
+                   esc(stl[1]) + '</p>') : '') +
       '</div>' +
     '</div>';
   }
@@ -3308,13 +3410,36 @@ body:not(.v-done) #sec-done{ display:none; }
     h.push('<div class="sd-hd"><span class="i-ic big ' + t[1] + '">' + svg(t[0]) + '</span>' +
            '<div style="min-width:0;"><h3>' + esc(r.bldg) + '　' + esc(r.room) +
            '<span class="who">' + esc(r.name) + ' 様</span></h3></div></div>');
+    /* 届かなかった件は、下の赤いお知らせに詳しく書きますので、ここは見出しだけ */
     h.push('<div class="sd-st">' + esc(stl[0]) +
-           (stl[1] ? ('<span>' + esc(stl[1]) + '</span>') : '') + '</div>');
+           ((stl[1] && !mailNg(r)) ? ('<span>' + esc(stl[1]) + '</span>') : '') + '</div>');
+
+    /* ★ メールが届かなかった件は、赤いお知らせを出します */
+    if(mailNg(r)){
+      var nw = mailNgWhy(r);
+      h.push('<div class="sd-ng"><b>アドレス相違による未送信</b>' +
+             '<span>' + esc(r.mail || '') + ' へお送りしましたが、届きませんでした' +
+             (nw ? ('（' + esc(nw) + '）') : '') + '。<br>' +
+             '下の「宛先を直して送り直す」から、正しいアドレスでお送りください。</span></div>');
+    }
 
     var acts = [];
-    if(!done){
+    /* 届かなかった件は、送り直しをいちばん前に、目立つ形で出します */
+    if(mailNg(r)){
+      acts.push('<button class="btn sm act-mail">宛先を直して送り直す</button>');
+    }
+    if(guideOnly(r)){
+      /* しおりだけの件は、督促をいたしません */
+      acts.push('<button class="btn sm ghost act-copy">案内文をコピー</button>');
+      if(!mailNg(r)){
+        acts.push('<button class="btn sm ghost act-mail">宛先を直して送り直す</button>');
+      }
+    }else if(!done){
       acts.push('<button class="btn sm ghost act-remind">督促メールを送る</button>');
       acts.push('<button class="btn sm ghost act-copy">案内文をコピー</button>');
+      if(!mailNg(r)){
+        acts.push('<button class="btn sm ghost act-mail">宛先を直して送り直す</button>');
+      }
     }else if(!fin){
       if(Number(r.noCheck||0) > 0){
         acts.push('<button class="btn sm ghost act-agent">仲介へ連絡する</button>');
@@ -3344,6 +3469,9 @@ body:not(.v-done) #sec-done{ display:none; }
     if(ag) b.push('仲介 ' + esc(ag));
     b.push('作成 ' + esc(String(r.created).slice(0,10)) +
            (r.due ? ' ／ 期限 ' + esc(r.due) : ''));
+    /* ★ 3つのうち、何をお送りしたか */
+    var po = partsOf(r, d);
+    if(po) b.push('送った内容 <b style="font-weight:600;">' + esc(partsText(po)) + '</b>');
     /* 何度かご返信をいただいている件は、そのことを書きます。
        画面に出しているのは、いちばん新しいぶんです */
     if(d && Number(d.replies || 0) > 1){
@@ -3603,6 +3731,81 @@ body:not(.v-done) #sec-done{ display:none; }
     doDrop(rows, '完了の記録');
   }
 
+  /* ★ 宛先を直して、ご案内をもう一度お送りします ------------------------
+       ・パスワードと、ご案内のリンクは、そのままです
+       ・この件の宛先も、入れていただいたものに書き替えます
+       サーバー（GAS）側で {action:'resend', id, mail} を受けていただく必要が
+       あります。受け口が無いあいだは、押しても「できませんでした」と出ます。 */
+  function askMail(id){
+    var r = rowById(id);
+    if(!r) return;
+    var h = [];
+    h.push('<div class="dp-card">');
+    h.push('<h3>宛先を直して送り直す</h3>');
+    h.push('<p class="dp-lead">' + esc(String(r.bldg||'') + '　' + String(r.room||'')) +
+           '　' + esc(r.name || '') + ' 様<br>' +
+           '正しいメールアドレスを入れてください。同じご案内を、もう一度お送りします。</p>');
+    h.push('<label class="f" for="mf-mail">メールアドレス</label>');
+    h.push('<input type="email" id="mf-mail" inputmode="email" autocomplete="off" ' +
+           'value="' + esc(r.mail || '') + '">');
+    h.push('<p class="fe" id="mf-err"></p>');
+    h.push('<p class="dp-note">' +
+           '・パスワードと、ご案内のリンクは、これまでと同じものです<br>' +
+           '・この件の宛先も、新しいものに書き替わります<br>' +
+           '・送信の記録は、対応履歴に残ります</p>');
+    h.push('<div class="dp-a">' +
+           '<button type="button" class="btn sm ghost" id="mf-no">やめる</button>' +
+           '<button type="button" class="btn sm" id="mf-go">この宛先へ送る</button></div>');
+    h.push('</div>');
+    $('#drop').innerHTML = h.join('');
+    $('#drop').classList.add('on');
+    var box = $('#mf-mail');
+    try{ box.focus(); box.select(); }catch(e){}
+    box.addEventListener('input', function(){
+      box.classList.remove('bad'); $('#mf-err').textContent = '';
+    });
+    box.addEventListener('keydown', function(ev){ if(ev.key === 'Enter') send(); });
+    $('#mf-no').addEventListener('click', dropClose);
+    $('#mf-go').addEventListener('click', send);
+
+    function send(){
+      var v = String(box.value || '').trim();
+      if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)){
+        box.classList.add('bad');
+        $('#mf-err').textContent = 'メールアドレスの形をご確認ください。';
+        box.focus();
+        return;
+      }
+      if(v === String(r.mail || '').trim() &&
+         !confirm('いまと同じアドレスです。このままお送りしますか？')) return;
+      $('#mf-go').disabled = true;
+      $('#mf-err').textContent = '';
+      veil(true, '送信しています…');
+      post({ action:'resend', key:KEY, id:id, mail:v }).then(function(res){
+        veil(false);
+        $('#mf-go').disabled = false;
+        if(!res || !res.ok){
+          $('#mf-err').textContent = (res && res.err) ||
+            '送信できませんでした。しばらく待って、もう一度お試しください。';
+          return;
+        }
+        dropClose();
+        /* 届かなかった印は消し、宛先を新しいものにします */
+        patchRow(id, { mail:v, bounce:'', mailNg:'', mailErr:'', mailStatus:'' });
+        try{ delete DC[id]; }catch(e){}   /* 中身を読み直します（履歴に残るため） */
+        fetchDetail(id);
+        flash('<b>✅ 送り直しました。</b><br>' +
+              esc(String(r.bldg||'') + ' ' + String(r.room||'')) + '　' +
+              esc(r.name || '') + ' 様<br>新しい宛先：' + esc(v));
+      }).catch(function(){
+        veil(false);
+        $('#mf-go').disabled = false;
+        $('#mf-err').textContent = '通信できませんでした。' +
+          '（サーバー側に「送り直し」の受け口が無い場合も、ここに出ます）';
+      });
+    }
+  }
+
   function actRemind(id){
     if(!confirm('督促メールを送信しますか？')) return;
     veil(true);
@@ -3796,6 +3999,7 @@ body:not(.v-done) #sec-done{ display:none; }
         ev.stopPropagation(); actDel(id, host.getAttribute('data-nm') || ''); return;
       }
       if(b.classList.contains('act-agent')){ ev.stopPropagation(); openAgent(id); return; }
+      if(b.classList.contains('act-mail')){ ev.stopPropagation(); askMail(id); return; }
       if(b.classList.contains('act-remind')){ ev.stopPropagation(); actRemind(id); return; }
       if(b.classList.contains('act-copy')){ ev.stopPropagation(); actCopy(id, b); return; }
       if(b.classList.contains('act-reload')){
