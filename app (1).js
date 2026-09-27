@@ -1,0 +1,1077 @@
+/* =====================================================================
+   入居時チェック アプリ ｜ 入居者の画面
+
+   ・?id=…… で、その方だけのご案内を開きます
+   ・パスワード（6文字）を入れると中身が出ます
+   ・書きかけは、その端末の中に自動で残ります（送信すると消えます）
+   ・「一時保存」を押すと、こちらでもお預かりします。
+     スマートフォンを買い替えても、続きから入力していただけます
+     （写真は端末の中だけです。重いため、お預かりしません）
+   ・写真は送る前に小さくします（通信量と、サーバーの負担を減らすため）
+   ===================================================================== */
+(function(){
+  'use strict';
+
+  var CFG = window.APP_CONFIG || {};
+  var ID  = (location.search.match(/[?&]id=([^&]+)/) || [])[1] || '';
+  /* ご案内メールのリンクには、パスワードが入っています。
+     入居者に入力していただかなくても、そのまま開けます。 */
+  var LNK = (location.search.match(/[?&]k=([^&]+)/) || [])[1] || '';
+  var PASS = '';
+  var DATA = null;               // サーバーから受け取ったご案内
+  /* ★ ご返信の受付が終わっているか。
+       終わっていても「お部屋のご案内」は、これまでどおりご覧いただけます。 */
+  var CLOSED = false;
+  var CLOSED_MSG = '';
+  var HOLD_NOTE = '';            // お預かりしていたぶんから続けたときの日時
+
+  /* 暮らしのルールの文。ゴミの回収の回数だけ、エリアによって差し替えます。
+     エリアが分からないとき・回数が決まっていないときは、
+     回数を書かずに「市区町村の決まりによります」と出します。 */
+  function manners(){
+    var area = String((DATA || {}).area || '');
+    var n    = String((window.TRASH || {})[area] || '');
+    var t    = n ? ('回収は' + n + 'です')
+                 : '回収の曜日と回数は、お住まいの市区町村の規定によります';
+    return (window.MANNERS || []).map(function(m){
+      return String(m).split('{ゴミ回収}').join(t);
+    });
+  }
+  /* ★ 送る内容。管理の画面で印を付けたものだけをお見せします。
+       guide … 入居のしおり（ご案内と、暮らしのルール）
+       room  … 室内チェック
+       terms … 重要事項（特約のご確認）
+       印が分からない、これまでの分は、3つとも出します。 */
+  var PART = { guide:true, room:true, terms:true };
+  /* 出す順番。いちばん後ろの send（送信）は、いつもあります */
+  var FLOW = ['room', 'terms', 'guide', 'send'];
+  var SECT = { room:'#s1', terms:'#s2', guide:'#s-guide', send:'#s3' };
+  var SECS = ['#s1', '#s2', '#s-guide', '#s3'];
+  var STEPT = { room:'お部屋', terms:'ご説明', guide:'しおり', send:'送信' };
+  var NEXTT = { room:'次へ（お部屋の確認）', terms:'次へ（ご説明の確認）',
+                guide:'次へ（入居のしおり）', send:'確認' };
+  var MARU  = ['①', '②', '③', '④'];
+
+  /* いまの段（'room' / 'terms' / 'guide' / 'send'） */
+  function nowKey(){ return FLOW[step - 1] || 'send'; }
+
+  /* 送る内容を読み取り、段の並びを決めます */
+  function readParts(){
+    var d = DATA || {};
+    var v = (d.parts && d.parts.length) ? d.parts : (d.clauses || []);
+    PART = window.partsRead ? window.partsRead(v) : { guide:true, room:true, terms:true };
+    FLOW = ['room', 'terms', 'guide'].filter(function(k){ return PART[k]; }).concat(['send']);
+    drawSteps();
+  }
+
+  /* 上の ①②③ を、送る内容に合わせて組み立てます */
+  function drawSteps(){
+    $('#steps').innerHTML = FLOW.map(function(k, i){
+      return '<span data-s="' + (i+1) + '">' + MARU[i] + ' ' + STEPT[k] + '</span>';
+    }).join('');
+  }
+
+  /* 送られてきた内容の名前（「室内チェック・重要事項」）*/
+  function partLabel(){
+    return (window.PARTS || []).filter(function(p){ return PART[p.key]; })
+             .map(function(p){ return p.t; }).join('・');
+  }
+
+  var step = 1;
+  var rooms = {};                // { 場所: {ng:bool, comment:'', photos:[dataURL]} }
+  var whys  = {};                // { 特約のタイトル: {why:'…', note:'…'} } 印を付けなかった理由
+  var checks = {};               // { 見出し: true }
+  var KEY  = 'ire_checkin_' + ID; // 書きかけの置き場所
+  var PKEY = 'ire_pass_'   + ID; // パスワードの置き場所（この端末の中だけ）
+
+  /* ★ 2回目からは、パスワードを入れずに開けるようにします。
+       ・入れたパスワードを、その端末の中にだけ覚えておきます
+       ・サーバーにも、ほかの端末にも、送られません
+       ・「このスマホを他の人が見る」ことが心配なときは、
+         ご案内の画面のいちばん下から、いつでも消せます            */
+  function passSave(p){ try{ localStorage.setItem(PKEY, p); }catch(e){} }
+  function passLoad(){ try{ return localStorage.getItem(PKEY) || ''; }catch(e){ return ''; } }
+  function passDrop(){ try{ localStorage.removeItem(PKEY); }catch(e){} }
+
+  var MAXPHOTO = 10;   /* 1か所あたりの写真の上限 */
+
+  /* 印を付けなかったときに選んでもらう理由。
+     「読んでいない」のか「聞いていない」のか「分からない」のかで、
+     こちらのやることが変わるためです。 */
+  var WHYS = [
+    '説明を受けていない',
+    '説明は受けたが、内容が理解できなかった',
+    '内容に納得できない'
+  ];
+
+  /* ご質問のあて先のご案内。
+     このページは「お部屋の確認」と「ご説明の確認」だけを受け取る場所です。
+     それ以外のご質問をここに書かれても、こちらでは受けられないため、
+     最初に、はっきりお伝えしておきます。 */
+  function askHtml(){
+    var hp = '';
+    try{ hp = String((window.APP_CONFIG||{}).HP_URL || '').trim(); }catch(e){}
+    /* お受けしている内容は、お送りした分だけを書きます */
+    var can = [];
+    if(PART.room)  can.push('お部屋の状態の確認');
+    if(PART.terms) can.push('ご契約時のご説明内容の確認');
+    if(PART.guide) can.push('暮らしのルールの確認');
+    if(!can.length) can.push('ご確認いただいた内容の受け取り');
+    return '<b>ご質問・ご要望について</b>' +
+      '<p>このページでお受けしているのは、' +
+      can.map(function(x){ return '<b>' + x + '</b>'; }).join('と') + 'だけです。<br>' +
+      'それ以外のご質問・ご要望につきましては、このページではお答えいたしかねます。<br>' +
+      'お手数ですが、弊社ホームページの<b>お問い合わせ</b>よりご連絡くださいますよう、' +
+      'くれぐれもよろしくお願いいたします。</p>' +
+      (hp ? ('<a class="hp" href="' + esc(hp) + '" target="_blank" rel="noopener">' +
+             (/contact|inquiry|toiawase|form/i.test(hp)
+                ? 'お問い合わせページを開く'
+                : '弊社ホームページを開く') + '</a>') : '');
+  }
+
+  function $(s){ return document.querySelector(s); }
+  function $$(s){ return Array.prototype.slice.call(document.querySelectorAll(s)); }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+
+  /* ---------- サーバーとのやりとり ---------- */
+  function post(body){
+    return fetch(CFG.GAS_URL, {
+      method:'POST',
+      /* text/plain にすると、よけいな事前確認（プリフライト）が飛ばず、
+         そのぶん速く・確実につながります */
+      headers:{ 'Content-Type':'text/plain;charset=utf-8' },
+      body: JSON.stringify(body)
+    }).then(function(r){ return r.json(); });
+  }
+
+  /* ---------- 書きかけの保存・復元 ---------- */
+  /* 書きかけを、この端末に残します。
+     写真は1枚で100KB以上あるので、端末の置き場（およそ5MB）がいっぱいになることがあります。
+     いっぱいのときは、写真を外して「選んだ内容と書いた文章」だけでも必ず残します。 */
+  function save(){
+    /* ★ いつのものかを入れておきます。
+         こちらでお預かりしたぶんと、どちらが新しいかを見るためです。 */
+    var body = { rooms:rooms, checks:checks, whys:whys, step:step, at:Date.now() };
+    try{
+      localStorage.setItem(KEY, JSON.stringify(body));
+      return;
+    }catch(e){}
+    try{
+      var slim = { rooms:{}, checks:checks, whys:whys, step:step, at:Date.now(), noPhoto:true }, k;
+      for(k in rooms){
+        if(!Object.prototype.hasOwnProperty.call(rooms, k)) continue;
+        slim.rooms[k] = { ng:rooms[k].ng, comment:rooms[k].comment || '', urgent:!!rooms[k].urgent, photos:[] };
+      }
+      localStorage.setItem(KEY, JSON.stringify(slim));
+      try{ console.warn('[checkin] 端末の空き容量が不足のため、写真を除いて保存しました'); }catch(x){}
+    }catch(e){
+      try{ localStorage.removeItem(KEY); }catch(x){}
+    }
+  }
+  function load(){
+    var v = null;
+    try{ v = JSON.parse(localStorage.getItem(KEY) || 'null'); }catch(e){ v = null; }
+    if(v){ rooms = v.rooms || {}; checks = v.checks || {}; whys = v.whys || {}; }
+    return v;
+  }
+
+  /* ================================================================
+     ★ 一時保存（こちらでお預かりします）
+
+     ・端末の中だけに残していると、スマートフォンを変えたときや、
+       ブラウザの記録を消したときに、書きかけが消えてしまいます。
+     ・そこで「一時保存」を押していただくと、こちらでもお預かりします。
+     ・写真はお預かりしません。重いためです。端末の中には残っています。
+     ・送信が終わると、お預かりしたぶんは消します。
+     ================================================================ */
+  function holdBody(){
+    var out = { rooms:{}, checks:{}, whys:{}, step:step }, k;
+    /* まだ触っていないところは、預けません。
+       場所の分だけ「まだ選んでいない」が並ぶと、中身が大きくなるだけだからです。 */
+    for(k in rooms){
+      if(!Object.prototype.hasOwnProperty.call(rooms, k)) continue;
+      var one = rooms[k] || {};
+      var ng  = (one.ng === true || one.ng === false) ? one.ng : null;
+      var cm  = String(one.comment || '');
+      if(ng === null && !cm) continue;
+      /* 写真は入れません（お預かりするのは、選んだ内容と書いた文章だけです） */
+      out.rooms[k] = { ng: ng, comment: cm, urgent: !!one.urgent };
+    }
+    for(k in checks){
+      if(!Object.prototype.hasOwnProperty.call(checks, k)) continue;
+      if(checks[k]) out.checks[k] = true;
+    }
+    for(k in whys){
+      if(!Object.prototype.hasOwnProperty.call(whys, k)) continue;
+      var w = whys[k] || {};
+      if(String(w.why||'') || String(w.note||'')) out.whys[k] = { why:w.why||'', note:w.note||'' };
+    }
+    return out;
+  }
+  function holdEmpty(b){
+    var k, n = 0, g = ['rooms','checks','whys'], i;
+    for(i = 0; i < g.length; i++){
+      for(k in (b[g[i]]||{})){ if(Object.prototype.hasOwnProperty.call(b[g[i]], k)) n++; }
+    }
+    return n === 0;
+  }
+  var _holding = false;
+  function holdNow(){
+    if(_holding) return;
+    if(!ID || !PASS){ toast('まだ開いていないため、お預かりできません。'); return; }
+    var b = holdBody();
+    if(holdEmpty(b)){ toast('まだ何も入力されていません。'); return; }
+    _holding = true;
+    var btn = $('#hold');
+    if(btn){ btn.disabled = true; btn.textContent = '保存しています…'; }
+    post({ action:'draftSave', id:ID, pass:PASS, data:b }).then(function(res){
+      if(res && res.ok){
+        toast('お預かりしました。ほかの端末からでも、続きから入力していただけます。\n' +
+              '写真は、この端末の中にだけ残ります。');
+      }else{
+        toast((res && res.err) || 'お預かりできませんでした。もう一度お試しください。');
+      }
+    }).catch(function(){
+      toast('通信できませんでした。入力内容は、この端末には残っています。');
+    }).then(function(){
+      _holding = false;
+      if(btn){ btn.disabled = false; btn.textContent = '入力を一時保存する'; }
+    });
+  }
+
+  /* お預かりしていたぶんを、画面に入れます */
+  function holdApply(d){
+    if(!d || !d.data) return;
+    rooms = {}; checks = d.data.checks || {}; whys = d.data.whys || {};
+    var src = d.data.rooms || {}, k;
+    for(k in src){
+      if(!Object.prototype.hasOwnProperty.call(src, k)) continue;
+      rooms[k] = { ng: src[k].ng, comment: src[k].comment || '', urgent: !!src[k].urgent, photos: [] };
+    }
+    save();
+  }
+  /* 「2026/09/10 14:22」を、時刻の数に直します（読めなければ 0） */
+  function holdMs(v){
+    var m = /^(\d{4})\/(\d{2})\/(\d{2})[ T](\d{2}):(\d{2})/.exec(String(v||''));
+    if(!m) return 0;
+    return new Date(Number(m[1]), Number(m[2])-1, Number(m[3]),
+                    Number(m[4]), Number(m[5])).getTime();
+  }
+  /* 「2026/09/10 14:22」を、読みやすい形に */
+  function holdWhen(v){
+    var m = /^(\d{4})\/(\d{2})\/(\d{2})[ T](\d{2}):(\d{2})/.exec(String(v||''));
+    return m ? (Number(m[2]) + '月' + Number(m[3]) + '日 ' + m[4] + ':' + m[5]) : '';
+  }
+
+  /* 下から出る、短いお知らせ */
+  var _toastT = null;
+  function toast(msg){
+    var el = $('#toast');
+    if(!el){ return; }
+    el.textContent = String(msg || '');
+    el.classList.add('on');
+    clearTimeout(_toastT);
+    _toastT = setTimeout(function(){ el.classList.remove('on'); }, 4200);
+  }
+  function clear(){ try{ localStorage.removeItem(KEY); }catch(e){} }
+
+  /* ---------- パスワード ---------- */
+  function openIt(auto){
+    var p = auto ? String(auto).toUpperCase().trim()
+                 : String($('#pw').value || '').toUpperCase().trim();
+    if(p.length < 4){ $('#pw-err').textContent = 'パスワードを入れてください。'; return; }
+    $('#pw-err').textContent = '';
+    veil(auto ? '開いています…' : '確認しています…');
+    post({ action:'open', id:ID, pass:p }).then(function(res){
+      veil(false);
+      if(!res.ok){
+        passDrop();                     /* 覚えていたものが古ければ、消します */
+        $('#pw-err').textContent = res.err || '開けませんでした。';
+        return;
+      }
+      PASS = p; DATA = res;
+      CLOSED = !!res.closed;
+      passSave(p);                               /* 次から、入れずに開けます */
+      readParts();                               /* 何をお送りしたかを見ます */
+      /* 「お部屋のご案内」は、入居のしおりをお送りした方だけにお出しします */
+      $('#btn-info').classList.toggle('hide', !PART.guide);
+
+      /* ★ ご返信の受付が終わっている件。
+           入力の画面は出さず、「お部屋のご案内」だけをお見せします。
+           ゴミの出し方・駐車場の区画・ポストのダイヤルは、
+           ご案内メールで「いつでもご確認いただけます」とお伝えしているためです。 */
+      if(CLOSED){
+        CLOSED_MSG = String(res.closedMsg || '');
+        _infoBack = 'closed';
+        showInfo();
+        return;
+      }
+
+      /* すでにご返信ずみでも、ここで終わりにはしません。
+         「もう一度ご返信する」から、何度でもお送りいただけます。 */
+      if(res.done){
+        showDone('すでにご返信をいただいております。ありがとうございました。\n' +
+                 'あとからお気づきのことがあれば、下の「もう一度ご返信する」からお送りください。');
+        return;
+      }
+
+      var mine = load();                       /* この端末に残っている書きかけ */
+      /* ★ こちらでお預かりしているぶんがあれば、どちらから続けるかを決めます */
+      var kept = res.draft;
+      if(kept && kept.data){
+        var mineAt = Number((mine && mine.at) || 0);
+        var keptAt = holdMs(kept.at);
+        if(!mine){
+          holdApply(kept);                      /* 端末に何も無ければ、そのまま使います */
+          HOLD_NOTE = holdWhen(kept.at);
+        }else if(keptAt > mineAt){
+          if(confirm('ほかの端末から ' + holdWhen(kept.at) + ' に一時保存されたものがあります。\n' +
+                     'そちらの続きから入力しますか？\n\n' +
+                     '「キャンセル」を押すと、この端末に残っている分から続けます。\n' +
+                     '※ 写真は、この端末に残っている分だけです。')){
+            holdApply(kept);
+            HOLD_NOTE = holdWhen(kept.at);
+          }
+        }
+      }
+      build();
+      go(1);
+      if(HOLD_NOTE) toast(HOLD_NOTE + ' に一時保存されたところから続けています。');
+    }).catch(function(){
+      veil(false);
+      $('#pw-err').textContent = '通信できませんでした。電波状況の良い場所で、もう一度お試しください。';
+    });
+  }
+
+  /* ---------- 画面を組み立てる ---------- */
+  function build(){
+    $('#h-bldg').textContent = (DATA.bldg || '') + ' ' + (DATA.room || '');
+    $('#h-sub').textContent  = (DATA.name || '') + ' 様' + (DATA.due ? '　／　' + DATA.due + ' までにご返信ください' : '');
+    /* 期限を、注意書きの中にも入れます（上のバーは小さく、見落とされるため） */
+    try{
+      var dn = $('#due-note');
+      if(dn && DATA.due && !dn.getAttribute('data-due')){
+        dn.setAttribute('data-due','1');   /* 二度目に組み立てても、重ねて足さないように */
+        dn.insertAdjacentHTML('afterbegin',
+          '<b style="display:inline;font-size:15px;">' + esc(DATA.due) + ' まで</b>にご返信ください。<br>');
+      }
+    }catch(e){}
+
+    /* 間取り図
+       ドライブが返す URL は「閲覧ページ」のもので、そのままでは画像として
+       読めません（画像が壊れた印になります）。ファイル番号を取り出して、
+       画像として出せるアドレスに作り直します。 */
+    if(DATA.plan){
+      var big = driveImg(DATA.plan, 1600);
+      $('#plan').innerHTML =
+        '<img src="' + esc(driveImg(DATA.plan, 1000)) + '" alt="間取り図">' +
+        '<div class="plan-cap">間取り図（タップで大きく表示）</div>';
+      var pim = $('#plan img');
+      pim.addEventListener('click', function(){ zoom(big); });
+
+      /* ★ v2.10）間取り図は、もう公開していません。
+           ドライブから直接は読めないので、読めなかったときは
+           このアプリに中身を取りにいきます（ご自分のぶんだけです）。
+           それでも読めないときだけ、開くリンクにします。 */
+      var _tried = false;
+      function planLink(){
+        $('#plan').innerHTML =
+          '<a class="plan-link" href="' + esc(DATA.plan) + '" target="_blank" rel="noopener">' +
+          '間取り図を開く</a>';
+      }
+      pim.addEventListener('error', function(){
+        if(_tried){ planLink(); return; }
+        _tried = true;
+        post({ action:'plan', id:ID, pass:PASS }).then(function(d){
+          if(d && d.ok && d.data){
+            var im = $('#plan img');
+            if(im){ big = d.data; im.src = d.data; return; }
+          }
+          planLink();
+        }).catch(planLink);
+      });
+    }
+
+    /* 場所ごとのカード（室内チェックをお送りした方だけ） */
+    var places = PART.room ? (window.PLACES || []) : [];
+    $('#places').innerHTML = places.map(function(p, i){
+      var cur = rooms[p] || {};
+      return '<div class="place' + (cur.ng ? ' is-ng' : '') + '" data-p="' + esc(p) + '">' +
+        '<div class="place-h">' + esc(p) + '</div>' +
+        '<div class="pick">' +
+          '<label><input type="radio" name="r' + i + '" value="ok"' + (cur.ng===false?' checked':'') + '><span>問題なし</span></label>' +
+          '<label class="ng"><input type="radio" name="r' + i + '" value="ng"' + (cur.ng===true?' checked':'') + '><span>気になる</span></label>' +
+        '</div>' +
+        '<div class="detail' + (cur.ng ? '' : ' hide') + '">' +
+          '<textarea placeholder="箇所と状態をご記入ください（例：北側の壁に10cm程度のキズ）">' + esc(cur.comment||'') + '</textarea>' +
+          /* ★ 緊急の印。すぐに対応が必要な不具合だけに付けていただきます */
+          '<label class="urg' + (cur.urgent ? ' on' : '') + '"><input type="checkbox"' + (cur.urgent ? ' checked' : '') + '>' +
+            '<span><b>緊急</b>（水漏れなど、すぐに対応が必要な不具合）</span></label>' +
+          '<div class="shots"></div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+    $$('#places .place').forEach(bindPlace);
+
+    var all = window.CLAUSES || [];
+    /* 送った内容の記録（【送付内容】…）は、特約ではありません。外します */
+    var mycl = (DATA.clauses || []).filter(function(t){
+      return !(window.isPartsMark && window.isPartsMark(t));
+    });
+
+    /* 特約の一覧に無いものは「この物件について」として、そのまま出します。
+       管理画面で「個別に伝えたいこと」に書いた文が、ここに来ます。 */
+    var known = {}, extra = [];
+    all.forEach(function(c){ known[c.t] = 1; });
+    mycl.forEach(function(t){
+      if(!known[t] && String(t).trim()) extra.push({ t:t, b:'', money:false, extra:true });
+    });
+
+    /* 確認事項（重要事項をお送りした方だけ） */
+    if(!PART.terms){
+      $('#cl-money').innerHTML = '';
+      $('#cl-other').innerHTML = '';
+    }else{
+      var mine = mycl.length
+        ? all.filter(function(c){ return mycl.indexOf(c.t) >= 0; })
+        : [];
+      if(!mine.length) mine = all;   // 指定が無いときは、すべて表示します
+
+      $('#cl-money').innerHTML = mine.filter(function(c){ return c.money; }).map(clHtml).join('')
+        || '<p class="note">該当なし</p>';
+      $('#cl-other').innerHTML =
+        (extra.length ? '<p class="note" style="margin:2px 0 6px">この物件・お部屋について</p>' + extra.map(clHtml).join('') : '') +
+        (mine.filter(function(c){ return !c.money; }).map(clHtml).join('')
+          || (extra.length ? '' : '<p class="note">該当なし</p>'));
+    }
+
+    /* 入居のしおり（ご案内と、暮らしのルール）をお送りした方だけ */
+    if(!PART.guide){
+      $('#guide-body').innerHTML = '';
+      $('#manners').innerHTML = '';
+    }else{
+      /* 重要事項をお送りしないときは、個別のお知らせをこちらに出します。
+         せっかく書いていただいた文が、どこにも出ないままになるためです。 */
+      $('#guide-body').innerHTML = infoHtml() +
+        ((!PART.terms && extra.length)
+          ? ('<div class="card"><h2>この物件・お部屋について</h2>' +
+             '<p class="lead">お読みいただいたものに、印を付けてください。</p>' +
+             extra.map(clHtml).join('') + '</div>')
+          : '');
+      $('#manners').innerHTML = manners().map(function(m){
+        return '<label class="chk mn' + (checks[m] ? ' on' : '') + '" data-t="' + esc(m) + '">' +
+          '<input type="checkbox"' + (checks[m]?' checked':'') + '>' +
+          '<div class="chk-h"><i class="box"></i><div class="chk-t">' + esc(m) + '</div></div></label>';
+      }).join('');
+    }
+    $$('.clwrap').forEach(bindClause);      /* 特約（理由つき） */
+    $$('#manners .chk').forEach(bindChk);   /* 暮らしのルール（理由なし） */
+  }
+
+  /* 文面の中の URL と電話番号を、押せるようにします。
+     （文字そのものは esc で無害にしてから、リンクだけ組み立てます） */
+  function linky(t){
+    var h = esc(String(t == null ? '' : t));
+    h = h.replace(/https?:\/\/[^\s<>"']+/g, function(u){
+      var href = u.split('&amp;').join('&');
+      return '<a href="' + href + '" target="_blank" rel="noopener">' + u + '</a>';
+    });
+    h = h.replace(/0\d{1,4}-\d{1,4}-\d{3,4}/g, function(n){
+      return '<a href="tel:' + n.split('-').join('') + '">' + n + '</a>';
+    });
+    return h.split('\n').join('<br>');
+  }
+
+  /* ===== お部屋のご案内 ================================================
+       駐車場・集合ポストのダイヤル・水道・ゴミ・保険を、1枚にまとめます。
+       ・ご返信の前でも、送ったあとでも、いつでも見られます
+       ・該当するものだけを出します（無いものは、最初から出しません）
+     ===================================================================== */
+
+  /* 「12（普通）、37（軽）」を、1台ずつに分けます */
+  function parkList(t){
+    var v = String(t || '').trim();
+    if(!v || v === 'なし') return [];
+    return v.split('、').map(function(x){
+      var m = /^\s*([^（(]+?)\s*(?:[（(]\s*([^）)]+?)\s*[）)])?\s*$/.exec(x);
+      return m ? { no:m[1], kind:m[2] || '' } : null;
+    }).filter(Boolean);
+  }
+
+  /* この方の該当特約から、選ばれているものを1つ取り出します */
+  function pickedOf(key){
+    var have = {};
+    ((DATA || {}).clauses || []).forEach(function(t){ have[t] = 1; });
+    var hit = (window.CLAUSES || []).filter(function(c){ return c.sel === key && have[c.t]; });
+    return hit[0] || null;
+  }
+
+  function infoHtml(){
+    var d = DATA || {};
+    var h = [];
+
+    /* --- 駐車場 --- */
+    var ps = parkList(d.parking);
+    if(ps.length){
+      h.push('<div class="iv"><h3>駐車場</h3><div class="row2">' +
+        ps.map(function(x, i){
+          return '<div>' +
+                 (ps.length > 1 ? ('<p class="pkn">' + (i+1) + '台目</p>') : '') +
+                 '<div class="big">' + esc(x.no) +
+                 '<span class="u">番' + (x.kind ? ('・' + esc(x.kind)) : '') + '</span></div>' +
+                 '</div>';
+        }).join('') + '</div>' +
+        '<p>ご契約の区画以外には、駐車なさらないようお願いいたします。</p></div>');
+    }
+
+    /* --- 集合ポストのダイヤル --- */
+    if(String(d.postDial || '').trim()){
+      h.push('<div class="iv"><h3>集合ポストのダイヤル</h3>' +
+        '<div class="big">' + esc(d.postDial) + '</div>' +
+        '<p>開かない場合は、数字にきちんと合わせてから、ゆっくりお回しください。</p></div>');
+    }
+
+    /* --- 水道料金 --- */
+    var w = pickedOf('水道');
+    if(w) h.push('<div class="iv"><h3>水道料金</h3><p>' + linky(w.b) + '</p></div>');
+
+    /* --- ゴミ --- */
+    var gm = pickedOf('ゴミ市'), gg = pickedOf('ゴミ業');
+    var tr = (window.TRASH || {})[String(d.area || '')] || '';
+    if(gm || gg || tr){
+      var g = '<div class="iv"><h3>ゴミの出し方</h3>';
+      if(tr) g += '<div class="big">回収は ' + esc(tr) + '</div>';
+      if(gm) g += '<p>' + linky(gm.b) + '</p>';
+      if(gg) g += '<p>' + linky(gg.b) + '</p>';
+      g += '<p>ゴミ置き場は24時間ご利用いただけますが、' +
+           '分別されていないゴミは回収されません。</p></div>';
+      h.push(g);
+    }
+
+    /* --- 入居者の過失による破損 --- */
+    var hk = pickedOf('破損');
+    if(hk) h.push('<div class="iv"><h3>お部屋を壊してしまったとき</h3><p>' +
+                  linky(hk.b) + '</p></div>');
+
+    if(!h.length){
+      h.push('<div class="iv"><p>このお部屋のご案内は、現在ございません。</p></div>');
+    }
+    return h.join('');
+  }
+
+  /* このページを、後から開きやすくするための案内 */
+  function keepHtml(){
+    var ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
+    return '<div class="iv keep"><h3>後日、ご確認いただくには</h3>' +
+      '<p>このページは、<b>いつでもこの画面からご確認いただけます。</b><br>' +
+      'このスマートフォンでは、<b>次回以降、パスワードの入力なしで開けます。</b></p>' +
+      '<p><b>ホーム画面に追加しておくと、すぐに開けます。</b><br>' +
+      (ios
+        ? '下の <b>共有ボタン（□に↑）</b> を押して、<b>「ホーム画面に追加」</b>を選んでください。'
+        : '右上の <b>⋮</b> を押して、<b>「ホーム画面に追加」</b>を選んでください。') +
+      '</p>' +
+      '<button type="button" class="btn ghost sm" id="pass-drop" ' +
+      'style="margin-top:12px;">このスマートフォンから、パスワードの記憶を削除する</button></div>';
+  }
+
+  /* メールに入れる、文字だけのご案内。
+     画面と同じ中身を、そのまま読める形にします（PDFは使いません）。 */
+  function infoText(){
+    var d = DATA || {}, t = [];
+
+    var ps = parkList(d.parking);
+    if(ps.length){
+      t.push('■ 駐車場');
+      ps.forEach(function(x, i){
+        t.push('　' + (ps.length > 1 ? ((i+1) + '台目： ') : '') +
+               x.no + ' 番' + (x.kind ? ('・' + x.kind) : ''));
+      });
+      t.push('　ご契約の区画以外には、駐車なさらないようお願いいたします。');
+      t.push('');
+    }
+    if(String(d.postDial || '').trim()){
+      t.push('■ 集合ポストのダイヤル');
+      t.push('　' + d.postDial);
+      t.push('　開かない場合は、数字にきちんと合わせてから、ゆっくりお回しください。');
+      t.push('');
+    }
+    var w = pickedOf('水道');
+    if(w){ t.push('■ 水道料金'); t.push('　' + w.b.split('\n').join('\n　')); t.push(''); }
+
+    var gm = pickedOf('ゴミ市'), gg = pickedOf('ゴミ業');
+    var tr = (window.TRASH || {})[String(d.area || '')] || '';
+    if(gm || gg || tr){
+      t.push('■ ゴミの出し方');
+      if(tr) t.push('　回収は ' + tr + ' です。');
+      if(gm) t.push('　' + gm.b.split('\n').join('\n　'));
+      if(gg) t.push('　' + gg.b.split('\n').join('\n　'));
+      t.push('　ゴミ置き場は24時間ご利用いただけますが、');
+      t.push('　分別されていないゴミは回収されません。');
+      t.push('');
+    }
+    var hk = pickedOf('破損');
+    if(hk){
+      t.push('■ お部屋を壊してしまったとき');
+      t.push('　' + hk.b.split('\n').join('\n　'));
+      t.push('');
+    }
+    var hp = '';
+    try{ hp = String((window.APP_CONFIG || {}).HP_URL || '').trim(); }catch(e){}
+    if(hp){
+      t.push('■ ご質問・ご要望');
+      t.push('　このご案内以外のお問い合わせは、弊社ホームページからお願いいたします。');
+      t.push('　' + hp);
+      t.push('');
+    }
+    return t.join('\n');
+  }
+
+  function showInfo(){
+    $('#info-ttl').textContent =
+      String((DATA||{}).bldg || '') + ' ' + String((DATA||{}).room || '') + '　お部屋のご案内';
+    /* ★ ご返信の受付が終わっているときは、はじめにそのことをお伝えします。
+         このご案内そのものは、これまでどおりご覧いただけます。 */
+    var note = CLOSED
+      ? ('<div class="closed-note"><b>ご返信の受付は終了しました</b>' +
+         esc(CLOSED_MSG || '') +
+         (PART.guide
+           ? ('<br>このご案内（ゴミの出し方・駐車場の区画・集合ポストのダイヤルなど）は、' +
+              'これまでどおり、いつでもご覧いただけます。')
+           : '<br>ご用の際は、管理会社までご連絡ください。') + '</div>')
+      : '';
+    /* 入居のしおりをお送りしていない方には、ご案内の中身はありません */
+    $('#info-body').innerHTML = note + (PART.guide ? infoHtml() : '') + keepHtml();
+    $('#ask5').innerHTML = askHtml();
+    ['#s-pw','#s1','#s2','#s-guide','#s3','#s-done'].forEach(function(x){ $(x).classList.add('hide'); });
+    $('#foot').classList.add('hide');
+    $('#steps').classList.add('hide');       /* ①②③ は、ご案内の画面では出しません */
+    $('#s-info').classList.remove('hide');
+    /* 受付が終わっている件では、戻る先がありません */
+    $('#info-back').classList.toggle('hide', _infoBack === 'closed');
+    window.scrollTo(0,0);
+  }
+
+  var _infoBack = 'done';     /* 戻る先。'done' か 'step' か 'closed' */
+  $('#btn-info').addEventListener('click', function(){
+    _infoBack = $('#s-done').classList.contains('hide') ? 'step' : 'done';
+    showInfo();
+  });
+  $('#done-info').addEventListener('click', function(){ _infoBack = 'done'; showInfo(); });
+
+  /* ★ ご返信は、何度でもいただけます。
+       あとから気づいたことがあれば、はじめからお送りいただけます。
+       前回お送りいただいたぶんは、そのまま記録に残ります。 */
+  $('#done-again').addEventListener('click', function(){
+    if(!DATA) return;
+    if(!confirm('もう一度、はじめからご返信いただきます。よろしいですか？\n\n' +
+                '前回お送りいただいた内容は、そのまま記録に残ります。')) return;
+    rooms = {}; checks = {}; whys = {};     /* 前回のぶんは引き継ぎません */
+    clear();
+    $('#s-done').classList.add('hide');
+    $('#ask4').innerHTML = '';
+    build();
+    go(1);
+  });
+  /* 記憶を消す（家族と共用の端末など） */
+  document.addEventListener('click', function(e){
+    var b = e.target && e.target.closest ? e.target.closest('#pass-drop') : null;
+    if(!b) return;
+    passDrop();
+    b.textContent = '削除しました。次回からはパスワードの入力が必要です';
+    b.disabled = true;
+  });
+
+  $('#info-back').addEventListener('click', function(){
+    if(_infoBack === 'closed') return;          /* 戻る先がありません */
+    $('#s-info').classList.add('hide');
+    if(_infoBack === 'done'){ $('#s-done').classList.remove('hide'); }
+    else { go(step); }
+    window.scrollTo(0,0);
+  });
+
+  /* ★「一時保存」。こちらでお預かりします */
+  $('#hold').addEventListener('click', holdNow);
+
+  var _clSeq = 0;
+  function clHtml(c){
+    var nm = 'w' + (++_clSeq);
+    var w  = whys[c.t] || {};
+    var on = !!checks[c.t];
+    return '<div class="clwrap" data-t="' + esc(c.t) + '">' +
+      '<label class="chk' + (on ? ' on' : '') + '" data-t="' + esc(c.t) + '">' +
+        '<input type="checkbox"' + (on?' checked':'') + '>' +
+        '<div class="chk-h"><i class="box"></i><div class="chk-t">' + esc(c.t) +
+          (c.money ? '<span class="tag money">お金</span>' : '') + '</div></div>' +
+        (c.b ? ('<div class="chk-b">' + linky(c.b) + '</div>') : '') +
+      '</label>' +
+      '<div class="why' + (on ? ' hide' : '') + '">' +
+        '<div class="why-q">印を付けなかった理由をお選びください</div>' +
+        WHYS.map(function(t){
+          var sel = (w.why === t);
+          return '<label class="whyr' + (sel ? ' on' : '') + '">' +
+            '<input type="radio" name="' + nm + '" value="' + esc(t) + '"' + (sel?' checked':'') + '>' +
+            '<span>' + esc(t) + '</span></label>';
+        }).join('') +
+        '<textarea class="why-n" placeholder="補足（任意）">' + esc(w.note || '') + '</textarea>' +
+      '</div>' +
+    '</div>';
+  }
+
+  /* 特約1件ぶんの動き（印の付け外しと、理由の記録） */
+  function bindClause(wrap){
+    var t   = wrap.getAttribute('data-t');
+    var lab = wrap.querySelector('.chk');
+    var why = wrap.querySelector('.why');
+    lab.addEventListener('click', function(e){
+      if(e.target.tagName === 'A') return;
+      var inp = lab.querySelector('input');
+      inp.checked = !inp.checked;
+      lab.classList.toggle('on', inp.checked);
+      checks[t] = inp.checked;
+      if(why) why.classList.toggle('hide', inp.checked);
+      save(); progress();
+    });
+    if(!why) return;
+    why.querySelectorAll('input[type=radio]').forEach(function(r){
+      r.addEventListener('change', function(){
+        if(!whys[t]) whys[t] = {};
+        whys[t].why = r.value;
+        why.querySelectorAll('.whyr').forEach(function(l){
+          l.classList.toggle('on', l.querySelector('input').checked);
+        });
+        save();
+      });
+    });
+    var ta = why.querySelector('.why-n');
+    if(ta) ta.addEventListener('input', function(){
+      if(!whys[t]) whys[t] = {};
+      whys[t].note = ta.value;
+      save();
+    });
+  }
+
+  function bindChk(el){
+    el.addEventListener('click', function(e){
+      if(e.target.tagName === 'A') return;
+      var inp = el.querySelector('input');
+      inp.checked = !inp.checked;
+      el.classList.toggle('on', inp.checked);
+      checks[el.getAttribute('data-t')] = inp.checked;
+      save(); progress();
+    });
+  }
+
+  function bindPlace(el){
+    var place = el.getAttribute('data-p');
+    if(!rooms[place]) rooms[place] = { ng:null, comment:'', photos:[] };
+    var st = rooms[place];
+    var detail = el.querySelector('.detail');
+    var ta = el.querySelector('textarea');
+
+    el.querySelectorAll('input[type=radio]').forEach(function(r){
+      r.addEventListener('change', function(){
+        st.ng = (r.value === 'ng');
+        el.classList.toggle('is-ng', st.ng);
+        detail.classList.toggle('hide', !st.ng);
+        save(); progress();
+      });
+    });
+    ta.addEventListener('input', function(){ st.comment = ta.value; save(); });
+
+    /* ★ 緊急の印 */
+    var ug = el.querySelector('.urg');
+    if(ug){
+      ug.querySelector('input').addEventListener('change', function(){
+        st.urgent = this.checked;
+        ug.classList.toggle('on', st.urgent);
+        save();
+      });
+    }
+
+    drawShots();
+    function drawShots(){
+      var box = el.querySelector('.shots');
+      box.innerHTML = st.photos.map(function(src, i){
+        return '<div class="shot"><img src="' + src + '" alt=""><button type="button" data-i="' + i + '">×</button></div>';
+      }).join('') +
+      (st.photos.length < MAXPHOTO
+        ? '<div class="addshot"><b>＋</b>写真</div>'
+        : '<div class="note" style="font-size:12px;color:#777;padding:6px 2px">写真は' + MAXPHOTO + '枚までです</div>');
+      box.querySelectorAll('.shot button').forEach(function(b){
+        b.addEventListener('click', function(ev){
+          ev.stopPropagation();
+          st.photos.splice(Number(b.getAttribute('data-i')), 1);
+          save(); drawShots();
+        });
+      });
+      box.querySelectorAll('.shot img').forEach(function(im){
+        im.addEventListener('click', function(){ zoom(im.src); });
+      });
+      var add = box.querySelector('.addshot');
+      if(add) add.addEventListener('click', pickPhoto);
+    }
+    function pickPhoto(){
+      var inp = document.createElement('input');
+      inp.type = 'file'; inp.accept = 'image/*'; inp.multiple = true;
+      inp.addEventListener('change', function(){
+        var files = Array.prototype.slice.call(inp.files || []);
+        var left = MAXPHOTO - st.photos.length;
+        files.slice(0, left).reduce(function(chain, f){
+          return chain.then(function(){
+            return shrink(f).then(function(d){ if(d) st.photos.push(d); });
+          });
+        }, Promise.resolve()).then(function(){ save(); drawShots(); });
+      });
+      inp.click();
+    }
+  }
+
+  /* 写真を小さくします（長辺1000px・JPEG）。
+     そのまま送ると1枚で数MBあり、電波の弱いところで送信に何十秒もかかるためです。
+     いちど作ってみて、まだ重いときは、もう一段だけ軽くします。
+     （傷の確認には十分な大きさです） */
+  function shrink(file){
+    return new Promise(function(done){
+      var fr = new FileReader();
+      fr.onload = function(){
+        var im = new Image();
+        im.onload = function(){
+          var M = 1000, w = im.width, h = im.height;
+          if(w > M || h > M){ var s = M/Math.max(w,h); w = Math.round(w*s); h = Math.round(h*s); }
+          var cv = document.createElement('canvas');
+          cv.width = w; cv.height = h;
+          cv.getContext('2d').drawImage(im, 0, 0, w, h);
+          var d = cv.toDataURL('image/jpeg', 0.60);
+          if(d.length > 240000) d = cv.toDataURL('image/jpeg', 0.45);
+          if(d.length > 240000) d = cv.toDataURL('image/jpeg', 0.35);
+          done(d);
+        };
+        im.onerror = function(){ done(''); };
+        im.src = fr.result;
+      };
+      fr.onerror = function(){ done(''); };
+      fr.readAsDataURL(file);
+    });
+  }
+
+  /* ---------- 進みぐあい ---------- */
+  function progress(){
+    var key = nowKey();
+    var places = PART.room ? (window.PLACES || []) : [];
+    var doneP = places.filter(function(p){ return rooms[p] && rooms[p].ng !== null; }).length;
+    var total = places.length;
+    var pct = total ? Math.round(doneP / total * 100) : 100;
+    $('#bar').style.width = (key === 'room' ? pct : 100) + '%';
+    var okAll = (doneP === total);
+
+    /* 暮らしのルールは、全部に印が付くまで先へ進めません。 */
+    var mn = PART.guide ? manners() : [];
+    var mnLeft = mn.filter(function(m){ return !checks[m]; }).length;
+
+    var nx = NEXTT[FLOW[step]] || '次へ';      /* つぎの段のご案内 */
+    $('#next').disabled = (key === 'room' && !okAll) || (key === 'guide' && mnLeft > 0);
+    $('#next').textContent =
+      (key === 'room')  ? (okAll ? nx : '残り ' + (total - doneP) + 'か所') :
+      (key === 'guide') ? (mnLeft > 0 ? '暮らしのルールが残り ' + mnLeft + ' 件' : nx) :
+      (key === 'send')  ? '送信する' : nx;
+  }
+
+  /* ---------- 画面の切り替え ---------- */
+  function go(n){
+    step = Math.min(Math.max(1, n), FLOW.length);
+    var key = nowKey();
+    $('#s-pw').classList.add('hide');
+    SECS.forEach(function(x){ $(x).classList.toggle('hide', x !== SECT[key]); });
+    $('#foot').classList.remove('hide');
+    $('#back').classList.toggle('hide', step === 1);
+    $('#steps').classList.remove('hide');
+    $$('#steps span').forEach(function(sp){
+      sp.classList.toggle('on', Number(sp.getAttribute('data-s')) === step); });
+    if(key === 'send'){ drawSum(); $('#ask3').innerHTML = askHtml(); }
+    window.scrollTo(0,0);
+    save(); progress();
+  }
+
+  function drawSum(){
+    var places = PART.room ? (window.PLACES || []) : [];
+    var ng = places.filter(function(p){ return rooms[p] && rooms[p].ng; });
+    /* 画面に出ている分（特約・暮らしのルール）だけを数えます */
+    var shown = $$('.chk').map(function(e){ return e.getAttribute('data-t'); });
+    var noChk = shown.filter(function(t){ return !checks[t]; });
+    var photos = 0;
+    places.forEach(function(p){ if(rooms[p]) photos += (rooms[p].photos||[]).length; });
+
+    var h = '';
+    h += row('ご確認いただく内容', esc(partLabel()));
+    if(PART.room){
+      h += row('ご確認いただいた箇所', places.length + ' か所');
+      h += row('気になるところ', ng.length ? ('<b class="sum-ng">' + ng.length + ' か所</b>') : '<b>なし</b>');
+      if(ng.length) h += row('　場所', esc(ng.join('、')));
+      var ug = ng.filter(function(p){ return rooms[p] && rooms[p].urgent; });
+      if(ug.length) h += row('　緊急', '<b class="sum-ng">' + esc(ug.join('、')) + '</b>');
+      h += row('写真', photos + ' 枚');
+    }
+    if(shown.length){
+      var ttl = (PART.terms && PART.guide) ? 'ご説明・ルールの確認'
+              : (PART.terms ? 'ご説明の確認' : '暮らしのルールの確認');
+      h += row(ttl, noChk.length ? ('<b class="sum-ng">未確認 ' + noChk.length + ' 件</b>') : '<b>すべて確認済み</b>');
+      if(noChk.length) h += row('　未確認', esc(noChk.join('、')));
+    }
+    $('#sum').innerHTML = h;
+    function row(k,v){ return '<div class="sum-row"><span>' + k + '</span><span>' + v + '</span></div>'; }
+  }
+
+  /* ---------- 送信 ---------- */
+  function submit(){
+    var places = PART.room ? (window.PLACES || []) : [];
+    var payload = {
+      action:'submit', id:ID, pass:PASS,
+      /* ご返信のあと、この文をそのままお送りします
+         （入居のしおりをお送りしていない方には、付けません） */
+      guide: PART.guide ? infoText() : '',
+      rooms: places.map(function(p){
+        var s = rooms[p] || {};
+        return { place:p, ng:!!s.ng, urgent:!!(s.ng && s.urgent), comment:s.comment||'',
+                 photos:(s.ng ? (s.photos||[]) : []) };
+      }),
+      checks: $$('.chk').map(function(e){
+        var t = e.getAttribute('data-t');
+        var w = whys[t] || {};
+        return { title:t, ok:!!checks[t],
+                 why : checks[t] ? '' : (w.why  || ''),
+                 note: checks[t] ? '' : (w.note || '') };
+      })
+    };
+    keepAwake(true);
+    veilCount('送信しています。画面をそのままにしてお待ちください');
+    post(payload).then(function(res){
+      keepAwake(false);
+      veil(false);
+      if(!res.ok){
+        /* ★ 受付が終わっていた件は、そのことをお伝えして、ご案内へお移しします */
+        if(res.closed){
+          CLOSED = true; CLOSED_MSG = String(res.err || '');
+          alert(res.err || 'ご返信の受付は終了しました。');
+          _infoBack = 'closed'; showInfo();
+          return;
+        }
+        alert(res.err || '送信できませんでした。もう一度お試しください。'); return;
+      }
+      clear();
+      showDone(!PART.room
+        ? 'ありがとうございました。いただきましたご確認の内容は、ご退去時まで記録として保管させていただきます。'
+        : (res.ng > 0
+            ? 'ご報告いただき、ありがとうございました。\n' +
+              'いただきました内容は、入居時のお部屋の状態として、ご退去の時まで記録として保管いたします。\n' +
+              'ご退去の際に、入居前からあったものであることを、お互いに確認するための記録です。\n' +
+              'このご報告をもとに、修繕をしたり、現地の確認にお伺いしたりするものではございません。' +
+              'あらかじめご了承ください。\n' +
+              (Number(res.urgent || 0) > 0
+                ? '「緊急」の印を付けていただいたものにつきましては、弊社より改めてご連絡いたします。\n'
+                : 'ただし、緊急性のある不具合は別です。お気づきの際は、弊社までご連絡ください。\n') +
+              'ご協力いただき、ありがとうございました。'
+            : 'ありがとうございました。問題なしとして承りました。いただきました室内チェックのご内容は、ご退去時まで記録として保管させていただきます。'));
+    }).catch(function(){
+      keepAwake(false);
+      veil(false);
+      alert('通信できませんでした。電波状況の良い場所で、もう一度お試しください。入力内容は保存されています。');
+    });
+  }
+
+  function showDone(msg){
+    ['#s-pw','#s1','#s2','#s-guide','#s3'].forEach(function(s){ $(s).classList.add('hide'); });
+    $('#foot').classList.add('hide');
+    $('#steps').classList.add('hide');
+    $('#s-done').classList.remove('hide');
+    /* お部屋のご案内は、入居のしおりをお送りした方だけにお出しします */
+    $('#done-info').classList.toggle('hide', !PART.guide);
+    $('#done-info-note').classList.toggle('hide', !PART.guide);
+    $('#done-msg').textContent = msg;
+    $('#ask4').innerHTML = askHtml();
+    $('#bar').style.width = '100%';
+    window.scrollTo(0,0);
+  }
+
+  /* ---------- 小道具 ---------- */
+  var _tick = null, _lock = null, _guard = null;
+
+  function veil(msg){
+    if(msg === false){
+      clearInterval(_tick); _tick = null;
+      $('#veil').classList.remove('on');
+      return;
+    }
+    $('#veil-msg').textContent = msg;
+    $('#veil').classList.add('on');
+  }
+
+  /* 送信のあいだ、何秒たったかを出します。
+     数字が動いていれば「止まっていない」と分かるので、
+     途中でアプリを閉じられてしまうのを防げます。 */
+  function veilCount(base){
+    var t0 = Date.now();
+    veil(base);
+    clearInterval(_tick);
+    _tick = setInterval(function(){
+      var s = Math.round((Date.now() - t0) / 1000);
+      var m = $('#veil-msg');
+      if(m) m.textContent = base + '（' + s + '秒）';
+    }, 1000);
+  }
+
+  /* 送信のあいだ、画面が暗くならないようにし、
+     うっかり閉じようとしたら聞き返します。 */
+  function keepAwake(on){
+    if(on){
+      try{
+        if(navigator.wakeLock && navigator.wakeLock.request){
+          navigator.wakeLock.request('screen').then(function(l){ _lock = l; }, function(){});
+        }
+      }catch(e){}
+      _guard = function(e){ e.preventDefault(); e.returnValue = ''; return ''; };
+      window.addEventListener('beforeunload', _guard);
+    }else{
+      try{ if(_lock){ _lock.release(); _lock = null; } }catch(e){}
+      if(_guard){ window.removeEventListener('beforeunload', _guard); _guard = null; }
+    }
+  }
+  /* ドライブの URL から、画像として出せるアドレスを作ります
+     例）https://drive.google.com/file/d/XXXX/view
+       → https://drive.google.com/thumbnail?id=XXXX&sz=w1000        */
+  function driveImg(u, w){
+    var t = String(u == null ? '' : u);
+    var m = /[-\w]{25,}/.exec(t);
+    return m ? ('https://drive.google.com/thumbnail?id=' + m[0] + '&sz=w' + (w || 1000)) : t;
+  }
+
+  function zoom(src){
+    var z = $('#zoom');
+    z.querySelector('img').src = src;
+    z.classList.add('on');
+  }
+  $('#zoom').addEventListener('click', function(){ this.classList.remove('on'); });
+
+  /* ---------- 出入り口 ---------- */
+  $('#pw-go').addEventListener('click', function(){ openIt(); });
+  $('#pw').addEventListener('keydown', function(e){ if(e.key === 'Enter') openIt(); });
+  $('#next').addEventListener('click', function(){
+    if(step < FLOW.length) go(step + 1); else submit();
+  });
+  $('#back').addEventListener('click', function(){ if(step > 1) go(step - 1); });
+  /* 「すべてに印を付ける」は外しました。
+     一括で付けられると、文面を読まずに送れてしまうためです。 */
+  /* 「すべてに印を付ける」「すべて外す」は、どちらも外しました。
+     まとめて操作できると、文面を読まずに送れてしまうためです。 */
+
+  if(!ID){
+    $('#pw-box').innerHTML =
+      '<div class="card"><h2>ご案内のリンクから開いてください</h2>' +
+      '<p class="lead">メールに記載のアドレスをタップすると開きます。</p></div>';
+  }else{
+    /* リンクにパスワードが入っていれば、それで開きます。
+       無ければ、この端末で一度開いたときのものを使います。 */
+    var auto = LNK || passLoad();
+    if(auto) openIt(decodeURIComponent(auto));
+  }
+})();
