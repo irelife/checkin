@@ -161,7 +161,7 @@
       var slim = { rooms:{}, checks:checks, whys:whys, step:step, at:Date.now(), noPhoto:true }, k;
       for(k in rooms){
         if(!Object.prototype.hasOwnProperty.call(rooms, k)) continue;
-        slim.rooms[k] = { ng:rooms[k].ng, comment:rooms[k].comment || '', photos:[] };
+        slim.rooms[k] = { ng:rooms[k].ng, comment:rooms[k].comment || '', urgent:!!rooms[k].urgent, photos:[] };
       }
       localStorage.setItem(KEY, JSON.stringify(slim));
       try{ console.warn('[checkin] 端末の空き容量が不足のため、写真を除いて保存しました'); }catch(x){}
@@ -196,7 +196,7 @@
       var cm  = String(one.comment || '');
       if(ng === null && !cm) continue;
       /* 写真は入れません（お預かりするのは、選んだ内容と書いた文章だけです） */
-      out.rooms[k] = { ng: ng, comment: cm };
+      out.rooms[k] = { ng: ng, comment: cm, urgent: !!one.urgent };
     }
     for(k in checks){
       if(!Object.prototype.hasOwnProperty.call(checks, k)) continue;
@@ -247,7 +247,7 @@
     var src = d.data.rooms || {}, k;
     for(k in src){
       if(!Object.prototype.hasOwnProperty.call(src, k)) continue;
-      rooms[k] = { ng: src[k].ng, comment: src[k].comment || '', photos: [] };
+      rooms[k] = { ng: src[k].ng, comment: src[k].comment || '', urgent: !!src[k].urgent, photos: [] };
     }
     save();
   }
@@ -405,6 +405,9 @@
         '</div>' +
         '<div class="detail' + (cur.ng ? '' : ' hide') + '">' +
           '<textarea placeholder="箇所と状態をご記入ください（例：北側の壁に10cm程度のキズ）">' + esc(cur.comment||'') + '</textarea>' +
+          /* ★ 緊急の印。すぐに対応が必要な不具合だけに付けていただきます */
+          '<label class="urg' + (cur.urgent ? ' on' : '') + '"><input type="checkbox"' + (cur.urgent ? ' checked' : '') + '>' +
+            '<span><b>緊急</b>（水漏れなど、すぐに対応が必要な不具合）</span></label>' +
           '<div class="shots"></div>' +
         '</div>' +
       '</div>';
@@ -776,6 +779,16 @@
     });
     ta.addEventListener('input', function(){ st.comment = ta.value; save(); });
 
+    /* ★ 緊急の印 */
+    var ug = el.querySelector('.urg');
+    if(ug){
+      ug.querySelector('input').addEventListener('change', function(){
+        st.urgent = this.checked;
+        ug.classList.toggle('on', st.urgent);
+        save();
+      });
+    }
+
     drawShots();
     function drawShots(){
       var box = el.querySelector('.shots');
@@ -895,6 +908,8 @@
       h += row('ご確認いただいた箇所', places.length + ' か所');
       h += row('気になるところ', ng.length ? ('<b class="sum-ng">' + ng.length + ' か所</b>') : '<b>なし</b>');
       if(ng.length) h += row('　場所', esc(ng.join('、')));
+      var ug = ng.filter(function(p){ return rooms[p] && rooms[p].urgent; });
+      if(ug.length) h += row('　緊急', '<b class="sum-ng">' + esc(ug.join('、')) + '</b>');
       h += row('写真', photos + ' 枚');
     }
     if(shown.length){
@@ -917,7 +932,8 @@
       guide: PART.guide ? infoText() : '',
       rooms: places.map(function(p){
         var s = rooms[p] || {};
-        return { place:p, ng:!!s.ng, comment:s.comment||'', photos:(s.ng ? (s.photos||[]) : []) };
+        return { place:p, ng:!!s.ng, urgent:!!(s.ng && s.urgent), comment:s.comment||'',
+                 photos:(s.ng ? (s.photos||[]) : []) };
       }),
       checks: $$('.chk').map(function(e){
         var t = e.getAttribute('data-t');
@@ -946,7 +962,15 @@
       showDone(!PART.room
         ? 'ありがとうございました。いただきましたご確認の内容は、ご退去時まで記録として保管させていただきます。'
         : (res.ng > 0
-            ? 'ありがとうございました。いただきました室内チェックのご内容は、ご退去時まで記録として保管させていただきます。'
+            ? 'ご報告いただき、ありがとうございました。\n' +
+              'いただきました内容は、入居時のお部屋の状態として、ご退去の時まで記録として保管いたします。\n' +
+              'ご退去の際に、入居前からあったものであることを、お互いに確認するための記録です。\n' +
+              'このご報告をもとに、修繕をしたり、現地の確認にお伺いしたりするものではございません。' +
+              'あらかじめご了承ください。\n' +
+              (Number(res.urgent || 0) > 0
+                ? '「緊急」の印を付けていただいたものにつきましては、弊社より改めてご連絡いたします。\n'
+                : 'ただし、緊急性のある不具合は別です。お気づきの際は、弊社までご連絡ください。\n') +
+              'ご協力いただき、ありがとうございました。'
             : 'ありがとうございました。問題なしとして承りました。いただきました室内チェックのご内容は、ご退去時まで記録として保管させていただきます。'));
     }).catch(function(){
       keepAwake(false);

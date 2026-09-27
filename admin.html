@@ -2402,7 +2402,11 @@ body:not(.v-done) #sec-done{ display:none; }
       _pinging = false;
       if(!d || !d.ok) return;
       var v = String(d.rev || '');
-      if(!v || !REV){ REV = v; return; }      /* はじめの1回は、ものさしを合わせるだけ */
+      /* ★ 2026/9/27）目印が分からないとき（控えを出したまま一覧の読み込みに
+           失敗したときなど）は、ものさしを合わせるだけでなく読み直します。
+           これまでは合わせるだけだったので、古い控えが出たままになりました。 */
+      if(!v) return;
+      if(!REV){ REV = v; if(canFresh()) reload(true); return; }
       if(v === REV){                          /* 何も変わっていません */
         _quiet++;
         var want = pingWait();
@@ -2637,6 +2641,14 @@ body:not(.v-done) #sec-done{ display:none; }
        対応が必要 … あなたが手を動かすもの
        待ち      … 相手の返事を待つもの（機械が自動で動きます）
        完了      … 済んだもの                                       */
+  /* ★ 2026/9/27）督促ずみで、まだご返信のないもの（返事なし）。
+       自動では完了にしません。「未返信」に置いたまま、札だけ「返事なし」にします。
+       完了へ移すのは、人が「完了にする」を押したときだけです。 */
+  function noReply(r){
+    if(String(r.status||'') !== '未返信') return false;
+    if(guideOnly(r) || mailNg(r)) return false;
+    return Number(r.remind||0) > 0 && !r.remindNext;
+  }
   function needAct(r){
     return String(r.status||'') === '返信済' && !agWait(r);
   }
@@ -2709,11 +2721,15 @@ body:not(.v-done) #sec-done{ display:none; }
       var day = r.doneAt ? (jpDate(String(r.doneAt).slice(0,10)) + ' に完了') : '';
       var why = whyText(r);
       /* 「返事をもらって完了」と「返事が無いまま完了」を、ここでも書き分けます */
-      return [String(r.doneWhy||'') === '自動：督促のみ・返事なし'
+      return [/返事なし/.test(String(r.doneWhy||''))
                 ? 'ご返信のないまま完了しています' : '完了しています',
               why ? (why + (day ? ('。' + day) : '')) : day];
     }
     if(st === '返信済'){
+      if(Number(r.urgent||0) > 0){
+        return ['緊急のお部屋の報告があります',
+                '入居者様が ' + Number(r.urgent) + ' か所に「緊急」の印を付けています。すぐに内容をご確認ください'];
+      }
       if(r.agentRe){
         return ['仲介から返事が届きました（' + esc(String(r.agentAns || '回答あり')) + '）',
                 '内容をご確認のうえ「完了にする」を押してください'];
@@ -2739,9 +2755,15 @@ body:not(.v-done) #sec-done{ display:none; }
       return ['内容をご確認ください', 'すべて問題なしのご返信です'];
     }
     /* 未返信 */
+    if(noReply(r)){
+      var lr = jpDate(String(r.lastRemind||'').slice(0,10));
+      return ['返事なし（督促ずみ）',
+              '督促メールを送りましたが、ご返信がありません' + (lr ? ('（' + lr + ' 送信）') : '') +
+              '。このまま未返信に置いておきます。終わりにするときは「完了にする」を押してください'];
+    }
     if(r.remindNext){
       return ['入居者様の返信待ち',
-              jpDate(r.remindNext) + ' に、自動で督促メールを送り、そのまま完了へ移します'];
+              jpDate(r.remindNext) + ' に、自動で督促メールを送ります（完了にはしません）'];
     }
     if(Number(r.remind || 0) > 0){
       /* 自動の督促は、上限まで送ったら、もう送りません。
@@ -2811,12 +2833,14 @@ body:not(.v-done) #sec-done{ display:none; }
   var WHY_TAG = {
     '手で完了'               : ['完了',   ''],
     '自動：問題の報告なし'   : ['問題なし', ''],
-    '自動：督促のみ・返事なし': ['返事なし', 'wn']
+    '自動：督促のみ・返事なし': ['返事なし', 'wn'],
+    '返事なし・手で完了'     : ['返事なし', 'wn']
   };
   var WHY_TEXT = {
     '手で完了'               : '担当者が内容を確認して完了にしました',
     '自動：問題の報告なし'   : '気になるところのご報告が無かったため、自動で完了になりました',
-    '自動：督促のみ・返事なし': 'ご返信をいただけないまま、督促メールを送って自動で完了になりました'
+    '自動：督促のみ・返事なし': 'ご返信をいただけないまま、督促メールを送って自動で完了になりました',
+    '返事なし・手で完了'     : 'ご返信をいただけないまま、担当者が完了にしました'
   };
   function whyTag(r){ return WHY_TAG[String(r.doneWhy||'')] || ['完了', '']; }
   function whyText(r){ return WHY_TEXT[String(r.doneWhy||'')] || ''; }
@@ -2945,12 +2969,14 @@ body:not(.v-done) #sec-done{ display:none; }
       return ['check', 'ok', w[0], w[1]];
     }
     if(st === '返信済'){
+      if(Number(r.urgent||0) > 0) return ['home', 'ng', '緊急', 'ng'];   /* ★ 入居者が緊急の印を付けた */
       if(r.agentRe)     return ['chat', 'ng', '仲介から返事', 'hot'];
       if(agWait(r))     return [r.agentRm ? 'clock' : 'chat', '', '仲介の返事待ち', ''];
       if(chk > 0)       return ['doc',  'ng', '仲介へ連絡',   'hot'];
       if(r.ng > 0)      return ['home', 'ng', 'お部屋の報告', 'hot'];
       return ['check', 'gd', '内容の確認', 'hot'];
     }
+    if(noReply(r))      return ['mail', 'ng', '返事なし', 'wn'];
     if(r.over)          return ['clock', 'ng', '期限すぎ', 'ng'];
     return ['mail', '', '入居者の返信待ち', ''];
   }
@@ -3047,7 +3073,8 @@ body:not(.v-done) #sec-done{ display:none; }
     if(String(r.status || '') !== '完了' && String(r.status || '') !== '取消'){
       if(!r.replied && r.remindNext){
         add(r.remindNext, 'plan', jpDate(r.remindNext) + ' に、自動で督促メールをお送りします',
-            '送信後は、この件を自動で「完了」へ移します' + (DONE_AFTER_REMIND ? '' : '（いまは移しません）'));
+            DONE_AFTER_REMIND ? '送信後は、この件を自動で「完了」へ移します'
+                              : '送信後もご返信がなければ「返事なし」として、未返信に置いたままにします');
       }
       if(agWait(r) && !r.agentRm && agNext(r)){
         add(agNext(r), 'plan', jpDate(agNext(r)) + ' に、仲介業者へ自動で確認のメールをお送りします',
@@ -3160,6 +3187,8 @@ body:not(.v-done) #sec-done{ display:none; }
        仲介から返事あり → 仲介へ連絡 → お部屋の報告 → そのほか */
     if(k === 'act'){
       var rank = function(r){
+        if(Number(r.urgent||0) > 0) return -1;
+        if(noReply(r)) return 4;
         if(r.agentRe) return 0;
         if(Number(r.noCheck||0) > 0) return 1;
         if(r.ng > 0) return 2;
@@ -3500,6 +3529,7 @@ body:not(.v-done) #sec-done{ display:none; }
       }
     }else if(!done){
       acts.push('<button class="btn sm ghost act-remind">督促メールを送る</button>');
+      if(noReply(r)) acts.push('<button class="btn sm act-done">完了にする</button>');
       if(!mailNg(r)){
         acts.push('<button class="btn sm ghost act-mail">宛先を直して送り直す</button>');
       }
@@ -3553,10 +3583,18 @@ body:not(.v-done) #sec-done{ display:none; }
          対応履歴（チャット）には出しきれない分も、ここにそのまま並べます。 */
     if(d && (d.acts || []).length){
       h.push('<div class="d-k">操作の記録</div>');
+      /* ★ いちばん新しい行に「いまここ」を付けます（どこまで進んだかが一目で分かるように） */
+      var al = actList(d);
       h.push('<div class="d-item"><p>' +
-             actList(d).map(function(x){
-               return esc(jpTime(x.t) || x.t) + '　' + esc(x.what) +
+             al.map(function(x, i){
+               var line = esc(jpTime(x.t) || x.t) + '　' + esc(x.what) +
                       (x.who ? ('　<b style="font-weight:600;">' + esc(x.who) + '</b>') : '');
+               if(i === al.length - 1){
+                 return '<span style="display:inline-block;margin-top:4px;padding:6px 10px;border-radius:10px;' +
+                        'background:#FCF0EE;color:#C7362A;font-weight:600;">' + line +
+                        '　<span style="white-space:nowrap;">◀ いまここ</span></span>';
+               }
+               return line;
              }).join('<br>') + '</p></div>');
     }
 
@@ -3596,7 +3634,8 @@ body:not(.v-done) #sec-done{ display:none; }
     }else{
       rms.forEach(function(x){
         h.push('<div class="d-item ng">');
-        h.push('<b>' + esc(x.place) + '　<span class="pill ng">指摘あり</span></b>');
+        var urg = /緊急/.test(String(x.judge||''));
+        h.push('<b>' + esc(x.place) + '　<span class="pill ng">' + (urg ? '緊急' : '指摘あり') + '</span></b>');
         if(x.comment) h.push('<p>' + esc(x.comment) + '</p>');
         if((x.photos||[]).length){
           /* ★ v2.10）写真は公開していません。
@@ -3737,8 +3776,11 @@ body:not(.v-done) #sec-done{ display:none; }
     /* 押した瞬間に動かします。送信は裏で行います */
     /* 別の場所へ移るので、浮かんでいる箱は閉じます */
     if(SEL === id){ SEL = ''; detailOpen(false); }
-    var undoDraw = patchRow(id, undo ? { status:'返信済', doneAt:'' }
-                                     : { status:'完了',   doneAt:nowJp() });
+    var r0 = rowById(id);
+    var nr = !!(r0 && !r0.replied);           /* ご返信をいただいていない件 */
+    var undoDraw = patchRow(id, undo ? { status:(nr ? '未返信' : '返信済'), doneAt:'', doneWhy:'' }
+                                     : { status:'完了', doneAt:nowJp(),
+                                         doneWhy:(nr && !guideOnly(r0) ? '返事なし・手で完了' : '手で完了') });
     syncing(true);
     post({ action:'done', key:KEY, id:id, undo:undo }).then(function(res){
       syncing(false);

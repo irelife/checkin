@@ -263,6 +263,13 @@ header .h-info:hover{background:rgba(255,255,255,.22);}
   align-items:center;justify-content:center;padding:16px;}
 #zoom.on{display:flex;}
 #zoom img{max-width:100%;max-height:100%;border-radius:14px;}
+/* ★ 緊急の印 */
+.urg{display:flex;align-items:center;gap:10px;margin-top:10px;padding:12px 14px;border-radius:14px;
+  background:#FCF0EE;color:#424245;font-size:15px;cursor:pointer;}
+.urg input{width:20px;height:20px;accent-color:#C7362A;flex:0 0 auto;}
+.urg b{color:#C7362A;}
+.urg.on{background:#C7362A;color:#fff;}
+.urg.on b{color:#fff;}
 </style>
 </head>
 <body>
@@ -308,6 +315,8 @@ header .h-info:hover{background:rgba(255,255,255,.22);}
       <b>ご返信の期限について</b>
       <p id="due-note">
         この確認は、入居されたときのお部屋の状態を、記録として残すためのものです。<br>
+        <b style="display:inline;font-size:14.5px;">ご報告をもとに修繕や現地の確認にお伺いするものではありません。</b>ご退去のときに、お互いが同じ認識でいられるようにするための記録です。<br>
+        ただし、緊急性のある不具合は別です。その場合は、ご報告の「緊急」に印を付けてください。<br>
         <b style="display:inline;font-size:14.5px;">期限までにご返信がないと</b>、入居前からあったキズや汚れであっても、
         ご退去のときにご負担をお願いすることがあります。<br>
         期限を過ぎてもご返信がない場合は、管理会社よりご連絡いたします。
@@ -425,7 +434,7 @@ header .h-info:hover{background:rgba(255,255,255,.22);}
     <div class="done">
       <div class="mk">✓</div>
       <h2>送信しました</h2>
-      <p class="lead" id="done-msg">ご協力ありがとうございました。</p>
+      <p class="lead" id="done-msg" style="white-space:pre-line;">ご協力ありがとうございました。</p>
       <button class="btn" id="done-info" style="max-width:420px;margin:26px auto 0;">
         お部屋のご案内を見る</button>
       <p class="note" id="done-info-note" style="margin-top:12px;">
@@ -457,6 +466,6 @@ header .h-info:hover{background:rgba(255,255,255,.22);}
 
 <script src="clauses.js?v=8"></script>
 <script src="config.js?v=3"></script>
-<script src="app.js?v=15"></script>
+<script src="app.js?v=17"></script>
 </body>
 </html>
