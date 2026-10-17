@@ -1,0 +1,45 @@
+# ★ 自動検査
+#
+#   いつ走るか：
+#     ・main へ何かを入れようとしたとき（プルリクエスト）
+#     ・main が直接変わったとき
+#     ・手で「実行」を押したとき
+#
+#   1件でも失敗したら赤くなり、マージのボタンが警告を出します。
+#
+#   ★ 2026/10/17 新設
+#     このリポジトリには .github がありませんでした。
+#     検査を忘れて main へ入れても、誰も気づけない状態でした。
+#     （2026/9/27 に tests/ ごと消えていたことにも、半月以上
+#       誰も気づきませんでした）
+#
+#   ★ ここの検査は、ぜんぶ素の JavaScript です。
+#     ブラウザを使わないので、playwright も npm install も要りません。
+#     だから1分かかりません。
+
+name: 自動検査
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: 検査
+    runs-on: ubuntu-24.04      # ★ 版を決め打ち。ubuntu-latest は向こうの都合で中身が変わります
+    timeout-minutes: 10
+
+    steps:
+      - name: リポジトリを取ってくる
+        uses: actions/checkout@v5
+
+      - name: Node を用意する
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+
+      - name: 検査を走らせる
+        run: node tests/run-all.cjs .
