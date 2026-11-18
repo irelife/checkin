@@ -1375,7 +1375,7 @@ body:not(.v-done) #sec-done{ display:none; }
   var CFG = window.APP_CONFIG || {};
   /* ★ 画面の版。手直しをするたび、ここを1つ上げてください。
        左下に出ますので、古いものが出ていないか、その場で分かります。 */
-  var APPV = '2026/09/22 ⑥';
+  var APPV = '2026/11/19 ①';
   var KEY = '';
   /* ★ v2.9）いま操作している人のお名前。
        完了・取り消し・督促・仲介への連絡のたびに、サーバーへ一緒に送り、
@@ -1523,6 +1523,26 @@ body:not(.v-done) #sec-done{ display:none; }
            ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
   }
 
+  /* ★ 2026/11/19）LINEのリンクから一発で開く
+       admin.html?sec=done&id=〇〇 … ログインのあと、その1件を開きます。
+       その件が「完了」なら「完了した件」の画面へ移ってから開きます。
+       この端末がパスワードとお名前を覚えていれば、ログインも自動で行います。 */
+  var DEEP = (function(){
+    try{ var q = new URLSearchParams(location.search);
+         return { sec: String(q.get('sec')||''), id: String(q.get('id')||'') }; }
+    catch(e){ return { sec:'', id:'' }; }
+  })();
+  var _deepDone = false;
+  function deepGo(){
+    if(_deepDone || (!DEEP.sec && !DEEP.id)) return;
+    var r = DEEP.id ? rowById(DEEP.id) : null;
+    if(DEEP.id && !r) return;          /* まだ一覧に無い（控えが古い）。新しい一覧が来たらもう一度 */
+    _deepDone = true;
+    var sec = r ? (String(r.status||'') === '完了' ? 'done' : '') : DEEP.sec;
+    if(sec && SECS.indexOf(sec) >= 0) goSec(sec, true);
+    if(r) selectRow(DEEP.id);
+  }
+
   /* 受け取った一覧を、画面に反映します */
   function applyList(o){
     _lastAuto = Date.now();     /* 読んだばかりなので、自動の読み直しは1分あけます */
@@ -1538,6 +1558,7 @@ body:not(.v-done) #sec-done{ display:none; }
        画面が出てから知らせたいので、ひと呼吸おきます。 */
     setTimeout(mailPaint, 0);
     buildPeriod(); buildArea(); drawAll();
+    setTimeout(deepGo, 0);   /* LINEのリンクから来たときは、その件を開く */
   }
 
   /* ---- パスワード（ログイン） ----
@@ -1594,6 +1615,13 @@ body:not(.v-done) #sec-done{ display:none; }
   try{ var k = localStorage.getItem('ire_checkin_key'); if(k) $('#key').value = k; }catch(e){}
   if(WHO) $('#who').value = WHO;
   whoPaint();
+  /* ★ 2026/11/19）LINEのリンクから来て、パスワードとお名前を覚えていれば、そのまま入ります */
+  if((DEEP.sec || DEEP.id) && $('#key').value && WHO){
+    setTimeout(function(){
+      var f = $('#key-form');
+      try{ f.requestSubmit(); }catch(e){ f.dispatchEvent(new Event('submit', { cancelable:true })); }
+    }, 0);
+  }
 
   /* 上のバーのお名前を押すと、変えられます */
   $('#who-b').addEventListener('click', function(){
